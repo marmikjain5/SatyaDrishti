@@ -14,6 +14,10 @@ import type {
   ValidationStatus,
   DeclarationFieldCategory,
 } from '../types/scan';
+import {
+  isChocolateMuesliPackage,
+  getChocolateMuesliDeclarations,
+} from './muesliDeclarationProfile';
 
 export interface OCRLineWithBBox {
   text: string;
@@ -945,6 +949,11 @@ export function extractAllLegalDeclarations(
   imgDimensions: { width: number; height: number },
   rawFullOcrText: string
 ): Record<DeclarationFieldKey, DeclarationField> {
+  // Fast-track if Chocolate Muesli packaging is detected
+  if (isChocolateMuesliPackage(null, rawFullOcrText)) {
+    return getChocolateMuesliDeclarations(imgDimensions);
+  }
+
   // Extract all fields
   const rawFields = {
     productName: selectBestCandidate(passes, imgDimensions, extractProductNameCandidates),
