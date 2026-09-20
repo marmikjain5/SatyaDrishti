@@ -319,6 +319,12 @@ export const useScanStore = create<ScanState>((set, get) => ({
       const validationResult = validateProduct(masterExtractedData);
       validationResult.scanId = scanId;
 
+      await new Promise((r) => setTimeout(r, 300));
+      set({
+        currentProgress: 94,
+        currentStatusMessage: 'Correlating with Legal Metrology Statutory RAG Database...',
+      });
+
       // Step 4: Run RAG Statutory Mapping & Complaint Correlation
       const correlationResult = processScanDiscrepanciesAndCorrelate(
         scanId,
@@ -326,6 +332,12 @@ export const useScanStore = create<ScanState>((set, get) => ({
         validationResult,
         consolidatedRawText
       );
+
+      await new Promise((r) => setTimeout(r, 250));
+      set({
+        currentProgress: 98,
+        currentStatusMessage: 'Finalizing readability analysis & compliance audit report...',
+      });
 
       // Step 5: Master Readability Analysis
       const masterReadability = await readabilityService.analyze(
