@@ -32,10 +32,10 @@ export const StatsCounterSection: React.FC = () => {
       highlight: 'Evidence-Backed Reporting',
     },
     {
-      label: 'Factory Hygiene Monitoring',
-      count: 'Live Factory Inspection',
-      sublabel: 'Hygiene Assessment & Zone Monitoring',
-      growth: 'Visual Inspection',
+      label: 'Zonal Inspector Operations',
+      count: 'Field Audit & SCN',
+      sublabel: 'Surprise Inspection & Barcode Audit',
+      growth: 'Inspector SLA Tracking',
       icon: MessageSquareText,
       highlight: 'Evidence-Based Violation Tracking',
     },
@@ -54,7 +54,7 @@ export const StatsCounterSection: React.FC = () => {
               SatyaDrishti Platform at a Glance
             </h2>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-              AI-powered packaging analysis, Legal Metrology compliance validation, factory hygiene monitoring, and evidence-driven regulatory review.
+              AI-powered packaging analysis, Legal Metrology compliance validation, Zonal Inspector field operations, and evidence-driven regulatory review.
             </p>
             <div className="pt-2">
               <a href="#features">
