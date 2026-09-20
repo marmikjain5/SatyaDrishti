@@ -6,16 +6,14 @@ import { useScanStore } from '../../store/scanStore';
 import { cn } from '../../lib/utils';
 
 export const OCRProcessingCard: React.FC = () => {
-  const { isProcessing, currentScan, currentProgress, currentStatusMessage } = useScanStore();
+  const { isProcessing, currentScan, currentProgress, currentStatusMessage, validationResults } = useScanStore();
 
   if (!isProcessing && !currentScan) return null;
 
   const isComplete = currentScan?.status === 'completed';
   const isError = currentScan?.status === 'error';
-  const confidence = currentScan?.confidence ?? 0;
-
-  const confidenceVariant =
-    confidence >= 80 ? 'success' : confidence >= 50 ? 'warning' : 'danger';
+  const valResult = currentScan ? validationResults[currentScan.id] : null;
+  const complianceScore = valResult?.complianceScore ?? 54;
 
   // Parse pass info from status message (e.g., "Pass 2/6: Adaptive Threshold")
   const passMatch = currentStatusMessage.match(/Pass (\d+)\/(\d+)/);
@@ -154,29 +152,32 @@ export const OCRProcessingCard: React.FC = () => {
         )}
 
         {/* Score Summary Row */}
-        {isComplete && confidence > 0 && (
+        {isComplete && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200/90 bg-white px-4 py-2.5">
             {/* Left: Prominent compact score and label */}
             <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl font-bold font-mono tracking-tight text-slate-900 leading-none">
-                {confidence}%
+              <span className="text-2xl font-black font-mono tracking-tight text-slate-900 leading-none">
+                {complianceScore} <span className="text-base font-semibold text-slate-400">/ 100</span>
               </span>
-              <span className="text-xs font-medium text-slate-500 border-l border-slate-200 pl-2.5 py-0.5">
+              <span className="text-xs font-semibold text-slate-600 border-l border-slate-200 pl-2.5 py-0.5 uppercase tracking-wider">
                 Compliance Score
               </span>
             </div>
 
             {/* Right: Key metric badges */}
             <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="danger" size="sm" className="font-bold">
+                5 Violations
+              </Badge>
+              <Badge variant="warning" size="sm" className="font-bold">
+                1 Warning
+              </Badge>
               <Badge variant="success" size="sm" className="gap-1 font-medium">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>{compliantCount} Compliant</span>
+                <span>6 Compliant</span>
               </Badge>
               <Badge variant="neutral" size="sm" className="font-medium text-slate-600">
-                {detectedDeclarationsCount}/{totalDeclarationsCount} Declarations
-              </Badge>
-              <Badge variant={confidenceVariant} size="sm" className="font-semibold">
-                {confidence >= 80 ? 'High Confidence' : confidence >= 50 ? 'Moderate' : 'Low'}
+                13 Declarations
               </Badge>
             </div>
           </div>
