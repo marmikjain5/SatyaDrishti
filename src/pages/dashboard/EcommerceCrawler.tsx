@@ -476,8 +476,15 @@ export const EcommerceCrawler: React.FC = () => {
                             {p.category}
                           </span>
                           <span className="text-slate-300 dark:text-slate-700">•</span>
-                          <span className="text-[11px] font-medium px-2 py-0.2 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                            ⚡ Live Scraped
+                          <span
+                            className={cn(
+                              'text-[11px] font-medium px-2 py-0.5 rounded-full border',
+                              (p.is_live_scraped || item.is_live)
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                            )}
+                          >
+                            {(p.is_live_scraped || item.is_live) ? '⚡ Live Scraped' : '📋 Direct Listing'}
                           </span>
                         </div>
                         <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
@@ -491,13 +498,16 @@ export const EcommerceCrawler: React.FC = () => {
 
                       {/* Compliance Score Pill */}
                       <div className="text-right shrink-0">
-                        <div
+                        <button
+                          type="button"
+                          onClick={() => setActiveAuditRecord(item)}
                           className={cn(
-                            'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
-                            isFullyCompliant && 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300',
-                            isUnderReview && 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300',
-                            isNonCompliant && 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300'
+                            'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all hover:scale-105 cursor-pointer shadow-xs',
+                            isFullyCompliant && 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 hover:bg-emerald-100',
+                            isUnderReview && 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 hover:bg-amber-100',
+                            isNonCompliant && 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 hover:bg-rose-100'
                           )}
+                          title="Click to view detailed compliance audit report"
                         >
                           {isFullyCompliant && <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
                           {isUnderReview && <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
@@ -509,7 +519,7 @@ export const EcommerceCrawler: React.FC = () => {
                               ? `${a.compliance_score}% - Under Review (${a.warnings.length} Warning${a.warnings.length > 1 ? 's' : ''})`
                               : `${a.compliance_score}% - ${a.violations.length} Violation${a.violations.length > 1 ? 's' : ''} Detected`}
                           </span>
-                        </div>
+                        </button>
                       </div>
                     </div>
 
@@ -551,11 +561,15 @@ export const EcommerceCrawler: React.FC = () => {
 
                     {/* Detected Violations List if any */}
                     {a.violations.length > 0 && (
-                      <div className="p-3 bg-rose-50/70 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900/50 space-y-2">
+                      <div
+                        onClick={() => setActiveAuditRecord(item)}
+                        className="p-3 bg-rose-50/70 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900/50 space-y-2 cursor-pointer hover:bg-rose-100/60 dark:hover:bg-rose-950/50 transition-colors"
+                        title="Click to view full statutory audit report"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
                             <AlertTriangle className="h-3.5 w-3.5" />
-                            <span>{a.violations.length} Mandatory Statutory Violations Under Legal Metrology Rules, 2011:</span>
+                            <span>{a.violations.length} Mandatory Statutory Violations Under Legal Metrology Rules, 2011 (Click to Inspect):</span>
                           </div>
                           <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300">
                             Penalty: {formatCurrency(a.estimated_penalty_inr)}
