@@ -26,6 +26,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Mail,
+  Camera,
+  Upload,
 } from 'lucide-react';
 import { useComplianceStore } from '../../store/complianceStore';
 import {
@@ -1533,21 +1535,38 @@ export const ConsumerComplaintsPortal: React.FC = () => {
               <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('evidenceHeader')}</span>
             </div>
 
-            {/* Drop zone */}
-            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-5 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 dark:hover:border-blue-600 dark:hover:bg-blue-950/20 transition-all group">
-              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-2 group-hover:bg-blue-100 dark:group-hover:bg-blue-950/60 transition-colors">
-                <ImageIcon className="h-5 w-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-              </div>
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Upload product images, bill/invoice photos</span>
-              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">JPG, PNG, HEIC, PDF supported • Multiple files allowed</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,application/pdf,.pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </label>
+            {/* Evidence acquisition options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="flex items-center justify-center gap-2.5 p-3.5 border-2 border-dashed border-blue-300 dark:border-blue-700/60 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/30 dark:bg-blue-950/10">
+                <Camera className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                <div className="text-left">
+                  <div>Take Photo (Back Camera)</div>
+                  <div className="text-[10px] font-normal text-slate-400">Snap product or receipt directly</div>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              <label className="flex items-center justify-center gap-2.5 p-3.5 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-50/40 dark:bg-slate-900/40">
+                <Upload className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
+                <div className="text-left">
+                  <div>Browse Files</div>
+                  <div className="text-[10px] font-normal text-slate-400">JPG, PNG, PDF supported</div>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
             {/* File list with thumbnails */}
             {uploadedFiles.length > 0 && (

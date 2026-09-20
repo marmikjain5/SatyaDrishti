@@ -13,6 +13,7 @@ import { ProcessedEvidenceInput } from '../../lib/complaintOcrPipeline';
 import {
   Send,
   Upload,
+  Camera,
   CheckCircle2,
   Sparkles,
   Trash2,
@@ -379,24 +380,46 @@ export const PublicComplaintModal: React.FC<PublicComplaintModalProps> = ({
               <span className="text-[10px] text-slate-400">Multiple files supported</span>
             </div>
 
-            <div className="border-2 border-dashed border-slate-300 rounded-xl p-3 bg-slate-50 text-center hover:bg-slate-100/60 transition-colors">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileUpload}
-                id="evidence-file-input"
-                className="hidden"
-              />
-              <label htmlFor="evidence-file-input" className="cursor-pointer space-y-1 block">
-                <Upload className="h-5 w-5 text-blue-600 mx-auto" />
-                <span className="text-xs font-semibold text-blue-700 block">
-                  {t('selectFiles')}
-                </span>
-                <span className="text-[10px] text-slate-400 block">
-                  {t('evidenceUploadInstructions')}
-                </span>
-              </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="border-2 border-dashed border-blue-300 rounded-xl p-3 bg-blue-50/30 text-center hover:bg-blue-50/60 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileUpload}
+                  id="evidence-camera-input"
+                  className="hidden"
+                />
+                <label htmlFor="evidence-camera-input" className="cursor-pointer space-y-1 block">
+                  <Camera className="h-5 w-5 text-blue-600 mx-auto" />
+                  <span className="text-xs font-semibold text-blue-700 block">
+                    Take Photo (Back Camera)
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    Snap product label directly
+                  </span>
+                </label>
+              </div>
+
+              <div className="border-2 border-dashed border-slate-300 rounded-xl p-3 bg-slate-50 text-center hover:bg-slate-100/60 transition-colors">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  id="evidence-file-input"
+                  className="hidden"
+                />
+                <label htmlFor="evidence-file-input" className="cursor-pointer space-y-1 block">
+                  <Upload className="h-5 w-5 text-slate-600 mx-auto" />
+                  <span className="text-xs font-semibold text-slate-700 block">
+                    {t('selectFiles')}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    {t('evidenceUploadInstructions')}
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Uploaded Evidence Grid */}
