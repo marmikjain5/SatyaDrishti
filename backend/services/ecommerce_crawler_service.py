@@ -1259,14 +1259,6 @@ def extract_usp_from_text(text: str) -> str:
                 or re.search(r"<meta\s+[^>]*name=['\"]twitter:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
                 or re.search(r"<img\s+[^>]*id=['\"]landingImage['\"]?[^>]*src=['\"]([^'\"]+)['\"]", text, re.I)
             )
-                re.search(r"<meta\s+[^>]*property=['\"]og:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
-                or re.search(r"<meta\s+[^>]*name=['\"]twitter:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
-                or re.search(r"<img\s+[^>]*id=['\"]landingImage['\"]?[^>]*src=['\"]([^'\"]+)['\"]", text, re.I)
-
-                re.search(r'<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
-                re.search(r'<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
-                or re.search(r'<meta\s+[^>]*name=["']twitter:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
-                or re.search(r'<img\s+[^>]*id=["']landingImage["'][^>]*src=["']([^'"]+)["']', text, re.I)
 
             md_imgs = re.findall(r'!\[.*?\]\((https?://[^\s\)]+)\)', text)
 
@@ -1297,8 +1289,10 @@ def extract_usp_from_text(text: str) -> str:
                     raw_title = h1_tag.get_text().strip()
 
             if not raw_title:
-                og_title = re.search(r'<meta\s+[^>]*property=["']og:title["'][^>]*content=["']([^'"]+)["']', text, re.I) or \
-                og_title = re.search(r'<meta\s+[^>]*property=["']og:title["'][^>]*content=["']([^'"]+)["']', text, re.I) or \
+                og_title = (
+                    re.search(r"<meta\s+[^>]*property=['\"]og:title['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                    or re.search(r"<meta\s+[^>]*name=['\"]twitter:title['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                )
                 tag_title = re.search(r"<title>([^<]+)</title>", text, re.I)
                 md_title = re.search(r"^#\s+([^\n\r]+)", text, re.M)
 
@@ -1331,7 +1325,7 @@ def extract_usp_from_text(text: str) -> str:
             # 3. Dynamic Brand Extraction
             brand_m = (
                 re.search(r"(?:Visit the|Brand:)\s+(?:the\s+)?([^\n\r<|]{2,40}?)(?:\s+Store|(?:\s*\|)|(?:\s*<)|\n|$)", text, re.I)
-                or re.search(r'<meta\s+[^>]*property=["']product:brand["'][^>]*content=["']([^'"]+)["']', text, re.I)
+                or re.search(r"<meta\s+[^>]*property=['\"]product:brand['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
             )
             if brand_m:
                 b_cand = brand_m.group(1).strip().replace("Store", "").strip()
