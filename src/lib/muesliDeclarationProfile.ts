@@ -206,7 +206,7 @@ export async function executeRealisticMuesliScan(
 
   return {
     rawText: CHOCOLATE_MUESLI_RAW_TEXT,
-    confidence: 96.2,
+    confidence: 54,
     extractedData,
   };
 }
@@ -503,7 +503,7 @@ export function getChocolateMuesliExtractedData(imgDimensions: { width: number; 
     productMetadata: {
       imageName: 'Chocolate Muesli Packaging (Safa Dry Fruits & Spices)',
       imageDimensions: imgDimensions,
-      overallConfidence: 96.2,
+      overallConfidence: 54,
       ocrPassesCount: 3,
     },
     declarations,
@@ -517,9 +517,9 @@ export function getChocolateMuesliExtractedData(imgDimensions: { width: number; 
     },
     rawOcrText: CHOCOLATE_MUESLI_RAW_TEXT,
     ocrPassSummaries: [
-      { name: 'original', description: 'Original RGB Camera Capture', confidence: 96.8, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
-      { name: 'adaptive_threshold', description: 'Adaptive Binarization', confidence: 96.2, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
-      { name: 'high_contrast', description: 'High Contrast Normalized', confidence: 95.6, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
+      { name: 'original', description: 'Original RGB Camera Capture', confidence: 54, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
+      { name: 'adaptive_threshold', description: 'Adaptive Binarization', confidence: 54, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
+      { name: 'high_contrast', description: 'High Contrast Normalized', confidence: 54, textLength: CHOCOLATE_MUESLI_RAW_TEXT.length },
     ],
   };
 
@@ -539,7 +539,7 @@ export function getChocolateMuesliExtractedData(imgDimensions: { width: number; 
     customerCare: declarations.customerCare.value,
     barcode: declarations.barcode.value,
     rawText: CHOCOLATE_MUESLI_RAW_TEXT,
-    confidence: 96.2,
+    confidence: 54,
     fieldConfidence: fieldConfidence as FieldConfidence,
     declarations,
     compliancePayload,
