@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Play,
@@ -153,7 +154,6 @@ export const EcommerceCrawler: React.FC = () => {
             </h1>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
-            Amazon, Flipkart, Blinkit, Zepto, Meesho
           </p>
         </div>
 
@@ -516,8 +516,8 @@ export const EcommerceCrawler: React.FC = () => {
                             {isFullyCompliant
                               ? '100% Compliant'
                               : isUnderReview
-                              ? `${a.compliance_score}% - Under Review (${a.warnings.length} Warning${a.warnings.length > 1 ? 's' : ''})`
-                              : `${a.compliance_score}% - ${a.violations.length} Violation${a.violations.length > 1 ? 's' : ''} Detected`}
+                                ? `${a.compliance_score}% - Under Review (${a.warnings.length} Warning${a.warnings.length > 1 ? 's' : ''})`
+                                : `${a.compliance_score}% - ${a.violations.length} Violation${a.violations.length > 1 ? 's' : ''} Detected`}
                           </span>
                         </button>
                       </div>
