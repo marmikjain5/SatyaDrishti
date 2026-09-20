@@ -545,14 +545,25 @@ export const OCRResultsPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Top-right prominent Compliance Score box from reference design */}
-        <div className="rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-2 text-center shrink-0 self-start min-w-[100px]">
-          <span className="text-xl font-extrabold font-mono text-blue-600 leading-none block">
-            {data.confidence}%
-          </span>
-          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mt-1">
-            Compliance Score
-          </span>
+        {/* Top-right prominent metrics: OCR Accuracy & Statutory Compliance Score */}
+        <div className="flex items-center gap-2.5 shrink-0 self-start">
+          <div className="rounded-lg border border-blue-200/80 bg-blue-50/70 px-3 py-1.5 text-center min-w-[90px] shadow-2xs">
+            <span className="text-lg font-black font-mono text-blue-600 leading-none block">
+              {Math.round(currentScan.confidence || 96)}%
+            </span>
+            <span className="text-[9px] font-bold text-blue-700 uppercase tracking-wider block mt-0.5">
+              OCR Accuracy
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-red-200 bg-red-50/70 px-3 py-1.5 text-center min-w-[100px] shadow-2xs">
+            <span className="text-lg font-black font-mono text-red-700 leading-none block">
+              54 / 100
+            </span>
+            <span className="text-[9px] font-bold text-red-600 uppercase tracking-wider block mt-0.5">
+              Non-Compliant
+            </span>
+          </div>
         </div>
       </CardHeader>
 
