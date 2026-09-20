@@ -1253,12 +1253,21 @@ def extract_usp_from_text(text: str) -> str:
                 clean_text = text
 
             # 1. Direct image extraction from live HTML or markdown
+
             og_img = (
+                re.search(r"<meta\s+[^>]*property=['\"]og:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<meta\s+[^>]*name=['\"]twitter:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<img\s+[^>]*id=['\"]landingImage['\"]?[^>]*src=['\"]([^'\"]+)['\"]", text, re.I)
+            )
+                re.search(r"<meta\s+[^>]*property=['\"]og:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<meta\s+[^>]*name=['\"]twitter:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<img\s+[^>]*id=['\"]landingImage['\"]?[^>]*src=['\"]([^'\"]+)['\"]", text, re.I)
+
                 re.search(r'<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
                 re.search(r'<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
                 or re.search(r'<meta\s+[^>]*name=["']twitter:image["'][^>]*content=["']([^'"]+)["']', text, re.I)
                 or re.search(r'<img\s+[^>]*id=["']landingImage["'][^>]*src=["']([^'"]+)["']', text, re.I)
-            )
+
             md_imgs = re.findall(r'!\[.*?\]\((https?://[^\s\)]+)\)', text)
 
             found_img = None
