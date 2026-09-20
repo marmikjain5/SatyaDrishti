@@ -12,14 +12,15 @@ import {
   FileCheck,
   ChevronDown,
   Database,
+  Camera,
 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 import { useScanStore } from '../../store/scanStore';
 import { useReportStore } from '../../store/reportStore';
 import { reportService } from '../../lib/reportService';
 import { StatCard } from '../../components/ui/StatCard';
 import { Button } from '../../components/ui/Button';
 import { ImageUploader } from '../../components/scanner/ImageUploader';
-import { LiveProductCapture } from '../../components/scanner/LiveProductCapture';
 import { ImagePreviewPanel } from '../../components/scanner/ImagePreviewPanel';
 import { OCRProcessingCard } from '../../components/scanner/OCRProcessingCard';
 import { OCRResultsPanel } from '../../components/scanner/OCRResultsPanel';
@@ -251,7 +252,7 @@ export const ProductScanner: React.FC = () => {
         </div>
       )}
 
-      {/* Capture/Upload Section */}
+      {/* Packaging Capture & Upload Zone */}
       <div className="min-w-0">
         <ImageUploader />
       </div>

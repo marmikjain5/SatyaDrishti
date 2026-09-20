@@ -57,8 +57,13 @@ def run_migrations():
     try:
         with engine.begin() as conn:
             if is_sqlite:
+                for col in ["evidence_images", "evidence_urls", "officer_decision_history"]:
+                    try:
+                        conn.execute(text(f"ALTER TABLE complaints ADD COLUMN {col} TEXT DEFAULT '[]'"))
+                    except Exception:
+                        pass
                 try:
-                    conn.execute(text("ALTER TABLE complaints ADD COLUMN evidence_images JSON DEFAULT '[]'"))
+                    conn.execute(text("ALTER TABLE complaints ADD COLUMN extracted_evidence_summary TEXT DEFAULT '{}'"))
                 except Exception:
                     pass
             else:

@@ -23,7 +23,7 @@ export const BentoFeaturesGrid: React.FC = () => {
             Next-Gen Regulatory Intelligence Stack
           </h2>
           <p className="text-sm text-slate-600 mt-2">
-            Every layer designed to withstand legal scrutiny, scale across millions of consumer transactions, and empower statutory enforcement.
+            An integrated intelligence stack for packaging analysis, compliance validation, regulatory review, and evidence-driven enforcement workflows.
           </p>
         </div>
 
@@ -32,7 +32,7 @@ export const BentoFeaturesGrid: React.FC = () => {
           className="flex gap-5 overflow-x-auto pb-6 pt-2 px-1 scroll-smooth snap-x snap-mandatory"
           style={{ scrollbarWidth: 'thin', scrollbarColor: '#CBD5E1 transparent' }}
         >
-          {/* Card 1: OCR Engine */}
+          {/* Card 1: Packaging OCR & Vision */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -40,32 +40,34 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <Scan className="h-5 w-5" />
                 </div>
                 <Badge variant="primary" size="sm">
-                  Neural Vision v3.4
+                  Multi-Pass OCR
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">High-Precision OCR Engine</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Packaging OCR & Vision</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Optical character recognition tailored for reflective, curved, and distorted consumer packaging surfaces. Accurately identifies 1.5mm micro-print MRP, dates, and mandatory declarations across 22 scheduled Indian languages.
+                Processes packaging images through preprocessing and multi-pass OCR to extract statutory declarations and product information.
               </p>
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
-                <div className="flex justify-between text-slate-400">
-                  <span>// OCR Field Extraction</span>
-                  <span className="text-emerald-600">CONF: 99.4%</span>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Image Preprocessing</span>
                 </div>
                 <div className="text-slate-800 truncate">
-                  <span className="text-blue-600">MRP_INCL_ALL_TAXES:</span> ₹4,999.00
+                  <span className="text-blue-600">Optimized Image Variants</span>
                 </div>
                 <div className="text-slate-800 truncate">
-                  <span className="text-blue-600">NET_QUANTITY:</span> 2000g / 1840g
+                  <span className="text-blue-600">Statutory Declaration Extraction</span>
                 </div>
               </div>
             </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Image → OCR → Declarations
+            </div>
           </div>
 
-          {/* Card 2: Rule Engine */}
+          {/* Card 2: Legal Metrology Rule Engine */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -73,20 +75,33 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <Cpu className="h-5 w-5" />
                 </div>
                 <Badge variant="secondary" size="sm">
-                  Rule Matrix
+                  Rule Validation
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Dynamic Rule Engine</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Legal Metrology Rule Engine</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Hot-swappable statutory rules based on Legal Metrology Act, 2009 and Packaged Commodities Rules 2011.
+                Validates extracted package declarations against applicable Legal Metrology requirements and identifies potential compliance violations.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              34 Statutory Rules Active
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Declaration Validation</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Legal Metrology Checks</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Compliance Assessment</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Rules → Validation → Findings
             </div>
           </div>
 
-          {/* Card 3: RAG Regulatory Intelligence */}
+          {/* Card 3: Regulatory RAG Intelligence */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -94,20 +109,33 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <BookOpenCheck className="h-5 w-5" />
                 </div>
                 <Badge variant="primary" size="sm">
-                  RAG LLM
+                  RAG Intelligence
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">RAG Regulatory Intelligence</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Regulatory RAG Intelligence</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Retrieval-Augmented Generation across central gazette notifications, high court precedents, and CCPA advisory orders.
+                Retrieves relevant regulatory information to support legal and compliance queries using the platform's regulatory knowledge base.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              Indexed 10,000+ Legal Orders
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Regulatory Document Retrieval</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Act & Rule References</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Context-Aware Legal Answers</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Query → Retrieval → Legal Context
             </div>
           </div>
 
-          {/* Card 4: Complaint Management */}
+          {/* Card 4: Violation Management */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -115,20 +143,33 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <MessageSquareWarning className="h-5 w-5" />
                 </div>
                 <Badge variant="warning" size="sm">
-                  NLP Triage
+                  Evidence Workflow
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Complaint Management</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Violation Management</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Automated sentiment analysis, evidence deduplication, and direct routing to zonal enforcement officers.
+                Centralizes detected compliance violations with evidence, severity, review status, and case-level workflow.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              NCH 1915 Sync Active
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Violation Detection</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Evidence Tracking</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Severity Categorization</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Finding → Evidence → Review
             </div>
           </div>
 
-          {/* Card 5: Notice Generation */}
+          {/* Card 5: AI Legal Review */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -136,24 +177,37 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <FileCheck2 className="h-5 w-5" />
                 </div>
                 <Badge variant="danger" size="sm">
-                  1-Click SCN
+                  Human-in-the-Loop
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Automated Legal Notice (SCN) Generator</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">AI Legal Review</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Generates legally binding Show Cause Notices complete with Section 36 penalty clauses, embedded high-resolution optical evidence, and statutory reply timelines for company directors.
+                Evaluates detected violations and evidence to produce a structured legal assessment before human verification.
               </p>
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                <span className="text-slate-700 font-medium truncate">Sec 36(1) LM Act</span>
-                <span className="text-emerald-700 font-mono font-semibold shrink-0">Ready for E-Sign</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Evidence Assessment</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Severity Assessment</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Legal Reasoning</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Human Verification</span>
+                </div>
               </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              AI Review → Human Verification
             </div>
           </div>
 
-          {/* Card 6: Network Analysis */}
+          {/* Card 6: Factory Hygiene Monitoring */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -161,20 +215,33 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <Share2 className="h-5 w-5" />
                 </div>
                 <Badge variant="secondary" size="sm">
-                  Graph DB
+                  Visual Inspection
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Network Analysis</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Factory Hygiene Monitoring</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Uncovers multi-brand shell networks operating across disparate e-commerce seller IDs using shared GSTIN and bank records.
+                Analyzes factory inspection inputs to assess hygiene and workplace conditions and track detected violations.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              Cross-Platform Graphing
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Live Factory Inspection</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Hygiene Assessment</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Zone Monitoring</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Inspection → Assessment → Violation
             </div>
           </div>
 
-          {/* Card 7: Company Risk Ranking */}
+          {/* Card 7: Compliance Reporting */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -182,20 +249,33 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <TrendingDown className="h-5 w-5" />
                 </div>
                 <Badge variant="danger" size="sm">
-                  Risk Tiering
+                  Evidence Reports
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Company Risk Ranking</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Compliance Reporting</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Algorithmic risk tiering based on recurrence index, complaint volume, and severity of misleading advertising claims.
+                Generates structured compliance inspection reports with extraction results, validation findings, and evidence documentation.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              1,200+ Flagged Entities
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Inspection Reports</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Compliance Evidence</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Session & Single-Scan Reports</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              Scan → Validate → Report
             </div>
           </div>
 
-          {/* Card 8: Consumer Verification */}
+          {/* Card 8: Human Verification Workflow */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -203,16 +283,29 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <Badge variant="success" size="sm">
-                  Citizen Tool
+                  Human Review
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Consumer Verification</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Human Verification Workflow</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Public API & portal for 1.4B citizens to verify genuine packaging claims, valid MRPs, and official country of origin before purchasing.
+                Routes AI-generated assessments through inspector verification before a finding can proceed toward publication.
               </p>
             </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-500 font-mono">
-              Instant Public Access
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Inspector Review</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Verification / Rejection</span>
+                </div>
+                <div className="text-slate-800 truncate">
+                  <span className="text-blue-600">Publication Approval</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] text-slate-500 font-mono">
+              AI Assessment → Verify → Publish
             </div>
           </div>
         </div>
@@ -220,3 +313,4 @@ export const BentoFeaturesGrid: React.FC = () => {
     </section>
   );
 };
+

@@ -8,13 +8,14 @@
  */
 
 import { ocrService } from './ocrService';
-import type { OCRResult, DeclarationField } from '../types/scan';
+import type { OCRResult, DeclarationField, ExtractedProductData, ScanAngle } from '../types/scan';
 import type {
   EvidenceImageItem,
   EvidenceTag,
   ExtractedEvidenceSummary,
 } from '../types/compliance';
 import { uploadEvidenceImage } from '../services/supabaseStorageService';
+import { consolidateMultiAngleExtractions } from './multiAngleConsolidator';
 
 export interface ProcessedEvidenceInput {
   fileOrUrl: File | string;
@@ -152,8 +153,10 @@ export async function processMultiEvidenceImages(
   evidenceImages: EvidenceImageItem[];
   consolidatedSummary: ExtractedEvidenceSummary;
   allRawText: string;
+  masterExtractedData?: ExtractedProductData;
 }> {
   const evidenceImages: EvidenceImageItem[] = [];
+  const angles: ScanAngle[] = [];
   let consolidatedSummary: ExtractedEvidenceSummary = {
     extractionConfidence: 0,
   };
@@ -208,6 +211,18 @@ export async function processMultiEvidenceImages(
     totalConfidenceSum += ocrRes.confidence;
     totalRawText += `\n--- Evidence ${i + 1}: ${item.tag} (${item.fileName}) ---\n${ocrRes.rawText}\n`;
 
+    // Track as angle for multi-angle consolidation engine
+    angles.push({
+      id: `ev-angle-${Date.now()}-${i}`,
+      angleIndex: i + 1,
+      label: item.tag,
+      imageName: item.fileName,
+      imageDataUrl: originalDataUrl,
+      extractedData: ocrRes.extractedData,
+      confidence: ocrRes.confidence,
+      rawText: ocrRes.rawText,
+    });
+
     const declarations = (ocrRes.extractedData.declarations || {}) as Record<string, DeclarationField>;
     const detectedBBoxesCount = Object.keys(declarations).filter(
       (k) => declarations[k]?.boundingBox !== null
@@ -256,6 +271,24 @@ export async function processMultiEvidenceImages(
     }
   }
 
+  // Consolidate all evidence images using the same multi-angle consolidation algorithm as ProductScanner
+  let masterExtractedData: ExtractedProductData | undefined = undefined;
+  if (angles.length > 0) {
+    const consolidated = consolidateMultiAngleExtractions(angles, inputs[0]?.fileName);
+    masterExtractedData = consolidated.masterExtractedData;
+
+    // Update consolidatedSummary with the authoritative consolidated declarations
+    if (masterExtractedData.productName) consolidatedSummary.productName = masterExtractedData.productName;
+    if (masterExtractedData.mrp) consolidatedSummary.declaredMrp = masterExtractedData.mrp;
+    if (masterExtractedData.netQuantity) consolidatedSummary.netQuantity = masterExtractedData.netQuantity;
+    if (masterExtractedData.manufacturer) consolidatedSummary.manufacturer = masterExtractedData.manufacturer;
+    if (masterExtractedData.importer) consolidatedSummary.importer = masterExtractedData.importer;
+    if (masterExtractedData.customerCare) consolidatedSummary.customerCare = masterExtractedData.customerCare;
+    if (masterExtractedData.packingDate) consolidatedSummary.packingDate = masterExtractedData.packingDate;
+    if (masterExtractedData.expiryDate) consolidatedSummary.expiryDate = masterExtractedData.expiryDate;
+    if (masterExtractedData.barcode) consolidatedSummary.barcode = masterExtractedData.barcode;
+  }
+
   // Calculate overcharge amount if both packaging MRP and receipt price are found
   if (consolidatedSummary.declaredMrp && consolidatedSummary.receiptPrice) {
     const pkgNum = parseFloat(consolidatedSummary.declaredMrp.replace(/[^0-9.]/g, ''));
@@ -273,5 +306,6 @@ export async function processMultiEvidenceImages(
     evidenceImages,
     consolidatedSummary,
     allRawText: totalRawText,
+    masterExtractedData,
   };
 }

@@ -58,9 +58,14 @@ export async function buildEvidenceBackedComplaintCase(
   // Step 1: Execute OCR & Evidence Extraction Pipeline on uploaded images
   onProgress?.(10, 'Step 1/4: Ingesting & running OCR on evidence images...');
 
-  let ocrOut = {
-    evidenceImages: [] as EvidenceImageItem[],
-    consolidatedSummary: {} as ExtractedEvidenceSummary,
+  let ocrOut: {
+    evidenceImages: EvidenceImageItem[];
+    consolidatedSummary: ExtractedEvidenceSummary;
+    allRawText: string;
+    masterExtractedData?: ExtractedProductData;
+  } = {
+    evidenceImages: [],
+    consolidatedSummary: { extractionConfidence: 0 },
     allRawText: '',
   };
 
@@ -82,7 +87,7 @@ export async function buildEvidenceBackedComplaintCase(
   );
 
   // Run Label Rule Engine Validation on extracted OCR data (detecting missing MRP, net qty, address, importer, etc.)
-  const mockProductData: ExtractedProductData = {
+  const extractedProductData: ExtractedProductData = ocrOut.masterExtractedData || {
     productName: input.productName || input.shopLocation?.name || 'Physical Retail Purchase',
     mrp: ocrOut.consolidatedSummary.declaredMrp || '',
     unitSalePrice: '',
@@ -106,7 +111,15 @@ export async function buildEvidenceBackedComplaintCase(
     ocrPassResults: [],
   };
 
-  const validationResult = validateProduct(mockProductData);
+  // Ensure user-supplied product name or brand backfills if OCR didn't detect them
+  if ((!extractedProductData.productName || extractedProductData.productName === 'Physical Retail Purchase') && input.productName) {
+    extractedProductData.productName = input.productName;
+  }
+  if (!extractedProductData.manufacturer && input.brand) {
+    extractedProductData.manufacturer = input.brand;
+  }
+
+  const validationResult = validateProduct(extractedProductData);
 
   // Step 3: Query Regulatory RAG for User Claim AND Scanner-Detected Label Issues
   onProgress?.(75, 'Step 3/4: Querying Regulatory RAG for User Claim & Label Discrepancies...');
@@ -216,11 +229,11 @@ export async function buildEvidenceBackedComplaintCase(
     ocrEvidenceExtracted += ` Scanner detected ${scannerDetectedDiscrepancies.length} additional label discrepancy(s).`;
   }
 
-  let assignedInspector = 'Inspector Vivek Sharma (Zonal Metrology Cell)';
+  let assignedInspector = 'Inspector Arjun Nair (Bengaluru City Zone 1)';
   if (input.shopLocation?.name) {
-    assignedInspector = `Inspector Vivek Sharma (${input.shopLocation.name} Zonal Metrology)`;
+    assignedInspector = `Inspector Arjun Nair (${input.shopLocation.name} Zonal Metrology)`;
   } else if (input.platform && ['Blinkit', 'Zepto', 'Instamart', 'Swiggy', 'Amazon', 'Flipkart'].includes(input.platform)) {
-    assignedInspector = `Central Compliance Inspector (${input.platform} Enforcement Cell)`;
+    assignedInspector = `Inspector Arjun Nair (${input.platform} Enforcement Cell)`;
   }
 
   const initialOfficerRecord: OfficerDecisionRecord = {

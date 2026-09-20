@@ -32,12 +32,12 @@ interface InspectorContact {
 
 const INSPECTORS: InspectorContact[] = [
   {
-    id: 'vivek',
-    name: 'Inspector Vivek Sharma & Team',
-    role: 'Lead Regulatory & Enforcement Officer',
-    zone: 'National Enforcement & Verification Cell',
-    email: 'vivek.sharma.inspect@satyadrishti.gov.in',
-    badge: 'OFF-IND-901',
+    id: 'arjun',
+    name: 'Inspector Arjun Nair & Team',
+    role: 'Senior Legal Metrology Inspector (Bengaluru City Zone 1)',
+    zone: 'Bengaluru Metropolitan Region (BBMP) Enforcement Cell',
+    email: 'arjun.nair.inspect@satyadrishti.gov.in',
+    badge: 'LM-BLR-4001',
     isConnected: true,
   },
   {
@@ -65,7 +65,7 @@ export const ScheduleInspectionModal: React.FC<ScheduleInspectionModalProps> = (
   isOpen,
   onClose,
 }) => {
-  const [selectedInspectorId, setSelectedInspectorId] = useState<string>('vivek');
+  const [selectedInspectorId, setSelectedInspectorId] = useState<string>('arjun');
   const [priority, setPriority] = useState<string>('Immediate / Surprise Audit');
   const [notes, setNotes] = useState<string>(
     'Execute unannounced surprise physical inspection. Audit packaging declarations, Legal Metrology compliance, net quantity verification, and MRP accuracy.'

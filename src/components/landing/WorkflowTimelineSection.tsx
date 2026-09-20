@@ -14,78 +14,88 @@ import {
 import { Badge } from '../ui/Badge';
 
 export const WorkflowTimelineSection: React.FC = () => {
-  const [activeStep, setActiveStep] = useState(0); // Stage 01: Consumer Encounter
+  const [activeStep, setActiveStep] = useState(0); // Stage 01: Product Encounter
 
   const steps = [
     {
       id: 0,
       phase: 'Stage 01',
-      title: 'Consumer Encounter',
-      actor: 'Public Citizen / Buyer',
+      title: 'Product Encounter',
+      actor: 'Consumer / Inspector / Manufacturer',
       icon: Users,
-      summary: 'Consumer searches product or encounters misleading e-commerce claim/dual-MRP pricing.',
+      summary: 'Product or packaging information enters SatyaDrishti through supported camera capture or image upload workflows.',
       details: [
-        'Instant mobile packaging & label image capture',
-        'Citizen grievance submission via National Consumer Helpline integration',
-        'Transparent trust rating verification in < 1 second',
+        'Live product camera capture',
+        'Packaging image ingestion',
+        'Product information enters the compliance workflow',
       ],
-      tag: 'Citizen Engagement',
+      tag: 'Product Ingestion',
+      pipelinePhase: 'Product Ingestion',
+      systemOutput: 'Captured Product / Packaging',
     },
     {
       id: 1,
       phase: 'Stage 02',
-      title: 'Product Ingestion',
-      actor: 'Automated Web Crawlers',
+      title: 'Image & OCR Processing',
+      actor: 'OCR Processing Pipeline',
       icon: PackageSearch,
-      summary: 'High-speed ingestion pipelines scrape millions of SKUs from Amazon, Flipkart, Blinkit & Meesho.',
+      summary: 'Packaging images are processed through image preprocessing variants and multi-pass OCR to extract relevant declarations.',
       details: [
-        'Continuous synchronization of pricing, images, and declared origin',
-        'Daily catalog delta extraction across 6 marketplaces',
-        'Automated product metadata normalization',
+        'Image preprocessing and enhancement',
+        'Multiple optimized image variants',
+        'Multi-pass OCR and declaration extraction',
       ],
-      tag: 'Big Data Pipeline',
+      tag: 'Multi-Pass OCR',
+      pipelinePhase: 'Multi-Pass OCR',
+      systemOutput: 'Extracted Declarations',
     },
     {
       id: 2,
       phase: 'Stage 03',
       title: 'Compliance Monitoring',
-      actor: 'AI Regulatory Engine',
+      actor: 'Legal Metrology Compliance Engine',
       icon: ScanEye,
-      summary: 'Multi-lingual OCR extracts label text and cross-references against Legal Metrology Rules 2011.',
+      summary: 'Extracted declarations are evaluated against applicable Legal Metrology requirements and compliance rules.',
       details: [
-        'Font height & Unit Sale Price (USP) compliance checking',
-        'Net weight shortfall vs maximum permissible error schedule',
-        'RAG regulatory lookup on unsubstantiated health claims',
+        'Declaration validation',
+        'Readability and packaging checks',
+        'Rule-based compliance assessment',
       ],
-      tag: 'Statutory Verification',
+      tag: 'Rule Validation',
+      pipelinePhase: 'Rule Validation',
+      systemOutput: 'Compliance Assessment',
     },
     {
       id: 3,
       phase: 'Stage 04',
       title: 'Violation Detection',
-      actor: 'Algorithmic Enforcement Ledger',
+      actor: 'Compliance & Evidence Engine',
       icon: AlertTriangle,
-      summary: 'Instantaneous case creation with tamper-proof cryptographic evidence hashes.',
+      summary: 'Potential compliance violations are identified and supported with structured evidence for review.',
       details: [
-        'Automated penalty estimation under Legal Metrology Act Sec 36',
-        'Manufacturer repeat-offender risk scoring adjustment',
-        'Evidence package compilation with OCR side-by-side snapshot',
+        'Violation identification',
+        'Evidence-backed findings',
+        'Severity and compliance assessment',
       ],
-      tag: 'Cryptographic Ledger',
+      tag: 'Evidence Review',
+      pipelinePhase: 'Evidence Generation',
+      systemOutput: 'Structured Violation Evidence',
     },
     {
       id: 4,
       phase: 'Stage 05',
-      title: 'Regulatory Action',
-      actor: 'CCPA & Legal Metrology Inspectors',
+      title: 'Legal Review & Human Verification',
+      actor: 'AI Legal Review + Human Inspector',
       icon: Gavel,
-      summary: 'Automated Show Cause Notice (SCN) generation and one-click dispatch to verified company CIN/GSTIN.',
+      summary: 'Detected violations move through AI Legal Review and human verification before publication or further regulatory action.',
       details: [
-        'Legally formatted Section 36 & Section 89 notice templates',
-        'Direct integration with MCA21 registered corporate emails',
-        'Zonal inspection tasking & hearing schedule tracking',
+        'AI-powered legal assessment',
+        'Human verification or rejection',
+        'Controlled publication workflow',
       ],
-      tag: 'Notice Dispatch',
+      tag: 'Human Verification',
+      pipelinePhase: 'Legal Review',
+      systemOutput: 'Verified Legal Assessment',
     },
   ];
 
@@ -100,7 +110,7 @@ export const WorkflowTimelineSection: React.FC = () => {
             Why It Matters: The Enforcement Chain
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-            How SatyaDrishti connects the consumer’s palm directly to statutory regulatory action in minutes, not months.
+            How SatyaDrishti connects the consumer's palm directly to statutory regulatory action in minutes, not months.
           </p>
         </div>
 
@@ -220,13 +230,13 @@ export const WorkflowTimelineSection: React.FC = () => {
 
                   <div className="space-y-3 font-mono text-xs">
                     <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Execution Latency</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-semibold">&lt; 450 ms (Cloud Engine)</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Pipeline Phase</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold">{current.pipelinePhase}</span>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Regulatory Confidence</span>
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">99.4% Multi-Pass AI</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">System Output</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{current.systemOutput}</span>
                     </div>
                   </div>
 

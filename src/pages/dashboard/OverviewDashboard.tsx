@@ -38,6 +38,7 @@ import { Badge } from '../../components/ui/Badge';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Button } from '../../components/ui/Button';
 import { NationalComplianceTrajectoryChart } from '../../components/dashboard/NationalComplianceTrajectoryChart';
+import { InspectorFieldTrajectoryChart } from '../../components/dashboard/InspectorFieldTrajectoryChart';
 import { useAuthStore } from '../../store/authStore';
 import { useComplianceStore } from '../../store/complianceStore';
 import {
@@ -109,7 +110,7 @@ export const OverviewDashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold font-mono px-2 py-0.5 rounded uppercase tracking-wider bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              {user?.role === 'admin' ? 'Enforcement Directorate' : user?.role === 'inspector' ? 'Zonal Inspector' : 'Citizen Desk'}
+              {user?.role === 'admin' ? 'Enforcement Supervisor' : user?.role === 'inspector' ? 'Zonal Field Inspector' : 'Citizen Desk'}
             </span>
           </div>
           <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -117,9 +118,9 @@ export const OverviewDashboard: React.FC = () => {
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
             {user?.role === 'admin'
-              ? 'Authorized for statutory Show Cause Notices under Section 36.'
+              ? 'Central directorate supervisor oversight & statutory Show Cause Notice authorization.'
               : user?.role === 'inspector'
-              ? 'Assigned to Field Packaging Audits & optical evidence verification.'
+              ? 'Personal field telemetry, assigned grievance inspections & packaging audit metrics.'
               : 'Registered citizen representative for national product vigilance.'}
           </p>
         </div>
@@ -181,56 +182,90 @@ export const OverviewDashboard: React.FC = () => {
 
       {/* ── DESKTOP KPI STATS GRID ── */}
       <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Active Products Analyzed"
-          value={formatNumber(NATIONAL_STATS.productsAnalyzed)}
-          change="+14.2%"
-          trend="up"
-          trendLabel="vs last month"
-          variant="accent"
-        />
-        <StatCard
-          title="Violations Flagged"
-          titleClassName="text-red-600 dark:text-red-400 font-bold"
-          value={formatNumber(NATIONAL_STATS.violationsDetected)}
-          valueClassName="text-red-600 dark:text-red-400 font-bold font-mono"
-          change="+8.1%"
-          trend="up"
-          trendLabel="Critical: 1,420"
-          variant="danger"
-        />
         {user?.role === 'inspector' ? (
-          <StatCard
-            title="Assigned Field Audits"
-            titleClassName="text-blue-700 dark:text-blue-400 font-bold"
-            value={formatNumber(complaints.filter((c) => c.status === 'Assigned for Inspection' || c.status === 'Investigation').length || 8)}
-            valueClassName="text-blue-700 dark:text-blue-400 font-bold font-mono"
-            change="Active"
-            trend="up"
-            trendLabel="Zonal Inspection Queue"
-            variant="accent"
-          />
+          <>
+            <StatCard
+              title="Your Assigned Grievances"
+              titleClassName="text-blue-700 dark:text-blue-400 font-bold"
+              value={formatNumber(complaints.filter((c) => c.status === 'Assigned for Inspection' || c.status === 'Investigation').length || 8)}
+              valueClassName="text-blue-700 dark:text-blue-400 font-bold font-mono"
+              change="Active"
+              trend="up"
+              trendLabel="Personal Field Queue"
+              variant="accent"
+            />
+            <StatCard
+              title="Field Scans Conducted"
+              titleClassName="text-blue-600 dark:text-blue-400 font-bold"
+              value="1,240"
+              valueClassName="text-blue-600 dark:text-blue-400 font-bold font-mono"
+              change="+14.2%"
+              trend="up"
+              trendLabel="OCR Optical Verifications"
+              variant="accent"
+            />
+            <StatCard
+              title="Field Violations Flagged"
+              titleClassName="text-red-600 dark:text-red-400 font-bold"
+              value="18"
+              valueClassName="text-red-600 dark:text-red-400 font-bold font-mono"
+              change="3 SCN Pending"
+              trend="up"
+              trendLabel="Forwarded to Supervisor"
+              variant="danger"
+            />
+            <StatCard
+              title="Zonal Compliance Index"
+              titleClassName="text-emerald-700 dark:text-emerald-400 font-bold"
+              value="94.2%"
+              valueClassName="text-emerald-700 dark:text-emerald-400 font-bold font-mono"
+              change="+1.8%"
+              trend="up"
+              trendLabel="Bengaluru Circle SLA"
+              variant="success"
+            />
+          </>
         ) : (
-          <StatCard
-            title="High-Risk Manufacturers"
-            titleClassName="text-amber-700 dark:text-amber-400 font-bold"
-            value={formatNumber(manufacturers.filter((m) => m.riskScore >= 60).length)}
-            change="Live Sync"
-            trend="down"
-            trendLabel="Bengaluru Industrial Hubs"
-            variant="warning"
-          />
+          <>
+            <StatCard
+              title="Active Products Analyzed"
+              value={formatNumber(NATIONAL_STATS.productsAnalyzed)}
+              change="+14.2%"
+              trend="up"
+              trendLabel="vs last month"
+              variant="accent"
+            />
+            <StatCard
+              title="Violations Flagged"
+              titleClassName="text-red-600 dark:text-red-400 font-bold"
+              value={formatNumber(NATIONAL_STATS.violationsDetected)}
+              valueClassName="text-red-600 dark:text-red-400 font-bold font-mono"
+              change="+8.1%"
+              trend="up"
+              trendLabel="Critical: 1,420"
+              variant="danger"
+            />
+            <StatCard
+              title="High-Risk Manufacturers"
+              titleClassName="text-amber-700 dark:text-amber-400 font-bold"
+              value={formatNumber(manufacturers.filter((m) => m.riskScore >= 60).length)}
+              change="Live Sync"
+              trend="down"
+              trendLabel="Bengaluru Industrial Hubs"
+              variant="warning"
+            />
+            <StatCard
+              title="Citizen Grievances & Complaints"
+              titleClassName="text-red-600 dark:text-red-400 font-bold"
+              value={formatNumber(NATIONAL_STATS.consumerComplaints)}
+              valueClassName="text-red-600 dark:text-red-400 font-bold font-mono"
+              change="6.4 Days"
+              trend="neutral"
+              trendLabel="Avg Resolution SLA"
+              variant="danger"
+            />
+          </>
         )}
-        <StatCard
-          title="Citizen Grievances & Complaints"
-          titleClassName="text-red-600 dark:text-red-400 font-bold"
-          value={formatNumber(NATIONAL_STATS.consumerComplaints)}
-          valueClassName="text-red-600 dark:text-red-400 font-bold font-mono"
-          change="6.4 Days"
-          trend="neutral"
-          trendLabel="Avg Resolution SLA"
-          variant="danger"
-        />
       </div>
 
       {/* ── MOBILE PROGRESSIVE DISCLOSURE: Toggle Detailed Analytics & Charts ── */}
@@ -253,72 +288,80 @@ export const OverviewDashboard: React.FC = () => {
 
       {/* Main Charts & Live Ticker Section — Visible always on desktop (lg:grid), collapsible on mobile */}
       <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${showAnalyticsMobile ? 'block' : 'hidden lg:grid'}`}>
-        {/* National Compliance Trajectory Dual-Axis Chart */}
-        <div className="lg:col-span-12">
-          <NationalComplianceTrajectoryChart data={filteredTrends} />
-        </div>
+        {user?.role === 'inspector' ? (
+          <div className="lg:col-span-12">
+            <InspectorFieldTrajectoryChart />
+          </div>
+        ) : (
+          <>
+            {/* National Compliance Trajectory Dual-Axis Chart */}
+            <div className="lg:col-span-12">
+              <NationalComplianceTrajectoryChart data={filteredTrends} />
+            </div>
 
-        {/* Right: Category Risk Distribution Bar Chart */}
-        <div className="lg:col-span-12">
-          <Card className="h-full flex flex-col justify-between">
-            <CardHeader>
-              <div>
-                <CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <span>Category Risk Matrix</span>
-                </CardTitle>
-                <CardDescription>Violation rate by commodity group</CardDescription>
-              </div>
-            </CardHeader>
+            {/* Right: Category Risk Distribution Bar Chart */}
+            <div className="lg:col-span-12">
+              <Card className="h-full flex flex-col justify-between">
+                <CardHeader>
+                  <div>
+                    <CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <span>Category Risk Matrix</span>
+                    </CardTitle>
+                    <CardDescription>Violation rate by commodity group</CardDescription>
+                  </div>
+                </CardHeader>
 
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={CATEGORY_RISK_METRICS}
-                  layout="vertical"
-                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                  <XAxis type="number" stroke="#94A3B8" fontSize={10} tickFormatter={(v) => `${v}%`} />
-                  <YAxis
-                    type="category"
-                    dataKey="category"
-                    stroke="#475569"
-                    fontSize={10}
-                    width={80}
-                    tickFormatter={(v) => v.split(' ')[0]}
-                  />
-                  <Tooltip
-                    formatter={(val: any) => [`${val}%`, 'Violation Rate']}
-                    contentStyle={{
-                      backgroundColor: '#0F172A',
-                      borderColor: '#1E293B',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '11px',
-                    }}
-                  />
-                  <Bar dataKey="violationRate" radius={[0, 4, 4, 0]}>
-                    {CATEGORY_RISK_METRICS.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.riskLevel === 'Critical'
-                            ? '#DC2626'
-                            : entry.riskLevel === 'High'
-                            ? '#EA580C'
-                            : entry.riskLevel === 'Medium'
-                            ? '#2563EB'
-                            : '#16A34A'
-                        }
+                <CardContent className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={CATEGORY_RISK_METRICS}
+                      layout="vertical"
+                      margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                      <XAxis type="number" stroke="#94A3B8" fontSize={10} tickFormatter={(v) => `${v}%`} />
+                      <YAxis
+                        type="category"
+                        dataKey="category"
+                        stroke="#475569"
+                        fontSize={10}
+                        width={80}
+                        tickFormatter={(v) => v.split(' ')[0]}
                       />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+                      <Tooltip
+                        formatter={(val: any) => [`${val}%`, 'Violation Rate']}
+                        contentStyle={{
+                          backgroundColor: '#0F172A',
+                          borderColor: '#1E293B',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '11px',
+                        }}
+                      />
+                      <Bar dataKey="violationRate" radius={[0, 4, 4, 0]}>
+                        {CATEGORY_RISK_METRICS.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.riskLevel === 'Critical'
+                                ? '#DC2626'
+                                : entry.riskLevel === 'High'
+                                ? '#EA580C'
+                                : entry.riskLevel === 'Medium'
+                                ? '#2563EB'
+                                : '#16A34A'
+                            }
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Bottom Row: Priority Cases & Zonal Risk Matrix */}
@@ -349,27 +392,27 @@ export const OverviewDashboard: React.FC = () => {
                   <div
                     key={violation.id}
                     onClick={() => handleInspectViolation(violation.id)}
-                    className="p-2.5 sm:p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center justify-between cursor-pointer transition-colors gap-2"
+                    className="p-2.5 sm:p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center justify-between cursor-pointer transition-colors gap-3"
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                          <span className="truncate max-w-[130px] sm:max-w-xs">{violation.productName}</span>
-                        </div>
-                        <div className="text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 truncate">
-                          {violation.caseNumber} • {violation.ruleCode}
-                        </div>
+                    <div className="min-w-0 flex-1 pr-2">
+                      <div className="font-semibold text-slate-900 dark:text-white truncate">
+                        {violation.productName}
+                      </div>
+                      <div className="text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+                        {violation.caseNumber} • {violation.ruleCode}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                      <div className="text-right hidden sm:block">
-                        <div className="font-bold text-slate-800 dark:text-slate-200 font-mono text-xs">
+                    <div className="flex items-center gap-3 shrink-0 ml-auto">
+                      <div className="w-24 text-right hidden sm:block shrink-0">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 font-mono text-xs whitespace-nowrap">
                           {formatCurrency(violation.penaltyEstimate)}
                         </div>
-                        <div className="text-[10px] text-slate-400">Est. Penalty</div>
+                        <div className="text-[10px] text-slate-400 whitespace-nowrap">Est. Penalty</div>
                       </div>
-                      <StatusBadge status={violation.status} />
+                      <div className="w-36 flex items-center justify-end shrink-0">
+                        <StatusBadge status={violation.status} />
+                      </div>
                       <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
                     </div>
                   </div>

@@ -57,9 +57,9 @@ export const DEMO_PORTAL_CONFIGS: Record<string, PortalConfig> = {
   },
   admin: {
     id: 'admin',
-    name: 'Central Admin Portal',
-    portalTitle: 'CCPA Directorate National Command',
-    badgeLabel: 'Directorate Admin',
+    name: 'Central Supervisor Portal',
+    portalTitle: 'CCPA Directorate Supervisory Command',
+    badgeLabel: 'Directorate Supervisor',
     badgeVariant: 'primary',
     tagline: 'Apex surveillance, statutory SCN issuance & policy rules',
     description: 'Apex administrative console for the Central Consumer Protection Authority (CCPA) to oversee national market intelligence, dispatch legal notices, and configure rule sets.',

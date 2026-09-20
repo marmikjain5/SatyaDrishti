@@ -32,3 +32,17 @@ export interface StateComplianceMetric {
   compliancePercentage: number;
   riskScore: number;
 }
+
+export interface InspectorPerformanceMetric {
+  id: string;
+  name: string;
+  badgeId: string;
+  assignedZone: string;
+  fieldScansConducted: number;
+  inspectionsCompleted: number;
+  scnIssued: number;
+  penaltiesRecommended: number; // in ₹
+  averageSlaDays: number;
+  complianceRating: number; // e.g. 98.4
+  status: 'Top Performer' | 'Active' | 'Under Review' | 'Highly Vigilant';
+}

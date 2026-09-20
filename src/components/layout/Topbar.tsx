@@ -312,7 +312,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenCommandPalette, onToggleMo
             </div>
             <div className="hidden md:block text-left text-xs">
               <div className="font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">{user?.name}</div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">{user?.role}</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-sans">
+                {user?.role === 'admin' ? 'Supervisor' : user?.role === 'inspector' ? 'Inspector' : 'Consumer'}
+              </div>
             </div>
             <ChevronDown className="h-3.5 w-3.5 text-slate-400 hidden sm:block" />
           </button>
@@ -322,6 +324,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenCommandPalette, onToggleMo
               <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="font-bold text-slate-900 dark:text-white">{user?.name}</div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">{user?.email}</div>
+                <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-1 uppercase tracking-wider font-mono">
+                  {user?.role === 'admin' ? 'Supervisor' : user?.role === 'inspector' ? 'Inspector' : 'Consumer'}
+                </div>
               </div>
 
               {isConsumer && (
