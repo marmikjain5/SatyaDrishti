@@ -59,9 +59,12 @@ export interface ProductAuditResult {
   compliance_score: number;
   violations_count: number;
   warnings_count: number;
+  info_checks_count: number;
   passed_rules_count: number;
   violations: RuleViolationFinding[];
   warnings: RuleViolationFinding[];
+  /** Informational notes — not enforceable violations on e-commerce listings */
+  info_checks: RuleViolationFinding[];
   passed_rules: string[];
   estimated_penalty_inr: number;
   draft_notice: DraftStatutoryNotice | null;
@@ -156,43 +159,75 @@ class CrawlerService {
   /**
    * Evaluates Legal Metrology Rules (Packaged Commodities) 2011 on extracted product data.
    */
+  /**
+   * Audits a product against Legal Metrology (Packaged Commodities) Rules, 2011
+   * scoped to e-commerce listing obligations under Rule 6(10).
+   *
+   * Mandatory on e-commerce listings (Rule 6(10) read with Rule 6(1)):
+   *   - Rule 6(1)(a): Manufacturer/Packer name & address   → CRITICAL if absent
+   *   - Rule 6(1)(b) + 6(10): Country of Origin            → CRITICAL if absent
+   *   - Rule 6(1)(d) + Rule 11/12: Net Quantity (metric)   → CRITICAL if absent
+   *   - Rule 6(1)(f): MRP inclusive of all taxes            → CRITICAL if absent
+   *   - Rule 6(1)(g): Consumer Care (email + phone)         → HIGH if absent
+   *
+   * Explicitly EXEMPT from e-commerce display (Rule 6(10)):
+   *   - Rule 6(1)(e): Mfg/Packing Date — NOT required on digital listing
+   *   - Rule 5 USP:   Unit Sale Price is a physical label obligation only
+   */
   public auditProduct(product: CrawlerProductData): ProductAuditResult {
     const violations: RuleViolationFinding[] = [];
     const warnings: RuleViolationFinding[] = [];
+    const info_checks: RuleViolationFinding[] = []; // Informational only — not enforceable on e-commerce
     const passed_rules: string[] = [];
     let compounding_fine_inr = 0.0;
 
-    // Rule 6(1)(a) - Complete Manufacturer / Packer Address
+    // ── Check 1: Rule 6(1)(a) — Manufacturer / Packer Identity & Address ──────
+    // Name + address is mandatory; however exact PIN-code-level address is a
+    // physical label obligation. E-commerce requires at minimum name + city/state.
     const mfg = (product.manufacturer || '').trim();
     if (!mfg) {
       violations.push({
         rule_code: 'RULE-6-1-A',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(a)',
-        title: 'Missing Manufacturer / Packer Identity',
+        section: 'Rule 6(1)(a) read with Rule 6(10)',
+        title: 'Missing Manufacturer / Packer Identity on E-Commerce Listing',
         severity: 'CRITICAL',
         evidence: '(Not declared on listing)',
-        expected: 'Full legal name and complete registered premises address of manufacturer/packer/importer.',
+        expected: 'Name and address of manufacturer/packer/importer must be displayed on digital listing per Rule 6(10).',
         fine_inr: 25000.0,
       });
       compounding_fine_inr += 25000.0;
-    } else if (mfg.length < 25 || !/\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6})\b/i.test(mfg)) {
+    } else if (mfg.length < 10) {
+      // Name present but very short — likely a truncation
       warnings.push({
+        rule_code: 'RULE-6-1-A-NAME',
+        act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
+        section: 'Rule 6(1)(a) read with Rule 6(10)',
+        title: 'Incomplete Manufacturer Name on E-Commerce Listing',
+        severity: 'HIGH',
+        evidence: mfg,
+        expected: 'Full legal name of manufacturer/packer/importer.',
+        fine_inr: 10000.0,
+      });
+      compounding_fine_inr += 10000.0;
+    } else if (!/\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6}|pvt|ltd|limited|india|mumbai|delhi|bengaluru|chennai|hyderabad|pune|kolkata)\b/i.test(mfg)) {
+      // Name present but no address context at all — LOW informational note only
+      // (Full PIN-level address is a physical label obligation, not strictly enforceable on digital listings)
+      info_checks.push({
         rule_code: 'RULE-6-1-A-ADDR',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
         section: 'Rule 6(1)(a)',
-        title: 'Incomplete Manufacturer Address (Missing Premise/PIN)',
-        severity: 'HIGH',
+        title: 'Manufacturer Address Detail May Be Incomplete',
+        severity: 'LOW',
         evidence: mfg,
-        expected: 'Complete address with building number, locality, city, state and PIN code.',
-        fine_inr: 15000.0,
+        expected: 'Physical package label must carry full address (building, locality, PIN). E-commerce listing should include at least city/state.',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 15000.0;
     } else {
-      passed_rules.push('Rule 6(1)(a): Manufacturer details verified');
+      passed_rules.push('Rule 6(1)(a): Manufacturer name & address present');
     }
 
-    // Rule 6(1)(b) & Rule 6(10) - Country of Origin on E-Commerce
+    // ── Check 2: Rule 6(1)(b) & Rule 6(10) — Country of Origin ───────────────
     const origin = (product.country_of_origin || '').trim();
     if (!origin) {
       violations.push({
@@ -210,7 +245,7 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(b): Country of Origin declared (${origin})`);
     }
 
-    // Rule 6(1)(d) & Rule 11/12 - Net Quantity in Metric Units
+    // ── Check 3: Rule 6(1)(d) & Rule 11/12 — Net Quantity in Metric Units ─────
     const net_qty = (product.net_weight || '').trim();
     if (!net_qty) {
       violations.push({
@@ -240,25 +275,27 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(d): Net quantity verified (${net_qty})`);
     }
 
-    // Rule 6(1)(e) - Month and Year of Manufacture / Packing
+    // ── Check 4: Rule 6(1)(e) — Mfg / Packing Date ────────────────────────────
+    // IMPORTANT: Rule 6(10) EXPLICITLY EXEMPTS the month & year of manufacture/packing
+    // from mandatory online display requirements. It is required only on the physical label.
+    // Flagging its absence as a violation on e-commerce listings is legally INCORRECT.
     const mfg_date = (product.mfg_date || '').trim();
     if (!mfg_date) {
-      violations.push({
+      info_checks.push({
         rule_code: 'RULE-6-1-E-DATE',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(e)',
-        title: 'Missing Month & Year of Manufacture/Packing',
-        severity: 'HIGH',
-        evidence: '(Not declared)',
-        expected: 'Month and year of manufacture or packing must be clearly declared.',
-        fine_inr: 25000.0,
+        section: 'Rule 6(1)(e) [Physical Label Only — Exempt Under Rule 6(10)]',
+        title: 'Mfg/Packing Date Not Shown on Listing (Exempt from E-Commerce Display)',
+        severity: 'LOW',
+        evidence: '(Not present on e-commerce listing)',
+        expected: 'Mfg date is mandatory on physical package label but explicitly exempted from e-commerce display under Rule 6(10).',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 25000.0;
     } else {
-      passed_rules.push(`Rule 6(1)(e): Date of packing verified (${mfg_date})`);
+      passed_rules.push(`Rule 6(1)(e): Mfg/packing date visible on listing (${mfg_date}) — Exceeds e-commerce minimum requirement`);
     }
 
-    // Rule 6(1)(f) - MRP Declaration
+    // ── Check 5: Rule 6(1)(f) — MRP Declaration ───────────────────────────────
     const mrp = product.mrp || 0.0;
     if (mrp <= 0) {
       violations.push({
@@ -276,31 +313,33 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(f): Valid MRP declared (₹${mrp})`);
     }
 
-    // Rule 5 & Rule 6(10) (2022 Amendment) - Mandatory Unit Sale Price
+    // ── Check 6: Rule 5 — Unit Sale Price (USP) ───────────────────────────────
+    // IMPORTANT: USP is a PHYSICAL LABEL obligation under Rule 5.
+    // It is NOT a mandatory e-commerce listing requirement under Rule 6(10).
+    // Treating its absence on an online listing as a violation is legally INCORRECT.
     const usp = (product.unit_sale_price || '').trim();
     if (!usp) {
-      violations.push({
+      info_checks.push({
         rule_code: 'RULE-5-USP',
         act: 'Legal Metrology (Packaged Commodities) Amendment Rules, 2021 [G.S.R. 779(E)]',
-        section: 'Rule 5 & Rule 6(10)',
-        title: 'Missing Mandatory Unit Sale Price (USP)',
-        severity: 'HIGH',
-        evidence: '(Unit sale price per g/kg/ml absent)',
-        expected: 'Mandatory unit sale price per g/kg/ml/unit to allow consumer price comparison.',
-        fine_inr: 25000.0,
+        section: 'Rule 5 [Physical Label — Best Practice for Online]',
+        title: 'Unit Sale Price (USP) Not Displayed on Listing',
+        severity: 'LOW',
+        evidence: '(Unit sale price per g/kg/ml not visible on e-commerce listing)',
+        expected: 'USP is mandatory on physical package label. Displaying it on the digital listing is best-practice for consumer transparency.',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 25000.0;
     } else {
-      passed_rules.push(`Rule 5: Unit Sale Price verified (${usp})`);
+      passed_rules.push(`Rule 5: Unit Sale Price displayed on listing (${usp}) — Above minimum e-commerce requirement`);
     }
 
-    // Rule 6(1)(g) - Consumer Care Details
+    // ── Check 7: Rule 6(1)(g) — Consumer Care Details ─────────────────────────
     const care = (product.customer_care || '').trim();
     if (!care) {
       violations.push({
         rule_code: 'RULE-6-1-G-CARE',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(g)',
+        section: 'Rule 6(1)(g) read with Rule 6(10)',
         title: 'Missing Consumer Care Contact Details',
         severity: 'HIGH',
         evidence: '(No consumer care details declared)',
@@ -324,7 +363,8 @@ class CrawlerService {
       passed_rules.push('Rule 6(1)(g): Consumer care channels verified');
     }
 
-    // Determine status & score
+    // ── Determine status & score ───────────────────────────────────────────────
+    // info_checks (mfg date, USP) do NOT affect score — they are legally exempt.
     const failed_count = violations.length;
     const warning_count = warnings.length;
     let status: 'compliant' | 'non-compliant' | 'under-review';
@@ -335,17 +375,19 @@ class CrawlerService {
       score = 100;
     } else if (failed_count === 0 && warning_count > 0) {
       status = 'under-review';
-      score = Math.max(70, 100 - warning_count * 12);
+      score = Math.max(70, 100 - warning_count * 15);
     } else {
       status = 'non-compliant';
-      score = Math.max(20, 100 - failed_count * 22 - warning_count * 8);
+      score = Math.max(15, 100 - failed_count * 25 - warning_count * 8);
     }
 
-    // Draft statutory notice
+    // Draft statutory notice — only for genuine e-commerce violations
     let draft_notice: DraftStatutoryNotice | null = null;
     if (status === 'non-compliant') {
       const case_no = `LM-S36-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
-      const violation_points = violations.map((v) => `  • ${v.section}: ${v.title} (Evidence: ${v.evidence})`).join('\n');
+      const violation_points = violations
+        .map((v) => `  • ${v.section}: ${v.title}\n    Evidence: ${v.evidence}`)
+        .join('\n');
       draft_notice = {
         case_number: case_no,
         issued_under: 'Section 36(1) of Legal Metrology Act, 2009',
@@ -353,7 +395,13 @@ class CrawlerService {
         product_sku: product.sku,
         product_title: product.title,
         total_penalty_exposure_inr: compounding_fine_inr,
-        notice_body: `FORMAL STATUTORY SHOW CAUSE NOTICE\nNotice Ref: ${case_no}\nTo: Legal Compliance Directorate, ${product.platform} & Manufacturer/Seller: ${product.manufacturer || 'Seller of Record'}\n\nSub: Statutory Violation of Legal Metrology (Packaged Commodities) Rules, 2011 in respect of SKU: ${product.sku} (${product.title}).\n\nThe Central Autonomous Inspection Pipeline of SatyaSetu has detected statutory violations on the e-commerce listing:\n${violation_points}\n\nYou are hereby directed to show cause within 15 days of receipt of this notice why compounding proceedings or criminal prosecution under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated.`,
+        notice_body:
+          `FORMAL STATUTORY SHOW CAUSE NOTICE\nNotice Ref: ${case_no}\n` +
+          `To: Legal Compliance Directorate, ${product.platform} & Manufacturer: ${product.manufacturer || 'Seller of Record'}\n\n` +
+          `Sub: Notice under Rule 6(10) of the Legal Metrology (Packaged Commodities) Rules, 2011 for non-display of mandatory declarations on e-commerce listing for SKU: ${product.sku} (${product.title}).\n\n` +
+          `The following statutory violations have been detected (all mandatory under Rule 6(10)):\n${violation_points}\n\n` +
+          `Note: Mfg/packing date and Unit Sale Price are physical label obligations and are NOT part of this notice as they are explicitly exempt from e-commerce display requirements under Rule 6(10).\n\n` +
+          `You are directed to show cause within 15 days why compounding proceedings under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated.`,
       };
     }
 
@@ -362,9 +410,11 @@ class CrawlerService {
       compliance_score: score,
       violations_count: failed_count,
       warnings_count: warning_count,
+      info_checks_count: info_checks.length,
       passed_rules_count: passed_rules.length,
       violations,
       warnings,
+      info_checks,
       passed_rules,
       estimated_penalty_inr: compounding_fine_inr,
       draft_notice,

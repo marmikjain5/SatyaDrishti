@@ -1327,48 +1327,71 @@ class EcommerceCrawlerService:
 
     def audit_legal_metrology(self, product: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Applies Legal Metrology (Packaged Commodities) Rules, 2011 checks:
-          - Rule 6(1)(a): Complete Manufacturer/Packer address
-          - Rule 6(1)(b) & Rule 6(10): Mandatory Country of Origin on e-commerce
-          - Rule 6(1)(d) & Rule 11/12: Net Quantity in metric units
-          - Rule 6(1)(e): Month & Year of manufacture/packing/import
-          - Rule 6(1)(f): MRP inclusive of all taxes
-          - Rule 6(1)(g): Complete consumer care contacts
-          - Rule 5 & Rule 6(10): Unit Sale Price (USP)
+        Applies Legal Metrology (Packaged Commodities) Rules, 2011 checks scoped
+        specifically to e-commerce listing obligations under Rule 6(10).
+
+        E-commerce mandatory declarations (Rule 6(10) read with Rule 6(1)):
+          - Rule 6(1)(a): Manufacturer / Packer name & address            [CRITICAL if absent]
+          - Rule 6(1)(b) + 6(10): Country of Origin                       [CRITICAL if absent]
+          - Rule 6(1)(d) + Rule 11/12: Net Quantity in metric units        [CRITICAL if absent]
+          - Rule 6(1)(f): Maximum Retail Price (MRP)                      [CRITICAL if absent]
+          - Rule 6(1)(g): Consumer Care contact (email + phone)           [HIGH if absent]
+
+        Explicitly NOT applicable to e-commerce listings per Rule 6(10):
+          - Rule 6(1)(e): Mfg / Packing Date — EXEMPTED from digital display
+          - Rule 5 USP:   Unit Sale Price is a physical label obligation,
+                          NOT a mandatory e-commerce listing requirement.
         """
         violations: List[Dict[str, Any]] = []
         warnings: List[Dict[str, Any]] = []
+        info_checks: List[Dict[str, Any]] = []
         passed_rules: List[str] = []
         compounding_fine_inr = 0.0
 
-        # Check 1: Rule 6(1)(a) - Manufacturer / Packer Identity & Complete Address
+        # Check 1: Rule 6(1)(a) — Manufacturer / Packer Identity & Address
+        # Name is mandatory; full address detail is required on the physical label but
+        # e-commerce listings must still display at minimum the name + city/state.
         mfg = (product.get("manufacturer") or "").strip()
         if not mfg:
             violations.append({
                 "rule_code": "RULE-6-1-A",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
-                "section": "Rule 6(1)(a)",
-                "title": "Missing Manufacturer / Packer Identity",
+                "section": "Rule 6(1)(a) read with Rule 6(10)",
+                "title": "Missing Manufacturer / Packer Identity on E-Commerce Listing",
                 "severity": "CRITICAL",
                 "evidence": "(Not declared on listing)",
-                "expected": "Full legal name and complete registered premises address of manufacturer/packer/importer.",
+                "expected": "Name and address of manufacturer/packer/importer must be displayed on digital listing per Rule 6(10).",
                 "fine_inr": 25000.0,
             })
             compounding_fine_inr += 25000.0
-        elif len(mfg) < 25 or not re.search(r"\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6})\b", mfg, re.I):
+        elif len(mfg) < 10:
+            # Name present but suspiciously short — flag as high warning
             warnings.append({
+                "rule_code": "RULE-6-1-A-NAME",
+                "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
+                "section": "Rule 6(1)(a) read with Rule 6(10)",
+                "title": "Incomplete Manufacturer Name on E-Commerce Listing",
+                "severity": "HIGH",
+                "evidence": mfg,
+                "expected": "Full legal name of manufacturer/packer/importer.",
+                "fine_inr": 10000.0,
+            })
+            compounding_fine_inr += 10000.0
+        elif not re.search(r"\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6}|pvt|ltd|limited|india|mumbai|delhi|bengaluru|chennai|hyderabad|pune|kolkata)\b", mfg, re.I):
+            # Name present but no address context — LOW severity informational note only
+            # (Full PIN-level address is a physical label obligation, not strictly enforced on digital listings)
+            info_checks.append({
                 "rule_code": "RULE-6-1-A-ADDR",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
                 "section": "Rule 6(1)(a)",
-                "title": "Incomplete Manufacturer Address (Missing Premise/PIN)",
-                "severity": "HIGH",
+                "title": "Manufacturer Address Detail May Be Incomplete",
+                "severity": "LOW",
                 "evidence": mfg,
-                "expected": "Complete address with building number, locality, city, state and PIN code.",
-                "fine_inr": 15000.0,
+                "expected": "Physical package label must carry full address (building, locality, PIN). E-commerce listing should include at least city/state.",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 15000.0
         else:
-            passed_rules.append("Rule 6(1)(a): Manufacturer details verified")
+            passed_rules.append("Rule 6(1)(a): Manufacturer name & address present")
 
         # Check 2: Rule 6(1)(b) & Rule 6(10) (2017 Amendment) - Country of Origin on E-Commerce
         origin = (product.get("country_of_origin") or "").strip()
@@ -1416,22 +1439,25 @@ class EcommerceCrawlerService:
         else:
             passed_rules.append(f"Rule 6(1)(d): Net quantity verified ({net_qty})")
 
-        # Check 4: Rule 6(1)(e) - Month and Year of Manufacture / Packing
+        # Check 4: Rule 6(1)(e) — Month and Year of Manufacture / Packing
+        # IMPORTANT: Rule 6(10) EXPLICITLY EXEMPTS mfg/packing date from mandatory
+        # online display requirements. It is required only on the physical package label.
+        # Flagging its absence as a violation on e-commerce listings is legally INCORRECT.
+        # We log it as an informational note only.
         mfg_date = (product.get("mfg_date") or "").strip()
         if not mfg_date:
-            violations.append({
+            info_checks.append({
                 "rule_code": "RULE-6-1-E-DATE",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
-                "section": "Rule 6(1)(e)",
-                "title": "Missing Month & Year of Manufacture/Packing",
-                "severity": "HIGH",
-                "evidence": "(Not declared)",
-                "expected": "Month and year of manufacture or packing must be clearly declared.",
-                "fine_inr": 25000.0,
+                "section": "Rule 6(1)(e) [Physical Label Only]",
+                "title": "Mfg/Packing Date Not Shown on Listing (Exempt Under Rule 6(10))",
+                "severity": "LOW",
+                "evidence": "(Not present on e-commerce listing)",
+                "expected": "Month & year of manufacture is mandatory on the physical package label but is explicitly exempted from e-commerce display requirements under Rule 6(10).",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 25000.0
         else:
-            passed_rules.append(f"Rule 6(1)(e): Date of packing verified ({mfg_date})")
+            passed_rules.append(f"Rule 6(1)(e): Mfg/packing date visible on listing ({mfg_date}) — Exceeds e-commerce minimum requirement")
 
         # Check 5: Rule 6(1)(f) - MRP Declaration
         mrp = product.get("mrp", 0.0)
@@ -1450,22 +1476,25 @@ class EcommerceCrawlerService:
         else:
             passed_rules.append(f"Rule 6(1)(f): Valid MRP declared (₹{mrp})")
 
-        # Check 6: Rule 5 & Rule 6(10) (2022 Amendment) - Mandatory Unit Sale Price
+        # Check 6: Rule 5 — Unit Sale Price (USP)
+        # IMPORTANT: USP declaration is a PHYSICAL LABEL obligation under Rule 5.
+        # It is NOT a mandatory e-commerce listing requirement under Rule 6(10).
+        # Treating its absence on an online listing as a violation is legally incorrect.
+        # We flag it as an informational best-practice note only.
         usp = (product.get("unit_sale_price") or "").strip()
         if not usp:
-            violations.append({
+            info_checks.append({
                 "rule_code": "RULE-5-USP",
                 "act": "Legal Metrology (Packaged Commodities) Amendment Rules, 2021 [G.S.R. 779(E)]",
-                "section": "Rule 5 & Rule 6(10)",
-                "title": "Missing Mandatory Unit Sale Price (USP)",
-                "severity": "HIGH",
-                "evidence": "(Unit sale price per g/kg/ml absent)",
-                "expected": "Mandatory unit sale price per g/kg/ml/unit to allow consumer price comparison.",
-                "fine_inr": 25000.0,
+                "section": "Rule 5 [Physical Label — Best Practice for Online]",
+                "title": "Unit Sale Price (USP) Not Displayed on Listing",
+                "severity": "LOW",
+                "evidence": "(Unit sale price per g/kg/ml not visible on e-commerce listing)",
+                "expected": "USP is mandatory on physical package label. Displaying it on the digital listing is best-practice and improves consumer transparency.",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 25000.0
         else:
-            passed_rules.append(f"Rule 5: Unit Sale Price verified ({usp})")
+            passed_rules.append(f"Rule 5: Unit Sale Price displayed on listing ({usp}) — Above minimum e-commerce requirement")
 
         # Check 7: Rule 6(1)(g) - Consumer Care Details
         care = (product.get("customer_care") or "").strip()
@@ -1497,7 +1526,8 @@ class EcommerceCrawlerService:
             passed_rules.append("Rule 6(1)(g): Consumer care channel verified")
 
         # Calculate Compliance Score
-        total_rules = 7
+        # Scoring is based on VIOLATIONS (legally enforceable on e-commerce) and WARNINGS only.
+        # Info checks (mfg date, USP) are exempt from scoring — they do not trigger penalties.
         failed_count = len(violations)
         warning_count = len(warnings)
         if failed_count == 0 and warning_count == 0:
@@ -1505,16 +1535,19 @@ class EcommerceCrawlerService:
             score = 100
         elif failed_count == 0 and warning_count > 0:
             status = "under-review"
-            score = max(70, 100 - (warning_count * 12))
+            score = max(70, 100 - (warning_count * 15))
         else:
             status = "non-compliant"
-            score = max(20, 100 - (failed_count * 22) - (warning_count * 8))
+            score = max(15, 100 - (failed_count * 25) - (warning_count * 8))
 
-        # Generate Draft Statutory Notice under Sec 36(1) if non-compliant
+        # Generate Draft Statutory Notice under Sec 36(1) only for genuine e-commerce violations
         draft_notice = None
         if status == "non-compliant":
             case_no = f"LM-S36-{datetime.utcnow().strftime('%Y%m%d')}-{random.randint(100, 999)}"
-            violation_points = "\n".join([f"  • {v['section']}: {v['title']} (Expected: {v['expected']})" for v in violations])
+            violation_points = "\n".join([
+                f"  • {v['section']}: {v['title']}\n    Evidence: {v['evidence']}\n    Required: {v['expected']}"
+                for v in violations
+            ])
             draft_notice = {
                 "case_number": case_no,
                 "issued_under": "Section 36(1) of Legal Metrology Act, 2009",
@@ -1526,10 +1559,15 @@ class EcommerceCrawlerService:
                     f"FORMAL STATUTORY SHOW CAUSE NOTICE\n"
                     f"Notice Ref: {case_no}\n"
                     f"To: Compliance Officer, {product.get('platform')} & Manufacturer: {product.get('manufacturer') or 'Seller of Record'}\n\n"
-                    f"Sub: Notice for violation of the Legal Metrology (Packaged Commodities) Rules, 2011 in respect of product SKU: {product.get('sku')} ({product.get('title')}).\n\n"
-                    f"The Central Autonomous Inspection System of SatyaSetu has detected statutory non-compliances on the e-commerce listing:\n"
+                    f"Sub: Notice under Rule 6(10) of the Legal Metrology (Packaged Commodities) Rules, 2011 "
+                    f"for non-display of mandatory declarations on e-commerce listing for SKU: {product.get('sku')} ({product.get('title')}).\n\n"
+                    f"The Central Autonomous Inspection System of SatyaSetu has detected the following statutory non-compliances "
+                    f"on the e-commerce listing (all of which are mandatory under Rule 6(10)):\n"
                     f"{violation_points}\n\n"
-                    f"You are hereby directed to show cause within 15 days of receipt of this notice why compounding proceedings or criminal prosecution under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated against you."
+                    f"Note: Mfg/packing date and Unit Sale Price are physical label obligations and are NOT part of this notice, "
+                    f"as they are explicitly exempt from e-commerce display requirements under Rule 6(10).\n\n"
+                    f"You are hereby directed to show cause within 15 days why compounding proceedings or prosecution "
+                    f"under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated."
                 ),
             }
 
@@ -1538,9 +1576,11 @@ class EcommerceCrawlerService:
             "compliance_score": score,
             "violations_count": len(violations),
             "warnings_count": len(warnings),
+            "info_checks_count": len(info_checks),
             "passed_rules_count": len(passed_rules),
             "violations": violations,
             "warnings": warnings,
+            "info_checks": info_checks,
             "passed_rules": passed_rules,
             "estimated_penalty_inr": compounding_fine_inr,
             "draft_notice": draft_notice,
