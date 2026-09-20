@@ -1,8 +1,6 @@
 """
 SatyaDrishti Deterministic Statutory Validation Service
-
 Implements production-grade compliance validation against gazette-verified statutory rules.
-
 Statutory Sources:
   - Legal Metrology (Packaged Commodities) Rules, 2011 [G.S.R. 882(E)]
   - Legal Metrology Act, 2009 — Section 36(1) penalty compounding
