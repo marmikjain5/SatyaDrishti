@@ -21,8 +21,15 @@ Architecture note:
 """
 
 import re
+import sys
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
 # ─── Extraction Result Data Classes ────────────────────────────────────────
@@ -326,56 +333,85 @@ Return ONLY valid JSON mapping key -> string value (or null).
     import json
     import os
 
-    # 1. Try Pollinations AI Text LLM
+    # Call Pollinations AI Text LLM API
     pollinations_enabled = os.getenv("POLLINATIONS_ENABLED", "true").lower() in ("true", "1", "yes")
-    if pollinations_enabled:
+    if not pollinations_enabled:
+        print("[ERROR] [LLM OCR Text Extractor] Pollinations AI is disabled (POLLINATIONS_ENABLED=false).")
+        return {}
+
+    print(f"[TRY] [LLM OCR Text Extractor] Calling Pollinations AI LLM API to parse OCR text into JSON...")
+
+    # 1. Primary Path: POST Request to Pollinations AI with Browser User-Agent (returns full JSON)
+    try:
         model_name = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
-        url = f"https://text.pollinations.ai/{model_name}"
-        payload = {
-            "messages": [{"role": "user", "content": prompt}],
+        post_url = f"https://text.pollinations.ai/{model_name}"
+        payload = json.dumps({"messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         }
+        req = urllib.request.Request(post_url, data=payload, headers=headers)
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            if resp.status == 200:
+                raw_resp = resp.read().decode("utf-8")
+                from services.vision_service import OllamaVisionProvider
+                parser = OllamaVisionProvider()
+                
+                # Unwrap OpenAI / Pollinations JSON response
+                content_to_parse = raw_resp
+                try:
+                    resp_dict = json.loads(raw_resp)
+                    if isinstance(resp_dict, dict) and "choices" in resp_dict:
+                        choices = resp_dict["choices"]
+                        if isinstance(choices, list) and len(choices) > 0:
+                            content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
+                        elif isinstance(choices, str):
+                            content_to_parse = choices
+                except Exception:
+                    pass
 
-        headers = {"Content-Type": "application/json"}
-        try:
-            data_bytes = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data_bytes, headers=headers)
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                if resp.status == 200:
-                    raw_resp = resp.read().decode("utf-8")
-                    from services.vision_service import OllamaVisionProvider
-                    parser = OllamaVisionProvider()
-                    parsed = parser._clean_and_parse_json(raw_resp)
-                    if parsed and isinstance(parsed, dict):
-                        return {k: str(v) for k, v in parsed.items() if v and str(v).lower() not in ("null", "none")}
-        except Exception as e:
-            print(f"[LLM OCR Text Extractor] Pollinations failed: {e}")
+                parsed = parser._clean_and_parse_json(content_to_parse)
+                if parsed and isinstance(parsed, dict) and len(parsed) > 0:
+                    clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
+                    print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI parsed {len(clean_result)} statutory fields into JSON via POST.")
+                    return clean_result
+    except Exception as e:
+        print(f"[WARN] [LLM OCR Text Extractor] POST mode failed ({e}). Retrying via GET endpoint...")
 
+    # 2. Secondary Path: Fast GET Request to Pollinations AI
+    import urllib.parse
+    try:
+        short_prompt = prompt[:2000]
+        encoded_p = urllib.parse.quote(short_prompt)
+        get_url = f"https://text.pollinations.ai/{encoded_p}?json=true"
+        req = urllib.request.Request(get_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                raw_resp = resp.read().decode("utf-8")
+                from services.vision_service import OllamaVisionProvider
+                parser = OllamaVisionProvider()
+                
+                content_to_parse = raw_resp
+                try:
+                    resp_dict = json.loads(raw_resp)
+                    if isinstance(resp_dict, dict) and "choices" in resp_dict:
+                        choices = resp_dict["choices"]
+                        if isinstance(choices, list) and len(choices) > 0:
+                            content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
+                        elif isinstance(choices, str):
+                            content_to_parse = choices
+                except Exception:
+                    pass
 
+                parsed = parser._clean_and_parse_json(content_to_parse)
+                if parsed and isinstance(parsed, dict) and len(parsed) > 0:
+                    clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
+                    print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI parsed {len(clean_result)} statutory fields into JSON via GET.")
+                    return clean_result
+    except Exception as e:
+        print(f"[ERROR] [LLM OCR Text Extractor] GET endpoint failed: {e}")
 
-
-
-
-    # 2. Try Gemini
-    gemini_key = os.getenv("GEMINI_API_KEY", "")
-    if gemini_key and len(gemini_key.strip()) > 10:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"response_mime_type": "application/json", "temperature": 0.1}
-        }
-        try:
-            data_bytes = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                if resp.status == 200:
-                    resp_json = json.loads(resp.read().decode("utf-8"))
-                    text = resp_json["candidates"][0]["content"]["parts"][0]["text"]
-                    parsed = json.loads(text.strip())
-                    if parsed and isinstance(parsed, dict):
-                        return {k: str(v) for k, v in parsed.items() if v and str(v).lower() not in ("null", "none")}
-        except Exception as e:
-            print(f"[LLM OCR Text Extractor] Gemini failed: {e}")
-
+    print("[ERROR] [LLM OCR Text Extractor] All Pollinations AI text parse attempts failed.")
     return {}
 
 
@@ -386,46 +422,8 @@ def extract_from_text(
 ) -> ExtractionResult:
     """
     Main entry point: extracts all mandatory and conditional statutory
-    declaration fields from OCR-extracted text.
+    declaration fields from OCR-extracted text using regex patterns and LLM parsing.
     """
-    # Demo Video Hardcode check: SAFA Chocolate Muesli Package
-    lowered = (raw_text or "").lower()
-    muesli_hits = sum(1 for kw in ['muesli', 'chocolate', 'safa', 'charminar', 'tarikat', '13624999000389', '8939117658330', 'shah gunj', '500064', 'dry fruits'] if kw in lowered)
-    if muesli_hits >= 2:
-        muesli_result = ExtractionResult(
-            image_id=image_id,
-            raw_text=raw_text,
-            cleaned_text=clean_ocr_text(raw_text),
-            preprocessing_passes=preprocessing_passes or ["muesli_profile"],
-            overall_confidence=0.96,
-        )
-        fields_def = {
-            "productName": ("Chocolate Muesli", "compliant", 0.99, True),
-            "netQuantity": ("1 Kg", "compliant", 0.99, True),
-            "manufacturer": ("SAFA DRY FRUITS & SPICES", "compliant", 0.98, True),
-            "manufacturerAddress": ("Near Tarikat Manzil, Shop No. 20-31058/1, Charminar, Shah Gunj, Beside Khursheed Jah Kaman, Hyderabad - 500064, Telangana, India", "compliant", 0.98, True),
-            "countryOfOrigin": ("India", "compliant", 0.99, True),
-            "customerCare": ("+91 9160991036, safadryfruitsandspices@gmail.com, Hyderabad", "compliant", 0.97, True),
-            "fssaiLicense": ("13624999000389", "compliant", 0.99, False),
-            "barcode": ("8939117658330", "warning", 0.99, False),
-            "mrp": ("", "non-compliant", 0.0, True),
-            "unitSalePrice": ("", "non-compliant", 0.0, False),
-            "batchNumber": ("", "non-compliant", 0.0, True),
-            "manufacturingDate": ("", "non-compliant", 0.0, True),
-            "expiryDate": ("", "non-compliant", 0.0, False),
-        }
-        for k, (v, stat, conf, mand) in fields_def.items():
-            muesli_result.fields[k] = ExtractedField(
-                key=k,
-                value=v,
-                raw_match=v,
-                confidence=conf,
-                regex_pattern="muesli_profile_match",
-                is_mandatory=mand,
-                validation_status=stat,
-            )
-        return muesli_result
-
     cleaned_text = clean_ocr_text(raw_text)
     result = ExtractionResult(
         image_id=image_id,
@@ -437,43 +435,46 @@ def extract_from_text(
     total_confidence = 0.0
     found_count = 0
 
-    # Step 1: Deterministic regex extraction
-    for field_key, patterns in FIELD_EXTRACTION_PATTERNS.items():
-        extracted = extract_field(cleaned_text, field_key, patterns)
-        if extracted:
-            result.fields[field_key] = extracted
-            total_confidence += extracted.confidence
-            found_count += 1
-        else:
+    # Step 1: LLM Text Parse via Pollinations AI (Handles spell correction & statutory context)
+    llm_extracted = {}
+    if raw_text and len(raw_text.strip()) > 10:
+        llm_extracted = _llm_parse_ocr_text(raw_text)
+
+    for field_key in list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS):
+        llm_val = llm_extracted.get(field_key)
+        if llm_val:
             is_mandatory = field_key in MANDATORY_FIELDS
             result.fields[field_key] = ExtractedField(
                 key=field_key,
-                value="",
-                raw_match="",
-                confidence=0.0,
-                regex_pattern="",
+                value=llm_val,
+                raw_match=llm_val,
+                confidence=0.92,
+                regex_pattern="llm_ocr_parse",
                 is_mandatory=is_mandatory,
-                validation_status="non-compliant" if is_mandatory else "missing",
+                validation_status="compliant",
             )
+            total_confidence += 0.92
+            found_count += 1
 
-    # Step 2: LLM Text Fallback for missing/unmatched fields from noisy OCR
-    missing_fields = [k for k, f in result.fields.items() if not f.value]
-    if missing_fields and raw_text and len(raw_text.strip()) > 10:
-        llm_extracted = _llm_parse_ocr_text(raw_text)
-        for field_key, val in llm_extracted.items():
-            if val and field_key in result.fields and not result.fields[field_key].value:
+    # Step 2: Deterministic regex fallback for any missing fields
+    for field_key, patterns in FIELD_EXTRACTION_PATTERNS.items():
+        if not result.fields.get(field_key) or not result.fields[field_key].value:
+            extracted = extract_field(cleaned_text, field_key, patterns)
+            if extracted:
+                result.fields[field_key] = extracted
+                total_confidence += extracted.confidence
+                found_count += 1
+            else:
                 is_mandatory = field_key in MANDATORY_FIELDS
                 result.fields[field_key] = ExtractedField(
                     key=field_key,
-                    value=val,
-                    raw_match=val,
-                    confidence=0.88,
-                    regex_pattern="llm_ocr_parse",
+                    value="",
+                    raw_match="",
+                    confidence=0.0,
+                    regex_pattern="",
                     is_mandatory=is_mandatory,
-                    validation_status="compliant",
+                    validation_status="non-compliant" if is_mandatory else "missing",
                 )
-                total_confidence += 0.88
-                found_count += 1
 
     result.overall_confidence = (total_confidence / found_count) if found_count > 0 else 0.0
     return result
@@ -516,103 +517,13 @@ def extract_from_image_hybrid(
     fallback_raw_text: Optional[str] = None
 ) -> ExtractionResult:
     """
-    Production-grade Hybrid Multimodal Vision Extractor.
-    
-    Coordinates:
-      1. Local Vision LLMs (Ollama with Qwen2.5-VL / MiniCPM-V / Llama3.2-Vision)
-      2. Cloud Vision LLM (Gemini Flash Vision)
-      3. Fallback: OCR text pass-through with pattern matching
+    Direct OCR + Pollinations AI Text LLM Extraction Pipeline:
+      1. Receives raw OCR text extracted from packaging label scan.
+      2. Uses Pollinations AI Text LLM API to clean typos & parse statutory fields into structured JSON.
     """
-    try:
-        from services.vision_service import vision_service
-    except ImportError:
-        try:
-            from backend.services.vision_service import vision_service
-        except ImportError:
-            vision_service = None
-
-    if vision_service:
-        vision_res = vision_service.extract_from_image(image_input)
-        if vision_res.get("status") == "success":
-            provider = vision_res.get("provider", "Vision-LLM")
-            v_fields = vision_res.get("fields", {})
-            raw_text = vision_res.get("raw_text", "")
-            
-            res = ExtractionResult(
-                image_id=image_id,
-                raw_text=raw_text,
-                cleaned_text=clean_ocr_text(raw_text),
-                extraction_engine=f"SatyaDrishti-HybridVision ({provider})",
-                preprocessing_passes=["multimodal_vision_pass"]
-            )
-            
-            total_conf = 0.0
-            found_count = 0
-            
-            # Map extracted fields into ExtractedField objects
-            all_known_fields = list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS)
-            for fkey in all_known_fields:
-                val = str(v_fields.get(fkey) or "").strip()
-                if val and val.lower() not in ("null", "none", "n/a", "not detected"):
-                    # Clean value
-                    norm_val = re.sub(r'\s+', ' ', val).strip()
-                    if fkey == "mrp":
-                        # Extract clean price digits
-                        m_mrp = re.search(r'[\d,]+(?:\.\d{1,2})?', norm_val)
-                        if m_mrp:
-                            norm_val = m_mrp.group(0).replace(',', '')
-
-                    
-                    is_mand = fkey in MANDATORY_FIELDS
-                    res.fields[fkey] = ExtractedField(
-                        key=fkey,
-                        value=norm_val,
-                        raw_match=val,
-                        confidence=0.96, # High confidence for vision LLM extraction
-                        regex_pattern="vision_llm_json_extractor",
-                        is_mandatory=is_mand,
-                        validation_status="compliant"
-                    )
-                    total_conf += 0.96
-                    found_count += 1
-                else:
-                    is_mand = fkey in MANDATORY_FIELDS
-                    res.fields[fkey] = ExtractedField(
-                        key=fkey,
-                        value="",
-                        raw_match="",
-                        confidence=0.0,
-                        regex_pattern="",
-                        is_mandatory=is_mand,
-                        validation_status="non-compliant" if is_mand else "missing"
-                    )
-            
-            res.overall_confidence = (total_conf / found_count) if found_count > 0 else 0.0
-
-            # Add 'address' as alias for 'manufacturerAddress' so the frontend can read it under both keys
-            mfr_addr_field = res.fields.get("manufacturerAddress")
-            if mfr_addr_field and mfr_addr_field.value:
-                res.fields["address"] = ExtractedField(
-                    key="address",
-                    value=mfr_addr_field.value,
-                    raw_match=mfr_addr_field.raw_match,
-                    confidence=mfr_addr_field.confidence,
-                    regex_pattern=mfr_addr_field.regex_pattern,
-                    is_mandatory=True,
-                    validation_status=mfr_addr_field.validation_status
-                )
-            else:
-                res.fields["address"] = ExtractedField(
-                    key="address", value="", raw_match="", confidence=0.0,
-                    regex_pattern="", is_mandatory=True, validation_status="non-compliant"
-                )
-            return res
-
-    # Fallback to standard OCR regex extraction
-    if fallback_raw_text:
-        return extract_from_text(fallback_raw_text, image_id=image_id)
-    
-    return extract_from_text("", image_id=image_id)
+    raw_text = fallback_raw_text or ""
+    print(f"[OCR PIPELINE] Running OCR Text Parsing + Pollinations AI LLM (Length: {len(raw_text)} chars)...")
+    return extract_from_text(raw_text, image_id=image_id)
 
 
 def aggregate_multi_angle_extractions(

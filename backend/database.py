@@ -55,8 +55,9 @@ from sqlalchemy import text
 def run_migrations():
     """Ensures existing tables are altered with newly added columns without data loss."""
     try:
+        is_current_sqlite = engine.url.drivername.startswith("sqlite")
         with engine.begin() as conn:
-            if is_sqlite:
+            if is_current_sqlite:
                 for col in ["evidence_images", "evidence_urls", "officer_decision_history"]:
                     try:
                         conn.execute(text(f"ALTER TABLE complaints ADD COLUMN {col} TEXT DEFAULT '[]'"))

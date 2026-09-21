@@ -28,8 +28,8 @@ import {
 } from './muesliDeclarationProfile';
 
 async function checkIsMuesli(imageSource: string | File, dataUrl: string): Promise<boolean> {
-  // 100% Guaranteed trigger for demo video recording
-  return true;
+  // Disabled hardcoded demo override — always run real OCR & Vision LLM pipeline
+  return false;
 }
 
 // ─── Provider Interface ─────────────────────────────────────────
@@ -346,16 +346,29 @@ export class HybridVisionBackendProvider implements OCRProvider {
         return executeRealisticMuesliScan(imgDimensions, onProgress);
       }
 
-      onProgress?.(30, 'Performing Vision LLM extraction (Pollinations AI / Ollama / Gemini)...');
+      onProgress?.(20, 'Scanning text regions with Tesseract OCR...');
+      let localOcrText = '';
+      try {
+        const localRes = await this.fallbackProvider.recognize(imageSource, (p, msg) => {
+          onProgress?.(20 + Math.round(p * 0.3), `[OCR Scan] ${msg}`);
+        });
+        localOcrText = localRes.rawText || '';
+      } catch (ocrErr) {
+        console.warn('Local OCR pre-pass failed:', ocrErr);
+      }
+
+      onProgress?.(55, 'Sending to SatyaDrishti LLM Engine (Pollinations AI / Ollama / Gemini)...');
 
       const endpoints = [
         `${this.backendBaseUrl}/api/v1/extract-image`,
+        '/api/v1/extract-image',
       ];
 
       let responseData: any = null;
 
       for (const endpoint of endpoints) {
         try {
+          console.log(`[SatyaDrishti OCR Engine] Requesting Hybrid Vision Backend at: ${endpoint}`);
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -364,6 +377,7 @@ export class HybridVisionBackendProvider implements OCRProvider {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               image_base64: dataUrl,
+              raw_text: localOcrText,
               product_category: 'ALL',
             }),
             signal: controller.signal,
@@ -378,13 +392,20 @@ export class HybridVisionBackendProvider implements OCRProvider {
               );
               if (hasFields) {
                 responseData = data.extraction;
+                console.log(`✅ [SatyaDrishti OCR Engine] Backend succeeded! Engine: "${responseData.extraction_engine}"`);
                 break;
+              } else {
+                console.warn(`⚠️ [SatyaDrishti OCR Engine] Backend returned 200 OK but 0 extracted statutory fields.`);
               }
+            } else {
+              console.warn(`⚠️ [SatyaDrishti OCR Engine] Backend response status:`, data.status);
             }
+          } else {
+            console.warn(`❌ [SatyaDrishti OCR Engine] Backend endpoint returned HTTP ${res.status}`);
           }
 
         } catch (e) {
-          // continue to next endpoint
+          console.warn(`❌ [SatyaDrishti OCR Engine] Network/fetch error for ${endpoint}:`, e);
         }
       }
 
@@ -521,10 +542,11 @@ export class HybridVisionBackendProvider implements OCRProvider {
         };
       }
     } catch (err) {
-      console.warn('Backend Hybrid Vision extraction failed, falling back to local Tesseract OCR:', err);
+      console.warn('⚠️ [SatyaDrishti OCR Engine] Backend Hybrid Vision extraction failed, falling back to local Tesseract OCR:', err);
     }
 
     // Graceful fallback to client-side multi-pass Tesseract OCR
+    console.warn('⚡ [SatyaDrishti OCR Engine] FALLBACK: Engaging browser Tesseract.js multi-pass OCR...');
     onProgress?.(20, 'Local Vision engine offline. Engaging browser Tesseract OCR fallback...');
     return this.fallbackProvider.recognize(imageSource, onProgress);
   }

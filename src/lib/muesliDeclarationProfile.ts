@@ -113,53 +113,7 @@ export function detectMuesliColorProfile(canvasOrImg: HTMLCanvasElement | HTMLIm
 }
 
 export function isChocolateMuesliPackage(imageSource?: string | File | null, text?: string): boolean {
-  const t = (text || '').toLowerCase();
-  let fn = '';
-
-  if (imageSource) {
-    if (typeof imageSource === 'string') {
-      fn = imageSource.toLowerCase();
-    } else if (typeof imageSource === 'object' && 'name' in imageSource) {
-      fn = (imageSource as File).name.toLowerCase();
-    }
-  }
-
-  // Check filename or URL (matches full, cropped, media ID, or generic camera photos)
-  if (/muesli|chocolate|safa|cereal|grain|dry\s*fruits|media_178991|uploaded_media|728|762|796|image|photo|camera|blob|crop/i.test(fn)) {
-    return true;
-  }
-
-  // Check extracted OCR text for key signature tokens from this exact packaging
-  const signatureTokens = [
-    'muesli',
-    'chocolate muesli',
-    'safa',
-    'tarikat',
-    'manzil',
-    'charminar',
-    'shah gunj',
-    'khursheed jah',
-    '500064',
-    'safadryfruits',
-    '13624999000389',
-    '8939117658330',
-    'dry fruits',
-    'texturized soya',
-    'beechnutoo',
-    'zsknuts',
-    'nutritional',
-    'net quantity',
-    '1 kg',
-    'packed and marketed',
-    'storage instruction',
-    'ingredients',
-  ];
-
-  if (signatureTokens.some((token) => t.includes(token))) {
-    return true;
-  }
-
-  return true;
+  return false;
 }
 
 /**
