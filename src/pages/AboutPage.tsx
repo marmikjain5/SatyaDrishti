@@ -8,6 +8,7 @@ import { CoreCapabilitiesSection } from '../components/landing/CoreCapabilitiesS
 import { WorkflowTimelineSection } from '../components/landing/WorkflowTimelineSection';
 import { BentoFeaturesGrid } from '../components/landing/BentoFeaturesGrid';
 import { CtaBannerSection } from '../components/landing/CtaBannerSection';
+import { TechJourneyBanner } from '../components/about/TechJourneyBanner';
 
 export const AboutPage: React.FC = () => {
 
@@ -16,6 +17,7 @@ export const AboutPage: React.FC = () => {
       <LandingNavbar />
       <main className="flex-1">
         <HeroSection />
+        <TechJourneyBanner />
         <TrustedByRegulators />
         <StatsCounterSection />
         <CoreCapabilitiesSection />
