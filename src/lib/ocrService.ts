@@ -82,14 +82,28 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
       );
 
       try {
-        const result = await Tesseract.recognize(variant.dataUrl, 'eng', {
-          logger: (m: Tesseract.LoggerMessage) => {
-            if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-              const passProgress = Math.round(5 + ((i + m.progress) / totalPasses) * 80);
-              onProgress?.(passProgress, passLabel);
-            }
-          },
-        });
+        let result: any;
+        try {
+          // Attempt bilingual English + Hindi Indic OCR
+          result = await Tesseract.recognize(variant.dataUrl, 'eng+hin', {
+            logger: (m: Tesseract.LoggerMessage) => {
+              if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                const passProgress = Math.round(5 + ((i + m.progress) / totalPasses) * 80);
+                onProgress?.(passProgress, passLabel);
+              }
+            },
+          });
+        } catch {
+          // Robust fallback to primary English model if Hindi traineddata is unavailable
+          result = await Tesseract.recognize(variant.dataUrl, 'eng', {
+            logger: (m: Tesseract.LoggerMessage) => {
+              if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                const passProgress = Math.round(5 + ((i + m.progress) / totalPasses) * 80);
+                onProgress?.(passProgress, passLabel);
+              }
+            },
+          });
+        }
 
         const pageData = result.data as unknown as {
           text?: string;
@@ -191,12 +205,17 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
                 const llmFields = data.extraction.fields;
                 for (const k of Object.keys(declarations) as DeclarationFieldKey[]) {
                   const llmF = llmFields[k];
-                  if (llmF && llmF.value && (!declarations[k].value || declarations[k].value === '(Not detected)')) {
-                    declarations[k].value = llmF.value;
-                    declarations[k].rawValue = llmF.raw_match || llmF.value;
-                    declarations[k].rawMatch = llmF.raw_match || llmF.value;
-                    declarations[k].confidence = Math.max(declarations[k].confidence, Math.round((llmF.confidence_pct || 88)));
-                    declarations[k].validationStatus = llmF.validation_status || 'compliant';
+                  if (llmF && llmF.value) {
+                    const currentVal = declarations[k].value;
+                    const isMissing = !currentVal || currentVal === '(Not detected)' || currentVal.trim() === '';
+                    const backendConf = Math.round(llmF.confidence_pct || 88);
+                    if (isMissing || backendConf >= declarations[k].confidence) {
+                      declarations[k].value = llmF.value;
+                      declarations[k].rawValue = llmF.raw_match || llmF.value;
+                      declarations[k].rawMatch = llmF.raw_match || llmF.value;
+                      declarations[k].confidence = Math.max(declarations[k].confidence, backendConf);
+                      declarations[k].validationStatus = llmF.validation_status || 'compliant';
+                    }
                   }
                 }
                 break;

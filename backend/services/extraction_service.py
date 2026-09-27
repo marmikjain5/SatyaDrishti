@@ -31,6 +31,12 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+try:
+    from services.multilingual_ner_service import multilingual_ner_service
+except ImportError:
+    from backend.services.multilingual_ner_service import multilingual_ner_service
+
+
 
 # ─── Extraction Result Data Classes ────────────────────────────────────────
 
@@ -185,18 +191,20 @@ def clean_ocr_text(raw_text: str) -> str:
     Normalize OCR output:
     - Collapse multiple whitespaces/newlines
     - Remove non-printable characters
+    - Preserve Devanagari, Bengali, Gurmukhi, Gujarati, Tamil, Telugu, Kannada, Malayalam (\u0900-\u0D7F)
     - Normalize Unicode currency symbols
     - Preserve structural newlines for layout parsing
     """
-    # Remove null bytes and control chars (except newlines)
-    text = re.sub(r'[^\x20-\x7E\n₹\u0900-\u097F]', ' ', raw_text)
+    # Remove null bytes and control chars (preserving standard ASCII and Indic scripts \u0900-\u0D7F + ₹)
+    text = re.sub(r'[^\x20-\x7E\n₹\u0900-\u0D7F]', ' ', raw_text)
     # Collapse multiple spaces into one
     text = re.sub(r'[ \t]+', ' ', text)
     # Collapse more than 2 consecutive newlines into 2
     text = re.sub(r'\n{3,}', '\n\n', text)
-    # Normalize Rs. / Rs / INR → ₹ for consistent matching
+    # Normalize Rs. / Rs / INR / रु. / रू → ₹ for consistent matching
     text = re.sub(r'\bRs\.?\b', '₹', text)
     text = re.sub(r'\bINR\b', '₹', text)
+    text = re.sub(r'(?:रु\.?|रू)\s*', '₹ ', text)
     return text.strip()
 
 
@@ -336,8 +344,8 @@ Return ONLY valid JSON mapping key -> string value (or null).
     # Call Pollinations AI Text LLM API
     pollinations_enabled = os.getenv("POLLINATIONS_ENABLED", "true").lower() in ("true", "1", "yes")
     if not pollinations_enabled:
-        print("[ERROR] [LLM OCR Text Extractor] Pollinations AI is disabled (POLLINATIONS_ENABLED=false).")
         return {}
+
 
     print(f"[TRY] [LLM OCR Text Extractor] Calling Pollinations AI LLM API to parse OCR text into JSON...")
 
@@ -346,12 +354,17 @@ Return ONLY valid JSON mapping key -> string value (or null).
         model_name = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
         post_url = f"https://text.pollinations.ai/{model_name}"
         payload = json.dumps({"messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+        api_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        poll_timeout = int(os.getenv("POLLINATIONS_TIMEOUT", "35"))
         req = urllib.request.Request(post_url, data=payload, headers=headers)
-        with urllib.request.urlopen(req, timeout=12) as resp:
+        with urllib.request.urlopen(req, timeout=poll_timeout) as resp:
             if resp.status == 200:
                 raw_resp = resp.read().decode("utf-8")
                 from services.vision_service import OllamaVisionProvider
@@ -384,8 +397,11 @@ Return ONLY valid JSON mapping key -> string value (or null).
         short_prompt = prompt[:2000]
         encoded_p = urllib.parse.quote(short_prompt)
         get_url = f"https://text.pollinations.ai/{encoded_p}?json=true"
-        req = urllib.request.Request(get_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        get_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        if api_key:
+            get_headers["Authorization"] = f"Bearer {api_key}"
+        req = urllib.request.Request(get_url, headers=get_headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
             if resp.status == 200:
                 raw_resp = resp.read().decode("utf-8")
                 from services.vision_service import OllamaVisionProvider
@@ -422,7 +438,8 @@ def extract_from_text(
 ) -> ExtractionResult:
     """
     Main entry point: extracts all mandatory and conditional statutory
-    declaration fields from OCR-extracted text using regex patterns and LLM parsing.
+    declaration fields using Multilingual BERT NER, multilingual statutory patterns,
+    English deterministic regexes, and LLM augmentation.
     """
     cleaned_text = clean_ocr_text(raw_text)
     result = ExtractionResult(
@@ -430,33 +447,34 @@ def extract_from_text(
         raw_text=raw_text,
         cleaned_text=cleaned_text,
         preprocessing_passes=preprocessing_passes or ["raw_pass"],
+        extraction_engine="SatyaDrishti-Multilingual-BERT-NER-2.0",
     )
 
     total_confidence = 0.0
     found_count = 0
 
-    # Step 1: LLM Text Parse via Pollinations AI (Handles spell correction & statutory context)
-    llm_extracted = {}
-    if raw_text and len(raw_text.strip()) > 10:
-        llm_extracted = _llm_parse_ocr_text(raw_text)
+    # Step 1: Multilingual BERT NER & Indic Statutory Extraction Engine
+    try:
+        ml_res = multilingual_ner_service.extract_statutory_fields(raw_text)
+        for field_key, field_data in ml_res.fields.items():
+            if field_data.get("value"):
+                is_mandatory = field_key in MANDATORY_FIELDS
+                conf = float(field_data.get("confidence", 0.90))
+                result.fields[field_key] = ExtractedField(
+                    key=field_key,
+                    value=field_data["value"],
+                    raw_match=field_data.get("raw_match", field_data["value"]),
+                    confidence=conf,
+                    regex_pattern=f"multilingual_ner_{field_data.get('source', 'bert')}",
+                    is_mandatory=is_mandatory,
+                    validation_status="compliant" if conf >= 0.75 else "warning",
+                )
+                total_confidence += conf
+                found_count += 1
+    except Exception as e:
+        print(f"[WARN] [Multilingual-NER] Error in multilingual extraction: {e}")
 
-    for field_key in list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS):
-        llm_val = llm_extracted.get(field_key)
-        if llm_val:
-            is_mandatory = field_key in MANDATORY_FIELDS
-            result.fields[field_key] = ExtractedField(
-                key=field_key,
-                value=llm_val,
-                raw_match=llm_val,
-                confidence=0.92,
-                regex_pattern="llm_ocr_parse",
-                is_mandatory=is_mandatory,
-                validation_status="compliant",
-            )
-            total_confidence += 0.92
-            found_count += 1
-
-    # Step 2: Deterministic regex fallback for any missing fields
+    # Step 2: Deterministic English regex patterns for any missing fields
     for field_key, patterns in FIELD_EXTRACTION_PATTERNS.items():
         if not result.fields.get(field_key) or not result.fields[field_key].value:
             extracted = extract_field(cleaned_text, field_key, patterns)
@@ -464,17 +482,39 @@ def extract_from_text(
                 result.fields[field_key] = extracted
                 total_confidence += extracted.confidence
                 found_count += 1
-            else:
-                is_mandatory = field_key in MANDATORY_FIELDS
+
+    # Step 3: If mandatory fields are still missing and raw_text is substantial, attempt LLM parse
+    missing_mandatory = [k for k in MANDATORY_FIELDS if not result.fields.get(k) or not result.fields[k].value]
+    if missing_mandatory and raw_text and len(raw_text.strip()) > 15:
+        llm_extracted = _llm_parse_ocr_text(raw_text)
+        for field_key in missing_mandatory:
+            llm_val = llm_extracted.get(field_key)
+            if llm_val:
                 result.fields[field_key] = ExtractedField(
                     key=field_key,
-                    value="",
-                    raw_match="",
-                    confidence=0.0,
-                    regex_pattern="",
-                    is_mandatory=is_mandatory,
-                    validation_status="non-compliant" if is_mandatory else "missing",
+                    value=llm_val,
+                    raw_match=llm_val,
+                    confidence=0.92,
+                    regex_pattern="llm_ocr_parse",
+                    is_mandatory=True,
+                    validation_status="compliant",
                 )
+                total_confidence += 0.92
+                found_count += 1
+
+    # Finalize any remaining missing fields
+    for field_key in list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS):
+        if not result.fields.get(field_key):
+            is_mandatory = field_key in MANDATORY_FIELDS
+            result.fields[field_key] = ExtractedField(
+                key=field_key,
+                value="",
+                raw_match="",
+                confidence=0.0,
+                regex_pattern="",
+                is_mandatory=is_mandatory,
+                validation_status="non-compliant" if is_mandatory else "missing",
+            )
 
     result.overall_confidence = (total_confidence / found_count) if found_count > 0 else 0.0
     return result
