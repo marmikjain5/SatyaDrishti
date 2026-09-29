@@ -33,6 +33,7 @@ try:
         StatutoryAuditReport,
         ViolationSeverity,
     )
+    from services.opencv_service import preprocess_packaging_for_ocr
     from database import SessionLocal
     from models.db_models import RegulatoryRuleModel
 except ImportError:
@@ -44,6 +45,7 @@ except ImportError:
         ExtractionResult,
     )
     from backend.services.validation_service import validate_product_compliance, StatutoryAuditReport, ViolationSeverity
+    from backend.services.opencv_service import preprocess_packaging_for_ocr
     from backend.database import SessionLocal
     from backend.models.db_models import RegulatoryRuleModel
 
@@ -310,12 +312,34 @@ class ExtractionAPIHandler:
                 pass
 
 
+    def handle_preprocess_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        POST /api/v1/preprocess-image
+
+        Executes full OpenCV optical packaging enhancement prior to OCR:
+        - Package/Label detection & background removal cropping
+        - 4-point homographic perspective transformation (angled to flat rectangle)
+        - Optical rotational deskewing
+        - CLAHE contrast normalization (glare and shadow removal)
+        - Small-text super-resolution upscaling (2x bicubic)
+        - Bilateral denoising and unsharp stroke sharpening
+        """
+        image_data = payload.get("image_base64") or payload.get("image_path")
+        if not image_data:
+            return {
+                "error": "image_base64 or image_path is required.",
+                "status": 400,
+            }
+
+        result = preprocess_packaging_for_ocr(image_data)
+        return result
+
     def handle_extract_image(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         POST /api/v1/extract-image
 
         Extracts statutory fields from a base64-encoded image or image file path using
-        the Hybrid Vision pipeline (Local Ollama Vision -> Cloud Gemini -> OCR fallback).
+        the OpenCV Optical Enhancement -> Hybrid Vision / OCR -> LLM mapping pipeline.
         """
         image_data = payload.get("image_base64") or payload.get("image_path")
         if not image_data:
@@ -341,15 +365,28 @@ class ExtractionAPIHandler:
         else:
             image_input = payload["image_path"]
 
+        # Run OpenCV optical enhancement before downstream extraction
+        cv_telemetry = []
+        try:
+            cv_res = preprocess_packaging_for_ocr(image_input)
+            if cv_res.get("status") == "success":
+                cv_telemetry = cv_res.get("operations_applied", [])
+                if cv_res.get("processed_image_base64"):
+                    image_input = cv_res["processed_image_base64"]
+        except Exception as cv_err:
+            print(f"[OpenCV Preprocessor] Optical step skipped: {cv_err}")
+
         result = extract_from_image_hybrid(
             image_input=image_input,
             image_id=image_id,
             fallback_raw_text=fallback_raw_text,
         )
 
+        serialized = _serialize_extraction_result(result)
+        serialized["opencv_enhancements"] = cv_telemetry
         return {
             "status": "success",
-            "extraction": _serialize_extraction_result(result),
+            "extraction": serialized,
         }
 
     def handle_extract_multi_angle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -430,6 +467,12 @@ class ExtractionAPIHandler:
 # ─── FastAPI Router Endpoints ───────────────────────────────────────────────
 
 _handler = ExtractionAPIHandler()
+
+@router.post("/preprocess-image")
+@router.post("/opencv-preprocess")
+def preprocess_image_endpoint(payload: Dict[str, Any] = Body(...)):
+    """Run OpenCV packaging optical preprocessing (crop, perspective warp, deskew, upscale, CLAHE)."""
+    return _handler.handle_preprocess_image(payload)
 
 @router.post("/extract")
 def extract_endpoint(payload: Dict[str, Any] = Body(...)):

@@ -54,14 +54,50 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
       dataUrl = await this.fileToDataUrl(imageSource);
     }
 
+    // ── Step 0: OpenCV Optical Packaging Preprocessing (Cropping, Perspective, Deskew, CLAHE, Super-Resolution)
+    let opticalDataUrl = dataUrl;
+    try {
+      onProgress?.(2, 'Running OpenCV optical packaging enhancement (Perspective, Crop & CLAHE)...');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const endpoints = [
+        `${apiUrl}/api/v1/preprocess-image`,
+        '/api/v1/preprocess-image',
+      ];
+      for (const endpoint of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const cvRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_base64: dataUrl }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (cvRes.ok) {
+            const cvData = await cvRes.json();
+            if (cvData.status === 'success' && cvData.processed_image_base64) {
+              opticalDataUrl = cvData.processed_image_base64;
+              console.log('✅ [OpenCV Preprocessor] Optical operations applied:', cvData.operations_applied);
+              break;
+            }
+          }
+        } catch {
+          // try next endpoint or fallback
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ [OpenCV Preprocessor] Backend optical endpoint unavailable, continuing with original image:', e);
+    }
+
     // ── Step 1: Preprocess Image Variants & Dimensions ───────────
-    onProgress?.(2, 'Preprocessing image variants & optical enhancements...');
-    const preprocessed = await preprocessImage(dataUrl);
+    onProgress?.(5, 'Preprocessing image variants & optical enhancements...');
+    const preprocessed = await preprocessImage(opticalDataUrl);
     const variants = preprocessed.variants;
     const imgDimensions = preprocessed.dimensions;
 
     // Check if Chocolate Muesli package for realistic demo scanning
-    if (await checkIsMuesli(imageSource, dataUrl)) {
+    if (await checkIsMuesli(imageSource, opticalDataUrl)) {
       return executeRealisticMuesliScan(imgDimensions, onProgress);
     }
 

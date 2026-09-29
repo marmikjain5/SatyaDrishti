@@ -20,10 +20,21 @@ Architecture note:
   When this backend is available, the frontend delegates to /api/v1/extract.
 """
 
+import os
 import re
 import sys
+import json
+import urllib.request
+import urllib.error
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Ensure .env is loaded
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv()
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -298,46 +309,131 @@ def _estimate_field_confidence(field_key: str, value: str, pattern: str) -> floa
     return base
 
 
+# ─── Heuristic Regex Candidate Collector ──────────────────────────────────
+
+def collect_regex_candidates(text: str) -> Dict[str, List[Dict[str, str]]]:
+    """
+    Scans the OCR text across all statutory regex patterns to gather candidate
+    matches and context snippets without prematurely locking in field assignments.
+    These candidate clues are fed to the LLM to guide disambiguation.
+    """
+    candidates: Dict[str, List[Dict[str, str]]] = {}
+    for field_key, patterns in FIELD_EXTRACTION_PATTERNS.items():
+        found = []
+        seen_values = set()
+        for pattern in patterns:
+            try:
+                for match in re.finditer(pattern, text, re.IGNORECASE | re.MULTILINE):
+                    groups = match.groups()
+                    val = ' '.join(g.strip() for g in groups if g)
+                    val = re.sub(r'\s+', ' ', val).strip()
+                    if val and val.lower() not in seen_values and len(val) >= 1:
+                        seen_values.add(val.lower())
+                        raw_snippet = match.group(0).strip()
+                        if len(raw_snippet) > 120:
+                            raw_snippet = raw_snippet[:120] + "..."
+                        found.append({
+                            "candidate": val,
+                            "raw_context": raw_snippet
+                        })
+            except re.error:
+                continue
+        if found:
+            candidates[field_key] = found[:4]  # Keep top matches per field
+    return candidates
+
+
+# ─── JSON Response Sanitizer & Parser ─────────────────────────────────────
+
+def _clean_and_parse_json(raw_str: str) -> Optional[Dict[str, Any]]:
+    """Robustly extracts and parses JSON dictionary from LLM markdown/raw text."""
+    if not raw_str:
+        return None
+    raw_str = raw_str.strip()
+
+    # Unwrap markdown fences
+    if raw_str.startswith("```json"):
+        raw_str = raw_str[7:]
+    elif raw_str.startswith("```"):
+        raw_str = raw_str[3:]
+    if raw_str.endswith("```"):
+        raw_str = raw_str[:-3]
+    raw_str = raw_str.strip()
+
+    # Try direct parse
+    try:
+        parsed = json.loads(raw_str)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    # Extract outermost { and }
+    s = raw_str.find("{")
+    e = raw_str.rfind("}")
+    if s != -1 and e != -1 and e > s:
+        try:
+            parsed = json.loads(raw_str[s:e+1].replace('\\n', '\n').replace('\\"', '"'))
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+
+    return None
+
+
 # ─── Main Extraction Pipeline Entry Point ─────────────────────────────────
 
-def _llm_parse_ocr_text(raw_text: str) -> Dict[str, str]:
+def _llm_parse_ocr_text(
+    raw_text: str,
+    regex_candidates: Optional[Dict[str, Any]] = None,
+) -> Dict[str, str]:
     """
-    Calls LLM (Pollinations / Gemini / Ollama) to extract statutory fields from raw OCR text.
-    Handles garbled or noisy OCR output by using natural language understanding.
+    Calls Pollinations AI Text LLM API to map, disambiguate, clean, and validate
+    statutory declarations from raw OCR text using regex candidate clues.
     """
     if not raw_text or len(raw_text.strip()) < 5:
         return {}
 
-    prompt = f"""You are a senior packaging compliance parser for Legal Metrology & FSSAI India.
-Clean, auto-correct OCR typos into real dictionary words, and extract all statutory declarations from raw OCR text into precise JSON.
+    candidates_block = ""
+    if regex_candidates and len(regex_candidates) > 0:
+        import json as _json
+        candidates_block = f"""
+HEURISTIC REGEX CANDIDATES & CLUES DETECTED:
+{_json.dumps(regex_candidates, indent=2)}
+Use these candidates as hints. Verify them against the raw text, resolve ambiguities, or correct them if regex picked the wrong snippet.
+"""
 
-RULES FOR PARSING & SPELL CORRECTION:
+    prompt = f"""You are a senior packaging compliance parser and mapper for Legal Metrology & FSSAI India.
+Your task is to accurately MAP, CLEAN, and DISAMBIGUATE statutory packaging declarations from raw OCR text into precise JSON.
+{candidates_block}
+RULES FOR PARSING, MAPPING & DISAMBIGUATION:
 1. productName: Auto-correct obvious OCR typos into proper brand/commodity words (e.g., 'B Naura Mied Fui' -> 'B Natural Mixed Fruit', 'NIVEA Soft Skin Cream').
-2. mrp: Exact numeric price in Indian Rupees (e.g., '550.00' or '152.00'). Do NOT include 'Rs.' or 'incl. of taxes'. When MRP and USP are printed side-by-side (e.g. '₹ 550 ₹ 1.83/ml'), the total price '550' is MRP and '1.83/ml' is unitSalePrice.
-3. unitSalePrice: Clean unit sale price (e.g., '₹ 1.83/ml', 'Rs. 0.50/g').
-4. netQuantity: Clean metric weight/volume (e.g., '300 ml (293.7g)', '500 g', '200 ml').
-5. manufacturer: Legal company name only (e.g., 'Nivea India Pvt. Ltd.', 'ITC LIMITED').
-6. address: Full premises address with PIN code (e.g., 'SM-9/1, Sanand II Industrial Estate, Vill Bol. Tal. Sanand Dist. Ahmedabad (Gujrat) Pin: 382110').
-7. manufacturingDate: Date format MM/YYYY or DD/MM/YYYY (e.g., '11/2023', '19/08/2026'). Note: Frequently printed with prefix 'M' or 'MFD. (M)' such as 'M 11/23 22:15' -> '11/2023'.
-8. expiryDate: Date format MM/YYYY or DD/MM/YYYY (e.g., '10/2026', '18/05/2027'). Note: Frequently printed with prefix 'U' (for Use Before), 'UB', 'EXP', or 'BB' such as 'U 10/26' -> '10/2026'.
-9. batchNumber: Clean batch/lot code (e.g., 'B34431350 11', 'H9XM190826'). Note: Frequently printed with prefix 'B' or 'BN' such as 'B34431350 11'.
-10. customerCare: Phone/toll-free number and email (e.g., '(022) 62487999, care@beiersdorf.com').
-11. countryOfOrigin: Country name (e.g., 'India', 'Germany').
-12. barcode: EAN barcode number (e.g., '4005808679829').
+2. mrp vs unitSalePrice:
+   - mrp: Exact numeric total package price in Indian Rupees (e.g. '550.00' or '152.00'). Do NOT include 'Rs.' or taxes.
+   - unitSalePrice: Unit price per g or ml (e.g. '₹ 1.83/ml', 'Rs. 0.50/g').
+   - When MRP and USP are printed side-by-side (e.g. '₹ 550 ₹ 1.83/ml'), the total price '550' is MRP and '1.83/ml' is unitSalePrice.
+3. manufacturingDate vs expiryDate:
+   - In compound stamps (e.g., "MRP ₹ ..., USP, Batch No., MFD. (M) & Use Before (U): ↓"):
+     * 'M' or 'MFD' means Manufacturing Date (e.g. 'M 11/23 22:15' -> '11/2023').
+     * 'U' (Use Before), 'UB', 'EXP', or 'BB' means Expiry Date (e.g. 'U 10/26' -> '10/2026').
+   - Always map dates in standard format MM/YYYY or DD/MM/YYYY.
+4. netQuantity: Metric weight/volume/count (e.g. '300 ml (293.7g)', '500 g', '200 ml').
+5. manufacturer: Legal company entity name only (e.g. 'Nivea India Pvt. Ltd.', 'ITC LIMITED').
+6. address: Full manufacturing/packing premises address with 6-digit Indian PIN code.
+7. batchNumber: Clean batch or lot code (e.g. 'B34431350 11', 'H9XM190826'). Frequently prefixed with 'B' or 'BN'.
+8. customerCare: Consumer grievance phone/toll-free number and email (e.g. '1800-22-7080, care@domain.com').
+9. countryOfOrigin: Country of origin/manufacture (e.g. 'India', 'Germany').
+10. barcode: EAN-13, EAN-8, or GS1 barcode number (e.g. '4005808679829').
 
-IMPORTANT FOR INDIAN FMCG PACKAGING ABBREVIATIONS:
-When packaging has compound stamp headers like "MRP ₹ (Incl. of all taxes), USP, Batch No., MFD. (M) & Use Before (U): ↓":
-- 'M' means Manufacturing Date (e.g. 'M 11/23' -> 11/2023)
-- 'U' means Use Before / Expiry Date (e.g. 'U 10/26' -> 10/2026)
-- 'B' means Batch Number (e.g. 'B34431350 11')
+RAW OCR TEXT FROM PACKAGING:
+{raw_text[:3500]}
 
-RAW OCR TEXT:
-{raw_text[:3000]}
-
-Return ONLY valid JSON mapping key -> string value (or null).
+Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSalePrice, netQuantity, manufacturer, address, manufacturingDate, expiryDate, batchNumber, customerCare, countryOfOrigin, barcode) to string values (or null if not found).
 """
 
     import urllib.request
+    import urllib.error
     import json
     import os
 
@@ -346,10 +442,9 @@ Return ONLY valid JSON mapping key -> string value (or null).
     if not pollinations_enabled:
         return {}
 
+    print(f"[TRY] [LLM OCR Text Extractor] Calling Pollinations AI LLM API to map & arbitrate fields with regex clues...")
 
-    print(f"[TRY] [LLM OCR Text Extractor] Calling Pollinations AI LLM API to parse OCR text into JSON...")
-
-    # 1. Primary Path: POST Request to Pollinations AI with Browser User-Agent (returns full JSON)
+    # 1. Primary Path: POST Request to Pollinations AI
     try:
         model_name = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
         post_url = f"https://text.pollinations.ai/{model_name}"
@@ -363,33 +458,52 @@ Return ONLY valid JSON mapping key -> string value (or null).
             headers["Authorization"] = f"Bearer {api_key}"
 
         poll_timeout = int(os.getenv("POLLINATIONS_TIMEOUT", "35"))
-        req = urllib.request.Request(post_url, data=payload, headers=headers)
-        with urllib.request.urlopen(req, timeout=poll_timeout) as resp:
-            if resp.status == 200:
-                raw_resp = resp.read().decode("utf-8")
-                from services.vision_service import OllamaVisionProvider
-                parser = OllamaVisionProvider()
-                
-                # Unwrap OpenAI / Pollinations JSON response
-                content_to_parse = raw_resp
-                try:
-                    resp_dict = json.loads(raw_resp)
-                    if isinstance(resp_dict, dict) and "choices" in resp_dict:
-                        choices = resp_dict["choices"]
-                        if isinstance(choices, list) and len(choices) > 0:
-                            content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
-                        elif isinstance(choices, str):
-                            content_to_parse = choices
-                except Exception:
-                    pass
 
-                parsed = parser._clean_and_parse_json(content_to_parse)
-                if parsed and isinstance(parsed, dict) and len(parsed) > 0:
-                    clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
-                    print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI parsed {len(clean_result)} statutory fields into JSON via POST.")
-                    return clean_result
+        def _send_post(use_auth: bool = True) -> Optional[str]:
+            h = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            if use_auth and api_key:
+                h["Authorization"] = f"Bearer {api_key}"
+            r = urllib.request.Request(post_url, data=payload, headers=h)
+            with urllib.request.urlopen(r, timeout=poll_timeout) as resp:
+                if resp.status == 200:
+                    return resp.read().decode("utf-8")
+            return None
+
+        raw_resp = None
+        try:
+            raw_resp = _send_post(use_auth=bool(api_key))
+        except urllib.error.HTTPError as he:
+            if he.code in (401, 402, 403) and api_key:
+                print(f"[INFO] [LLM OCR Text Extractor] API key returned HTTP {he.code}. Retrying on Pollinations free public tier...")
+                try:
+                    raw_resp = _send_post(use_auth=False)
+                except Exception as e_pub:
+                    print(f"[WARN] [LLM OCR Text Extractor] Public POST failed: {e_pub}")
+            else:
+                print(f"[WARN] [LLM OCR Text Extractor] POST mode failed ({he}).")
+        except Exception as e:
+            print(f"[WARN] [LLM OCR Text Extractor] POST mode failed ({e}). Retrying via GET endpoint...")
+
+        if raw_resp:
+            content_to_parse = raw_resp
+            try:
+                resp_dict = json.loads(raw_resp)
+                if isinstance(resp_dict, dict) and "choices" in resp_dict:
+                    choices = resp_dict["choices"]
+                    if isinstance(choices, list) and len(choices) > 0:
+                        content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
+                    elif isinstance(choices, str):
+                        content_to_parse = choices
+            except Exception:
+                pass
+
+            parsed = _clean_and_parse_json(content_to_parse)
+            if parsed and isinstance(parsed, dict) and len(parsed) > 0:
+                clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
+                print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI mapped {len(clean_result)} statutory fields via POST.")
+                return clean_result
     except Exception as e:
-        print(f"[WARN] [LLM OCR Text Extractor] POST mode failed ({e}). Retrying via GET endpoint...")
+        print(f"[WARN] [LLM OCR Text Extractor] POST mode setup error ({e}). Retrying via GET endpoint...")
 
     # 2. Secondary Path: Fast GET Request to Pollinations AI
     import urllib.parse
@@ -398,32 +512,47 @@ Return ONLY valid JSON mapping key -> string value (or null).
         encoded_p = urllib.parse.quote(short_prompt)
         get_url = f"https://text.pollinations.ai/{encoded_p}?json=true"
         get_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        if api_key:
-            get_headers["Authorization"] = f"Bearer {api_key}"
-        req = urllib.request.Request(get_url, headers=get_headers)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            if resp.status == 200:
-                raw_resp = resp.read().decode("utf-8")
-                from services.vision_service import OllamaVisionProvider
-                parser = OllamaVisionProvider()
-                
-                content_to_parse = raw_resp
+        
+        def _send_get(use_auth: bool = True) -> Optional[str]:
+            h = dict(get_headers)
+            if use_auth and api_key:
+                h["Authorization"] = f"Bearer {api_key}"
+            req = urllib.request.Request(get_url, headers=h)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                if resp.status == 200:
+                    return resp.read().decode("utf-8")
+            return None
+
+        raw_resp = None
+        try:
+            raw_resp = _send_get(use_auth=bool(api_key))
+        except urllib.error.HTTPError as he:
+            if he.code in (401, 402, 403) and api_key:
                 try:
-                    resp_dict = json.loads(raw_resp)
-                    if isinstance(resp_dict, dict) and "choices" in resp_dict:
-                        choices = resp_dict["choices"]
-                        if isinstance(choices, list) and len(choices) > 0:
-                            content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
-                        elif isinstance(choices, str):
-                            content_to_parse = choices
+                    raw_resp = _send_get(use_auth=False)
                 except Exception:
                     pass
+        except Exception:
+            pass
 
-                parsed = parser._clean_and_parse_json(content_to_parse)
-                if parsed and isinstance(parsed, dict) and len(parsed) > 0:
-                    clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
-                    print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI parsed {len(clean_result)} statutory fields into JSON via GET.")
-                    return clean_result
+        if raw_resp:
+            content_to_parse = raw_resp
+            try:
+                resp_dict = json.loads(raw_resp)
+                if isinstance(resp_dict, dict) and "choices" in resp_dict:
+                    choices = resp_dict["choices"]
+                    if isinstance(choices, list) and len(choices) > 0:
+                        content_to_parse = choices[0].get("message", {}).get("content", raw_resp)
+                    elif isinstance(choices, str):
+                        content_to_parse = choices
+            except Exception:
+                pass
+
+            parsed = _clean_and_parse_json(content_to_parse)
+            if parsed and isinstance(parsed, dict) and len(parsed) > 0:
+                clean_result = {k: str(v).strip() for k, v in parsed.items() if v and str(v).lower() not in ("null", "none", "(not detected)")}
+                print(f"[SUCCESS] [LLM OCR Text Extractor] Pollinations AI mapped {len(clean_result)} statutory fields via GET.")
+                return clean_result
     except Exception as e:
         print(f"[ERROR] [LLM OCR Text Extractor] GET endpoint failed: {e}")
 
@@ -437,9 +566,11 @@ def extract_from_text(
     preprocessing_passes: Optional[List[str]] = None,
 ) -> ExtractionResult:
     """
-    Main entry point: extracts all mandatory and conditional statutory
-    declaration fields using Multilingual BERT NER, multilingual statutory patterns,
-    English deterministic regexes, and LLM augmentation.
+    Main extraction pipeline:
+      1. Optical OCR Text Cleaning & Normalization
+      2. Deterministic Regex & Multilingual BERT NER candidate clue gathering
+      3. Pollinations AI LLM Semantic Disambiguation & Field Mapping
+      4. Graceful Fallback: deterministic regex candidates used if LLM misses any field
     """
     cleaned_text = clean_ocr_text(raw_text)
     result = ExtractionResult(
@@ -447,11 +578,10 @@ def extract_from_text(
         raw_text=raw_text,
         cleaned_text=cleaned_text,
         preprocessing_passes=preprocessing_passes or ["raw_pass"],
-        extraction_engine="SatyaDrishti-Multilingual-BERT-NER-2.0",
+        extraction_engine="SatyaDrishti-Regex-Candidate-LLM-Arbiter-2.0",
     )
 
-    total_confidence = 0.0
-    found_count = 0
+    baseline_fields: Dict[str, ExtractedField] = {}
 
     # Step 1: Multilingual BERT NER & Indic Statutory Extraction Engine
     try:
@@ -460,7 +590,7 @@ def extract_from_text(
             if field_data.get("value"):
                 is_mandatory = field_key in MANDATORY_FIELDS
                 conf = float(field_data.get("confidence", 0.90))
-                result.fields[field_key] = ExtractedField(
+                baseline_fields[field_key] = ExtractedField(
                     key=field_key,
                     value=field_data["value"],
                     raw_match=field_data.get("raw_match", field_data["value"]),
@@ -469,43 +599,66 @@ def extract_from_text(
                     is_mandatory=is_mandatory,
                     validation_status="compliant" if conf >= 0.75 else "warning",
                 )
-                total_confidence += conf
-                found_count += 1
     except Exception as e:
         print(f"[WARN] [Multilingual-NER] Error in multilingual extraction: {e}")
 
-    # Step 2: Deterministic English regex patterns for any missing fields
+    # Step 2: Deterministic English regex patterns for candidate baseline
     for field_key, patterns in FIELD_EXTRACTION_PATTERNS.items():
-        if not result.fields.get(field_key) or not result.fields[field_key].value:
+        if field_key not in baseline_fields or not baseline_fields[field_key].value:
             extracted = extract_field(cleaned_text, field_key, patterns)
             if extracted:
-                result.fields[field_key] = extracted
-                total_confidence += extracted.confidence
-                found_count += 1
+                baseline_fields[field_key] = extracted
 
-    # Step 3: If mandatory fields are still missing and raw_text is substantial, attempt LLM parse
-    missing_mandatory = [k for k in MANDATORY_FIELDS if not result.fields.get(k) or not result.fields[k].value]
-    if missing_mandatory and raw_text and len(raw_text.strip()) > 15:
-        llm_extracted = _llm_parse_ocr_text(raw_text)
-        for field_key in missing_mandatory:
-            llm_val = llm_extracted.get(field_key)
-            if llm_val:
-                result.fields[field_key] = ExtractedField(
-                    key=field_key,
-                    value=llm_val,
-                    raw_match=llm_val,
-                    confidence=0.92,
-                    regex_pattern="llm_ocr_parse",
-                    is_mandatory=True,
-                    validation_status="compliant",
-                )
-                total_confidence += 0.92
-                found_count += 1
+    # Step 3: Collect candidate proposals to feed as clues to the LLM
+    candidate_clues = collect_regex_candidates(cleaned_text)
+    for k, v in baseline_fields.items():
+        if k not in candidate_clues and v.value:
+            candidate_clues[k] = [{"candidate": v.value, "raw_context": v.raw_match}]
 
-    # Finalize any remaining missing fields
-    for field_key in list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS):
-        if not result.fields.get(field_key):
-            is_mandatory = field_key in MANDATORY_FIELDS
+    # Step 4: Two-Stage Semantic LLM Mapping & Disambiguation Pass (Pollinations AI)
+    llm_extracted: Dict[str, str] = {}
+    if raw_text and len(raw_text.strip()) > 10:
+        llm_extracted = _llm_parse_ocr_text(raw_text, regex_candidates=candidate_clues)
+
+    total_confidence = 0.0
+    found_count = 0
+
+    all_keys = list(MANDATORY_FIELDS) + list(CONDITIONAL_FIELDS)
+    for field_key in all_keys:
+        is_mandatory = field_key in MANDATORY_FIELDS
+        llm_val = llm_extracted.get(field_key) if llm_extracted else None
+
+        # Check if address was returned as 'address' or 'manufacturerAddress'
+        if field_key == "manufacturerAddress" and not llm_val and llm_extracted.get("address"):
+            llm_val = llm_extracted.get("address")
+
+        if llm_val and str(llm_val).strip() and str(llm_val).lower() not in ("null", "none", "(not detected)"):
+            clean_val = str(llm_val).strip()
+            raw_evidence = (
+                baseline_fields[field_key].raw_match
+                if (field_key in baseline_fields and baseline_fields[field_key].raw_match)
+                else clean_val
+            )
+            conf = 0.95
+            result.fields[field_key] = ExtractedField(
+                key=field_key,
+                value=clean_val,
+                raw_match=raw_evidence,
+                confidence=conf,
+                regex_pattern="llm_mapped_with_regex_clues",
+                is_mandatory=is_mandatory,
+                validation_status="compliant",
+            )
+            total_confidence += conf
+            found_count += 1
+        elif field_key in baseline_fields and baseline_fields[field_key].value:
+            # Clean fallback to regex / BERT baseline candidate
+            base_f = baseline_fields[field_key]
+            result.fields[field_key] = base_f
+            total_confidence += base_f.confidence
+            found_count += 1
+        else:
+            # Field completely missing from both LLM and regex
             result.fields[field_key] = ExtractedField(
                 key=field_key,
                 value="",
