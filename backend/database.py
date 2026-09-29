@@ -21,6 +21,10 @@ if DATABASE_URL:
     DATABASE_URL = DATABASE_URL.strip().strip('"').strip("'")
     # Remove Prisma-specific ?pgbouncer=true param — not supported by psycopg2
     DATABASE_URL = DATABASE_URL.split("?")[0]
+    # Use the driver provided by requirements.txt explicitly. SQLAlchemy 2.1
+    # otherwise prefers psycopg, which is a separate package from psycopg2.
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 # Detect if PostgreSQL or SQLite
 is_sqlite = DATABASE_URL.startswith("sqlite")
