@@ -83,6 +83,19 @@ function grayscale(imageData: ImageData): ImageData {
 }
 
 /**
+ * Invert luminance (converts white text on dark packaging into dark text on light).
+ */
+function invertColors(imageData: ImageData): ImageData {
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 255 - data[i];
+    data[i + 1] = 255 - data[i + 1];
+    data[i + 2] = 255 - data[i + 2];
+  }
+  return imageData;
+}
+
+/**
  * Enhance contrast using histogram stretching.
  * Finds min/max pixel values and stretches them to 0-255 range,
  * then applies a contrast multiplier for extra punch.
@@ -322,6 +335,84 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
       dataUrl: canvas.toDataURL('image/png'),
       description: '2× upscaled + grayscale + enhanced',
       scale: 2,
+    });
+  }
+
+  // 7. Inverted High Contrast (for white text on dark blue/black containers)
+  {
+    const { canvas, ctx } = imageToCanvas(img, 1);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = invertColors(pixels);
+    pixels = enhanceContrast(pixels, 1.8);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'inverted_contrast',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Inverted (white-on-dark containers) + high contrast',
+      scale: 1,
+    });
+  }
+
+  // 8. Dot-Matrix / White Stamp Pass (fine local threshold for faint printed stamps & barcodes)
+  {
+    const { canvas, ctx } = imageToCanvas(img, 1);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = sharpen(pixels, canvas.width);
+    pixels = adaptiveThreshold(pixels, canvas.width, 11, 4);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'dot_matrix_stamp',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Dot-matrix stamp & barcode threshold',
+      scale: 1,
+    });
+  }
+
+  // 9. Statutory Declaration Panel Zoom Pass (PCR-2011 Rule 6 declaration panel: lower 55%, 2x upscale)
+  {
+    const cropY = Math.floor(height * 0.45);
+    const cropH = height - cropY;
+    const canvas = document.createElement('canvas');
+    canvas.width = width * 2;
+    canvas.height = cropH * 2;
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, cropY, width, cropH, 0, 0, canvas.width, canvas.height);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = enhanceContrast(pixels, 1.5);
+    pixels = sharpen(pixels, canvas.width);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'declaration_panel_zoom',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Statutory declaration panel zoom (MRP, USP, Stamp)',
+      scale: 2,
+    });
+  }
+
+  // 10. Vertical Side Barcode Pass (Rotates 90° so side-printed vertical barcodes are read horizontally)
+  {
+    const canvas = document.createElement('canvas');
+    canvas.width = height;
+    canvas.height = width;
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((90 * Math.PI) / 180);
+    ctx.drawImage(img, -width / 2, -height / 2);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = enhanceContrast(pixels, 1.6);
+    pixels = sharpen(pixels, canvas.width);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'vertical_barcode_rotated_90',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: '90° rotated pass for vertical side barcodes',
+      scale: 1,
     });
   }
 

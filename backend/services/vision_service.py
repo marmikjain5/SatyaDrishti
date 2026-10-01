@@ -31,7 +31,7 @@ DEFAULT_OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5-vl")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
-POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")
+POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
 POLLINATIONS_VISION_MODEL = os.getenv("POLLINATIONS_VISION_MODEL", "openai")
 
 
@@ -267,7 +267,7 @@ class PollinationsVisionProvider:
         timeout_seconds: int = 60,
     ):
         self.api_key = api_key or os.getenv("POLLINATIONS_API_KEY", "")
-        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")).rstrip("/")
+        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")).rstrip("/")
         self.model_name = model_name or os.getenv("POLLINATIONS_VISION_MODEL", "openai")
         self.timeout = timeout_seconds
 

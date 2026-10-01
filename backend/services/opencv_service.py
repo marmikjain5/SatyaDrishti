@@ -180,16 +180,29 @@ def crop_package_contour(image: np.ndarray) -> Tuple[np.ndarray, bool]:
     largest_contour = max(contours, key=cv2.contourArea)
     area = cv2.contourArea(largest_contour)
 
-    # Only crop if package occupies between 18% and 90% of frame area
-    if (0.18 * total_area) <= area <= (0.90 * total_area):
+    # Only crop if package occupies between 15% and 92% of frame area
+    if (0.15 * total_area) <= area <= (0.92 * total_area):
         x, y, cw, ch = cv2.boundingRect(largest_contour)
-        # Add 4% margin padding so we don't clip text near edges
-        pad_x = int(cw * 0.04)
-        pad_y = int(ch * 0.04)
+        
+        # Guard against aggressive over-cropping: if bounding box would discard >35% of width,
+        # it is likely segmenting only the central label of a curved bottle and clipping stamps/barcodes
+        if cw < int(w * 0.60):
+            # Expand horizontally to preserve curved packaging edges
+            expand_w = int(w * 0.15)
+            x = max(0, x - expand_w)
+            cw = min(w - x, cw + (2 * expand_w))
+
+        # Generous margin padding (10% of dimension, min 40px) to prevent clipping text
+        pad_x = max(40, int(cw * 0.10))
+        pad_y = max(40, int(ch * 0.10))
         x0 = max(0, x - pad_x)
         y0 = max(0, y - pad_y)
         x1 = min(w, x + cw + pad_x)
         y1 = min(h, y + ch + pad_y)
+
+        # If crop still covers >85% of both dimensions, keeping original image avoids resampling artifacts
+        if (x1 - x0) >= int(w * 0.88) and (y1 - y0) >= int(h * 0.88):
+            return image, False
 
         cropped = image[y0:y1, x0:x1]
         if cropped.shape[0] >= 150 and cropped.shape[1] >= 150:

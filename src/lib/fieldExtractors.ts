@@ -285,6 +285,24 @@ function extractMRPCandidates(pass: MultiPassOCRData): CandidateResult[] {
         });
       }
     }
+
+    // Standalone price line if document contains MRP keywords (e.g. dot-matrix stamp line "550" or "* 550")
+    if (hasMRPKeyword) {
+      const pureNumMatch = lineText.match(/^(?:[*#F₹Rs.]\s*)?([1-9]\d{1,4}(?:\.\d{1,2})?)$/);
+      if (pureNumMatch) {
+        const val = parseFloat(pureNumMatch[1]);
+        if (!isNaN(val) && val >= 5 && val <= 50000 && val !== 2024 && val !== 2025 && val !== 2026 && val !== 2027) {
+          const formatted = val % 1 === 0 ? `₹${val}.00` : `₹${val.toFixed(2)}`;
+          results.push({
+            value: formatted,
+            rawValue: pureNumMatch[0],
+            rawMatch: lineText.trim(),
+            score: 0.91,
+            bbox: line.bbox,
+          });
+        }
+      }
+    }
   }
 
   return results;
@@ -325,9 +343,9 @@ function validateMRP(value: string, rawText: string): { status: ValidationStatus
 // Format: "₹ X.XX per g" or "₹ X.XX per ml"
 
 const USP_REGEXES: RegExp[] = [
-  /(?:usp|unit\s*sale\s*price|unit\s*price)\s*[:;.]?\s*[₹Rs.]*\s*([\d]+(?:[.,]\d{1,2})?)\s*(?:per|\/)\s*(g|ml|kg|l)\b/gi,
-  /[₹Rs.]*\s*([\d]+(?:[.,]\d{1,2})?)\s*(?:per|\/)\s*(g|ml|kg|l)\b/gi,
-  /\b([\d]+(?:[.,]\d{1,2})?)\s*\/\s*(g|ml|kg|l)\b/gi,
+  /(?:usp|unit\s*sale\s*price|unit\s*price)\s*[:;.]?\s*[₹Rs.*#F]*\s*([\d]+(?:[.,]\d{1,2})?)\s*(?:per|\/)\s*(g|ml|kg|l|m[l1I|])\b/gi,
+  /[₹Rs.*#F]*\s*([\d]+(?:[.,]\d{1,2})?)\s*(?:per|\/)\s*(g|ml|kg|l|m[l1I|])\b/gi,
+  /\b([\d]+(?:[.,]\d{1,2})?)\s*\/\s*(g|ml|kg|l|m[l1I|])\b/gi,
 ];
 
 function extractUSPCandidates(pass: MultiPassOCRData): CandidateResult[] {
@@ -342,7 +360,8 @@ function extractUSPCandidates(pass: MultiPassOCRData): CandidateResult[] {
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(lineText)) !== null) {
         const rawNum = match[1].replace(/,/g, '');
-        const unit = match[2]?.toLowerCase() || 'g';
+        let unit = match[2]?.toLowerCase() || 'g';
+        if (/^m/i.test(unit)) unit = 'ml';
         const val = parseFloat(rawNum);
         if (isNaN(val) || val <= 0) continue;
 
@@ -489,6 +508,16 @@ function formatParsedDate(raw: string): string | null {
     }
   }
 
+  // 2b. Dot-matrix date stamps where slash '/' was read as '1' or 'l' or space (e.g. "12126" -> 12/2026, "07124" -> 07/2024, "12 26" -> 12/2026)
+  m = cleaned.match(/^([0-1]?\d)[1l\s](\d{2})$/);
+  if (m) {
+    const monthNum = parseInt(m[1]);
+    const yr = m[2];
+    if (monthNum >= 1 && monthNum <= 12 && parseInt(yr) >= 20 && parseInt(yr) <= 40) {
+      return `${m[1].padStart(2, '0')}/20${yr}`;
+    }
+  }
+
   // 3. MMM YYYY or MMM YY (e.g. NOV 2023, NOV 23, OCT/26)
   m = cleaned.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*[,.\/\-]?\s*(\d{2,4})$/i);
   if (m) {
@@ -580,7 +609,8 @@ function extractExpiryDateCandidates(pass: MultiPassOCRData): CandidateResult[] 
     const lineText = line.text;
 
     // Direct Use Before / Expiry abbreviations like "U 10/26", "U: 10/26", "UB 10/26", "EXP 10/26", "BB 10/26", "Use Before (U) 10/26"
-    const expAbbrMatch = lineText.match(/(?:^|\b)(?:Use\s*Before\s*\(U\)|Use\s*By\s*\(U\)|EXP\.?\s*\(E\)|UB|BB|EXP|EXPIRY|U|E)\s*[:.\-]?\s*([0-1]?\d[\/\-.]\d{2,4})/i);
+    // Also supports dot-matrix stamps where slash was read as 1, l, or space (e.g. "U 12126", "U 12 26")
+    const expAbbrMatch = lineText.match(/(?:^|\b)(?:Use\s*Before\s*\(U\)|Use\s*By\s*\(U\)|EXP\.?\s*\(E\)|UB|BB|EXP|EXPIRY|U|E)\s*[:.\-]?\s*([0-1]?\d[\/\-.\s1l]\d{2,4})\b/i);
     if (expAbbrMatch) {
       const norm = formatParsedDate(expAbbrMatch[1]);
       if (norm) {
@@ -589,6 +619,21 @@ function extractExpiryDateCandidates(pass: MultiPassOCRData): CandidateResult[] 
           rawValue: expAbbrMatch[0],
           rawMatch: lineText.trim(),
           score: 0.97,
+          bbox: line.bbox,
+        });
+      }
+    }
+
+    // Standalone or dot-matrix date stamp lines (e.g. "12126", "12/26", "B 12126" where U was read as B)
+    const standaloneExpMatch = lineText.match(/^(?:[UBE]\s*[:.\-]?)?\s*([0-1]?\d[1l\/\-.]\d{2,4})$/i);
+    if (standaloneExpMatch) {
+      const norm = formatParsedDate(standaloneExpMatch[1]);
+      if (norm) {
+        results.push({
+          value: norm,
+          rawValue: standaloneExpMatch[0],
+          rawMatch: lineText.trim(),
+          score: 0.93,
           bbox: line.bbox,
         });
       }
@@ -603,7 +648,7 @@ function extractExpiryDateCandidates(pass: MultiPassOCRData): CandidateResult[] 
     /valid\s*(?:upto|up\s*to)/i,
     /\buse\s*before\s*\(u\)/i,
     /\buse\s*by\s*\(u\)/i,
-    /(?:^|\s)U\s*[:\-\/.]?\s*\d/i,
+    /(?:^|\s)U\s*[:\-\/.\s]?\s*\d/i,
   ]);
 
   return [...results, ...keywordResults];
@@ -613,8 +658,9 @@ function extractExpiryDateCandidates(pass: MultiPassOCRData): CandidateResult[] 
 
 const BATCH_REGEXES: RegExp[] = [
   /(?:batch\s*(?:no|number|#)?|lot\s*(?:no|number|#)?|b\.?\s*no\.?|l\.?\s*no\.?|b\/no)\s*[:;.\-]?\s*([A-Z0-9\/\-_]{3,20})/gi,
-  /\b(?:BN|LOT|BATCH|LOTNO|BNO)\s*[:.\-]?\s*([A-Z0-9\/\-_]{3,15})\b/gi,
-  /(?:^|\b)B\s*[:.\-]?\s*([A-Z0-9]{4,16}(?:\s+\d{1,4})?)\b/gi,
+  /\b(?:BN|LOT(?!ION|ON)|BATCH|LOTNO|BNO)\s*[:.\-]?\s*([A-Z0-9\/\-_]{3,15})\b/gi,
+  // Require at least one digit when starting with 'B' to eliminate English dictionary words like 'Building'
+  /(?:^|\b)B\s*[:.\-]?\s*([A-Z0-9]*\d[A-Z0-9]*(?:\s+\d{1,4})?)\b/gi,
 ];
 
 function extractBatchCandidates(pass: MultiPassOCRData): CandidateResult[] {
@@ -623,13 +669,24 @@ function extractBatchCandidates(pass: MultiPassOCRData): CandidateResult[] {
   for (const line of pass.lines) {
     const lineText = line.text;
 
-    // Check direct line starting with B + alphanumeric code e.g. "B34431350 11" or "B 34431350"
-    const directBMatch = lineText.match(/^(?:B|BN|LOT)\s*[:.\-]?\s*([A-Z0-9]{4,16}(?:\s+[A-Z0-9]{1,4})?)$/i);
+    // Guard against date collision or ingredient lists: ignore lines that start with U: or M:, or describe ingredients/lotions
+    if (
+      /^\s*[UM]\s*[:.\-]?\s*\d/i.test(lineText) ||
+      /^\s*(?:[0-1]?\d[\/\-.]?\d{2,4}|[0-1]?\d[1l]\d{2})\s*$/.test(lineText.trim()) ||
+      /ingredients|aqua|glycerin|lotion|paraffinum/i.test(lineText)
+    ) {
+      continue;
+    }
+
+    // Check direct line starting with B + alphanumeric code with digits e.g. "B42856550 13", "B34431350 11", or "B 34431350"
+    const directBMatch = lineText.match(/^(?:BN|LOT)\s*[:.\-]?\s*([A-Z0-9]{4,16}(?:\s+[A-Z0-9]{1,4})?)$|^(?:B)\s*[:.\-]?\s*([A-Z0-9]*\d[A-Z0-9]*(?:\s+[A-Z0-9]{1,4})?)$/i);
     if (directBMatch) {
-      const batchVal = directBMatch[1].trim();
+      const batchVal = (directBMatch[1] || directBMatch[2]).trim();
+      // Guard: strictly ignore if batchVal is a date code like 12126, 07124, 12/26, 07/24
       if (
         batchVal.length >= 3 &&
-        !/^(AND|THE|FOR|REG|DATE|BEFORE|AFTER|BODY|BOTTLE|BEIERSDORF|MADE|INDIA|GERMANY)$/i.test(batchVal)
+        !/^(?:[0-1]?\d[\/\-.]?\d{2,4}|[0-1]?\d[1l]\d{2})$/.test(batchVal) &&
+        !/^(AND|THE|FOR|REG|DATE|BEFORE|AFTER|BODY|BOTTLE|BEIERSDORF|MADE|INDIA|GERMANY|BUILDING)$/i.test(batchVal)
       ) {
         results.push({
           value: directBMatch[0].trim(),
@@ -646,6 +703,10 @@ function extractBatchCandidates(pass: MultiPassOCRData): CandidateResult[] {
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(lineText)) !== null) {
         const batchVal = match[1].trim();
+        // Guard: skip if the value is actually a month-year date string (e.g. 12/26, 12126, 07/24, 0724)
+        if (/^(?:[0-1]?\d[\/\-.]?\d{2,4}|[0-1]?\d[1l]\d{2})$/.test(batchVal)) {
+          continue;
+        }
         if (
           batchVal.length >= 3 &&
           !/^(AND|THE|FOR|REG|DATE|BEFORE|AFTER|BODY|BOTTLE|BEIERSDORF|MADE|INDIA|GERMANY)$/i.test(batchVal)
@@ -678,19 +739,44 @@ function extractBarcodeCandidates(pass: MultiPassOCRData): CandidateResult[] {
 
   for (const line of pass.lines) {
     const lineText = line.text;
+
+    // Reject phone numbers and contact lines from barcode candidate extraction
+    if (/(?:tel|phone|contact|query|feedback|\(0\d{2,4}\))/i.test(lineText)) {
+      continue;
+    }
+
     const hasBarcodeKeyword = /barcode|ean|upc|gtin|code/i.test(lineText);
 
+    // 1. Continuous digits matching
     for (const pattern of BARCODE_REGEXES) {
       pattern.lastIndex = 0;
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(lineText)) !== null) {
         const digits = match[1];
-        // Exclude common false positives like dates
-        if (digits.length === 13) {
-          const score = hasBarcodeKeyword ? 0.95 : 0.65;
+        if (digits.length === 13 || digits.length === 12 || (digits.length === 8 && digits.startsWith('89'))) {
+          const score = hasBarcodeKeyword ? 0.95 : (digits.startsWith('890') ? 0.95 : 0.65);
           results.push({
             value: digits,
             rawValue: digits,
+            rawMatch: lineText.trim(),
+            score,
+            bbox: line.bbox,
+          });
+        }
+      }
+    }
+
+    // 2. Space-separated digits common in GS1 / EAN barcodes (e.g. "8 904256 000109")
+    const digitRuns = lineText.match(/(?:^|[^\d])(8\s*9\s*0\s*[0-9\s]{6,16})(?:[^\d]|$)/g);
+    if (digitRuns) {
+      for (const run of digitRuns) {
+        const cleanDigits = run.replace(/\D/g, '');
+        if (cleanDigits.length === 13 || cleanDigits.length === 12 || cleanDigits.length === 8) {
+          const isGs1India = cleanDigits.startsWith('890');
+          const score = isGs1India ? 0.98 : (hasBarcodeKeyword ? 0.92 : 0.70);
+          results.push({
+            value: cleanDigits,
+            rawValue: run.trim(),
             rawMatch: lineText.trim(),
             score,
             bbox: line.bbox,
@@ -778,55 +864,60 @@ const ADDRESS_KEYWORDS: RegExp[] = [
   /(?:packed\s*&\s*marketed|marketed|packed|mfd|manufactured)\s*(?:by|at)?\s*[:;.\-]?/i,
   /(?:regd|registered)?\s*(?:office|address|unit|plant|premise|premises|works)\s*[:;.\-]\s*/i,
   /add(?:ress)?\.?\s*[:;.\-]\s*/i,
-  /(?:plot|survey|sector|phase|industrial\s*area)\s*(?:no|number)?\.?\s*[:;.\-]?\s*/i,
+  /(?:plot|survey|sector|phase|industrial\s*area|industrial\s*estate)\s*(?:no|number)?\.?\s*[:;.\-]?\s*/i,
+  /(?:floor|estate|sanand|kurla|mumbai|ahmedabad|delhi|bengaluru|chennai|kolkata|hyderabad|pune|gujarat|maharashtra)/i,
 ];
+
+// Matches standard 6-digit Indian PIN codes, including spaced variants like 400 070 or 382 110
+const PIN_REGEX: RegExp = /(?:\b[1-9][0-9]{2}\s*[0-9]{3}\b|\b[1-9][0-9]{5}\b)/;
 
 function extractAddressCandidates(pass: MultiPassOCRData): CandidateResult[] {
   const results: CandidateResult[] = [];
   const lines = pass.lines;
 
+  // Search every line that contains an Indian PIN code (with or without space)
   for (let i = 0; i < lines.length; i++) {
-    const lineText = lines[i].text;
-    for (const kw of ADDRESS_KEYWORDS) {
-      const match = lineText.match(kw);
-      if (match) {
-        let val = lineText.substring(match.index! + match[0].length).trim();
-        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-          if (/^(?:mfg|mrp|customer|net\s*wt|batch|exp|use\s*by)/i.test(lines[j].text)) break;
-          val += `, ${lines[j].text}`;
-          if (/\b[1-9][0-9]{5}\b/.test(lines[j].text)) break; // PIN code terminator
-        }
-        val = val.replace(/[,;.]$/, '').trim();
-        if (val.length >= 6) {
-          const hasPIN = /\b[1-9][0-9]{5}\b/.test(val);
-          results.push({
-            value: val,
-            rawValue: match[0],
-            rawMatch: lineText.trim(),
-            score: hasPIN ? 0.95 : 0.72,
-            bbox: lines[i].bbox,
-          });
-        }
+    if (PIN_REGEX.test(lines[i].text)) {
+      let val = lines[i].text.trim();
+      // Scan up to 3 preceding lines to capture premise, industrial estate, city
+      const start = Math.max(0, i - 3);
+      const prefix = lines.slice(start, i)
+        .map(l => l.text.trim())
+        .filter(t => !/^(?:mrp|usp|batch|exp|mfd|ingredients|net\s*wt)/i.test(t))
+        .join(', ');
+      if (prefix) val = `${prefix}, ${val}`;
+      val = val.replace(/^[,\s;.\-]+/, '').replace(/[,;.]$/, '').trim();
+      if (val.length >= 8) {
+        results.push({
+          value: val,
+          rawValue: lines[i].text,
+          rawMatch: val,
+          score: 0.96,
+          bbox: lines[i].bbox,
+        });
       }
     }
   }
 
-  // Fallback: If no keyword-based address match, search for any line with a 6-digit Indian PIN code
-  if (results.length === 0) {
-    for (let i = 0; i < lines.length; i++) {
-      if (/\b[1-9][0-9]{5}\b/.test(lines[i].text)) {
-        let val = lines[i].text;
-        // Scan up to 2 preceding lines to construct the address
-        const start = Math.max(0, i - 2);
-        const prefix = lines.slice(start, i).map(l => l.text).join(', ');
-        if (prefix) val = `${prefix}, ${val}`;
-        val = val.replace(/[,;.]$/, '').trim();
-        if (val.length >= 6) {
+  // Keyword-based search for address header lines
+  for (let i = 0; i < lines.length; i++) {
+    const lineText = lines[i].text;
+    for (const kw of ADDRESS_KEYWORDS) {
+      if (kw.test(lineText)) {
+        let val = lineText.trim();
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          if (/^(?:mfg|mrp|customer|net\s*wt|batch|exp|use\s*by)/i.test(lines[j].text)) break;
+          val += `, ${lines[j].text.trim()}`;
+          if (PIN_REGEX.test(lines[j].text)) break;
+        }
+        val = val.replace(/^[,\s;.\-]+/, '').replace(/[,;.]$/, '').trim();
+        if (val.length >= 8) {
+          const hasPIN = PIN_REGEX.test(val);
           results.push({
             value: val,
-            rawValue: lines[i].text,
+            rawValue: lineText,
             rawMatch: val,
-            score: 0.90,
+            score: hasPIN ? 0.95 : 0.72,
             bbox: lines[i].bbox,
           });
         }
@@ -876,11 +967,13 @@ function extractImporterCandidates(pass: MultiPassOCRData): CandidateResult[] {
 
 const CARE_KEYWORDS: RegExp[] = [
   /(?:customer\s*care|helpline|toll\s*free|consumer\s*(?:care|helpline))\s*(?:no|number|#)?\.?\s*[:;.\-]?\s*/i,
-  /(?:contact|call)\s*(?:us)?\s*[:;.\-]?\s*/i,
-  /(?:for\s*(?:queries|feedback|complaints))\s*[:;.\-]?\s*/i,
+  /(?:contact|call)\s*(?:us|executive|care)?\s*[:;.\-]?\s*/i,
+  /(?:for\s*(?:queries|feedback|complaints)|query\s*\/\s*feedback|queries|feedback|complaints?)\s*[:;.\-]?\s*/i,
+  /care\s*executive/i,
 ];
 
-const PHONE_REGEX: RegExp = /(?:1800[\s\-]?\d{3}[\s\-]?\d{3,4}|(?:\+91[\s\-]?)?[6-9]\d{4}[\s\-]?\d{5}|\(\d{3,4}\)\s*\d{6,8})/g;
+// Handles 1800 toll-free, +91 mobile, STD landlines like (022)-62487999 or (022) 62487999, and 10-digit numbers
+const PHONE_REGEX: RegExp = /(?:1800[\s\-]?\d{3}[\s\-]?\d{3,4}|(?:\+91[\s\-]?)?[6-9]\d{4}[\s\-]?\d{5}|\(?0?\d{2,5}\)?[\s\-]*\d{6,8}|\b\d{10}\b)/g;
 const EMAIL_REGEX: RegExp = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 
 function extractCustomerCareCandidates(pass: MultiPassOCRData): CandidateResult[] {
@@ -905,11 +998,13 @@ function extractCustomerCareCandidates(pass: MultiPassOCRData): CandidateResult[
     EMAIL_REGEX.lastIndex = 0;
     let emailMatch: RegExpExecArray | null;
     while ((emailMatch = EMAIL_REGEX.exec(lineText)) !== null) {
+      let val = emailMatch[0].trim();
+      val = val.replace(/^[Jji✉\s:.\-]+/, '');
       results.push({
-        value: emailMatch[0].trim(),
+        value: val,
         rawValue: emailMatch[0],
         rawMatch: lineText.trim(),
-        score: 0.9,
+        score: 0.95,
         bbox: line.bbox,
       });
     }

@@ -31,7 +31,7 @@ DEFAULT_OLLAMA_BASE_URL  = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"
 DEFAULT_OLLAMA_MODEL     = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5-vl")  # Same model as vision
 GEMINI_API_KEY           = os.getenv("GEMINI_API_KEY", "")
 POLLINATIONS_API_KEY     = os.getenv("POLLINATIONS_API_KEY", "")
-POLLINATIONS_BASE_URL    = os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")
+POLLINATIONS_BASE_URL    = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
 POLLINATIONS_TEXT_MODEL  = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
 
 # Output token cap — keep it tight so inference stays fast
@@ -228,7 +228,7 @@ class _PollinationsTextProvider:
         timeout_seconds: int = 45,
     ):
         self.api_key = api_key or os.getenv("POLLINATIONS_API_KEY", "")
-        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")).rstrip("/")
+        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")).rstrip("/")
         self.model_name = model_name or os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
         self.timeout = timeout_seconds
 
@@ -237,7 +237,12 @@ class _PollinationsTextProvider:
         return bool(enabled and (self.api_key or "pollinations.ai" in self.base_url))
 
     def call(self, prompt: str) -> Tuple[Optional[List[Dict]], str]:
-        url = self.base_url if self.base_url.endswith("/") else f"{self.base_url}/"
+        if "chat/completions" in self.base_url:
+            url = self.base_url
+        elif self.base_url.endswith("/v1"):
+            url = f"{self.base_url}/chat/completions"
+        else:
+            url = f"{self.base_url}/v1/chat/completions"
         payload = {
             "model": self.model_name,
             "messages": [

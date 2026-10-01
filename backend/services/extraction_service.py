@@ -97,14 +97,15 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
         r"(?:MRP|Maximum\s*Retail\s*Price|Max\.?\s*Retail\s*Price)[:\-\s]*(?:Rs\.?|₹|INR)?\s*([\d,]+(?:\.\d{1,2})?)(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
         r"(?:₹|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)\s*(?:\(incl\.?\s*of\s*all\s*taxes\)|inclusive\s*of\s*all\s*taxes)",
         r"(?:MRP)[:\-\s]*[Rs₹INR.\s]*([\d,]+(?:\.\d{1,2})?)",
-        r"(?:^|\n)\s*(?:₹|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
+        r"(?:^|\n)\s*(?:₹|Rs\.?|[*#F])\s*([\d,]+(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
+        r"(?:^|\n)\s*([1-9]\d{1,4}(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
     ],
 
     # PCR-2022-R6(1)(aa) — Unit Sale Price (G.S.R. 779(E), effective 1 Jan 2023)
     "unitSalePrice": [
-        r"(?:USP|Unit\s*Sale\s*Price|Unit\s*Price)[:\-\s]*(?:Rs\.?|₹|INR)?\s*([\d.]+)\s*(?:per|/)\s*(g|ml|kg|l)\b",
-        r"(?:₹|Rs\.?)\s*([\d.]+)\s*(?:per|/)\s*(g|ml|kg|l)\b",
-        r"\b([\d.]+)\s*\/\s*(g|ml|kg|l)\b",
+        r"(?:USP|Unit\s*Sale\s*Price|Unit\s*Price)[:\-\s]*(?:Rs\.?|₹|INR)?\s*([\d.]+)\s*(?:per|/)\s*(g|ml|kg|l|m[l1I|])\b",
+        r"(?:₹|Rs\.?|[*#F])\s*([\d.]+)\s*(?:per|/)\s*(g|ml|kg|l|m[l1I|])\b",
+        r"\b([\d.]+)\s*\/\s*(g|ml|kg|l|m[l1I|])\b",
     ],
 
     # PCR-2011-R6(1)(b) — Net Quantity (weight/volume/count in metric units)
@@ -157,8 +158,10 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
 
     # PCR-2011-R6(1)(g) — Batch / Lot Number
     "batchNumber": [
-        r"(?:Batch\s*(?:No\.?|Code)|B\.?\s*No\.?|Lot\s*(?:No\.?|Code))[:\-\s]*([A-Za-z0-9\-\/\s]+)",
-        r"(?:^|\b)(?:B|BN|LOT)[:\s\-.]*([A-Za-z0-9]{4,16}(?:\s+[A-Za-z0-9]{1,4})?)\b",
+        r"(?:Batch\s*(?:No\.?|Code)|B\.?\s*No\.?|Lot\s*(?:No\.?|Code))[:\-\s]*([A-Za-z0-9\-\/]+(?:\s+[A-Za-z0-9]+)?)",
+        r"(?:^|\b)(?:BN|LOT(?!ION|ON)|BNO|BATCH)[:\s\-.]*([A-Z0-9\-\/]{3,18}(?:\s+[A-Z0-9]{1,4})?)\b",
+        # Prefix B with required digit to reject words like 'Building on' or 'Before'
+        r"(?:^|\b)B[:\s\-.]*([A-Z0-9]*\d[A-Z0-9]*(?:\s+[A-Z0-9]{1,4})?)\b",
     ],
 
     # Manufacturer name (separate from address)
@@ -173,17 +176,18 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
         r"(?:Imported\s*by|Importer)[:\-\s]+([A-Za-z0-9\s,\-\.]+,[^\n]+[1-9][0-9]{5}[^\n]*)",
     ],
 
-    # Barcode (EAN-13 / EAN-8 / GS1 barcode)
+    # Barcode (EAN-13 / GS1 barcode) — exclude bare 8-digit landline numbers
     "barcode": [
+        r"(?:^|\b)(8\s*9\s*0\s*\d{3,4}\s*\d{3,6})\b",  # Indian GS1 prefix 890 with spaces
         r"\b((?:890|891|892|893|894|895|896|897|898|899)\d{10})\b",  # Indian GS1 prefix
         r"\b(\d{13})\b",  # EAN-13
-        r"\b(\d{8})\b",   # EAN-8
+        r"(?:barcode|ean|gtin)[:\-\s]*(\d{8,14})\b",
     ],
 }
 
 # Mandatory field keys per Legal Metrology Rules
 MANDATORY_FIELDS = {
-    "productName", "mrp", "netQuantity", "manufacturer", "manufacturerAddress",
+    "productName", "mrp", "netQuantity", "manufacturer", "address", "manufacturerAddress",
     "manufacturingDate", "countryOfOrigin", "customerCare", "batchNumber",
 }
 
@@ -192,6 +196,8 @@ CONDITIONAL_FIELDS = {
     "expiryDate": "Required for perishable goods",
     "importer": "Required for imported goods (Country of Origin ≠ India)",
     "unitSalePrice": "Required when USP ≠ MRP (G.S.R. 779(E), from 1 Jan 2023)",
+    "barcode": "GS1 barcode / GTIN identifier",
+    "packingDate": "Packaging date if applicable",
 }
 
 
@@ -238,6 +244,14 @@ def extract_field(
                 # Combine all capture groups into a single clean value
                 value = ' '.join(g.strip() for g in groups if g)
                 value = re.sub(r'\s+', ' ', value).strip()
+
+                if field_key == "customerCare":
+                    value = re.sub(r'^[Jji✉\s:.\-]+', '', value).strip()
+                elif field_key == "barcode":
+                    value = re.sub(r'\s+', '', value)
+                elif field_key == "batchNumber":
+                    # If batch starts with 'B' followed by space and alphanumeric, normalize
+                    value = re.sub(r'^[B|]\s*', 'B', value)
 
                 if value and len(value) >= 1:
                     confidence = _estimate_field_confidence(field_key, value, pattern)
@@ -404,30 +418,30 @@ HEURISTIC REGEX CANDIDATES & CLUES DETECTED:
 Use these candidates as hints. Verify them against the raw text, resolve ambiguities, or correct them if regex picked the wrong snippet.
 """
 
-    prompt = f"""You are a senior packaging compliance parser and mapper for Legal Metrology & FSSAI India.
+    prompt = f"""You are an expert packaging compliance parser and mapper for Indian Legal Metrology (Packaged Commodities) Rules & FSSAI.
 Your task is to accurately MAP, CLEAN, and DISAMBIGUATE statutory packaging declarations from raw OCR text into precise JSON.
 {candidates_block}
 RULES FOR PARSING, MAPPING & DISAMBIGUATION:
-1. productName: Auto-correct obvious OCR typos into proper brand/commodity words (e.g., 'B Naura Mied Fui' -> 'B Natural Mixed Fruit', 'NIVEA Soft Skin Cream').
+1. productName: Clean, legible brand and commodity name. Repair OCR typographical noise and broken words (e.g. 'Cocod Nous' -> 'Cocoa Nourish', 'COMPLET oy' -> 'Complete Care', 'SKINLOTION' -> 'Skin Lotion'). Output the clean, human-readable product title without garbled OCR artifacts.
 2. mrp vs unitSalePrice:
-   - mrp: Exact numeric total package price in Indian Rupees (e.g. '550.00' or '152.00'). Do NOT include 'Rs.' or taxes.
-   - unitSalePrice: Unit price per g or ml (e.g. '₹ 1.83/ml', 'Rs. 0.50/g').
-   - When MRP and USP are printed side-by-side (e.g. '₹ 550 ₹ 1.83/ml'), the total price '550' is MRP and '1.83/ml' is unitSalePrice.
+   - mrp: Total package MRP numeric value in Indian Rupees (e.g., '550' or '550.00'). Look for '₹ 550', 'MRP 550', or '550'. Do NOT include 'Rs.' or currency symbols in the number, output clean value like '550.00'.
+   - unitSalePrice: Unit rate per ml or g (e.g., '₹ 1.38/ml' or '1.38/ml').
+   - When a dot-matrix stamp has both (e.g., '₹ 550' and '₹ 1.38/ml'), 550 is MRP and 1.38/ml is unitSalePrice.
 3. manufacturingDate vs expiryDate:
-   - In compound stamps (e.g., "MRP ₹ ..., USP, Batch No., MFD. (M) & Use Before (U): ↓"):
-     * 'M' or 'MFD' means Manufacturing Date (e.g. 'M 11/23 22:15' -> '11/2023').
-     * 'U' (Use Before), 'UB', 'EXP', or 'BB' means Expiry Date (e.g. 'U 10/26' -> '10/2026').
-   - Always map dates in standard format MM/YYYY or DD/MM/YYYY.
-4. netQuantity: Metric weight/volume/count (e.g. '300 ml (293.7g)', '500 g', '200 ml').
-5. manufacturer: Legal company entity name only (e.g. 'Nivea India Pvt. Ltd.', 'ITC LIMITED').
-6. address: Full manufacturing/packing premises address with 6-digit Indian PIN code.
-7. batchNumber: Clean batch or lot code (e.g. 'B34431350 11', 'H9XM190826'). Frequently prefixed with 'B' or 'BN'.
-8. customerCare: Consumer grievance phone/toll-free number and email (e.g. '1800-22-7080, care@domain.com').
-9. countryOfOrigin: Country of origin/manufacture (e.g. 'India', 'Germany').
-10. barcode: EAN-13, EAN-8, or GS1 barcode number (e.g. '4005808679829').
+   - In dot-matrix / printed stamps:
+     * 'M' or 'MFD' prefix indicates Manufacturing Date (e.g., 'M 07/24 11:28' -> '07/2024').
+     * 'U' (Use Before), 'UB', 'EXP', or 'BB' indicates Expiry Date (e.g., 'U 12/26' -> '12/2026', or '12126' where slash was read as 1 -> '12/2026').
+   - Convert 2-digit years (07/24) to 4-digit years (07/2024).
+4. netQuantity: Metric volume/weight/count (e.g., '400 ml' or '400ml').
+5. manufacturer: The legal entity name (e.g., 'NIVEA India Pvt. Ltd.').
+6. address: Complete manufacturing or marketing premises address with 6-digit Indian PIN code. Extract the full postal address string found (e.g., 'SM-9/1, Sanand II Industrial Estate, Vill. Bol., Tal. Sanand, Dist. Ahmedabad (Gujarat) - 382110' or '4th Floor, AGH, Phoenix Market City, Kurla (W), Mumbai, Maharashtra - 400070').
+7. batchNumber: Alphanumeric batch or lot code (e.g., 'B42856550 13' or 'B42856550'). NEVER output month/year date codes (like '12126' or '07/24') as the batch number.
+8. customerCare: Exact contact telephone/STD landline number and email found on the packaging (e.g., '(022)-62487999, care@beiersdorf.com'). Fix obvious OCR typos in email domains (e.g., 'care@BETEONCOM' -> 'care@beiersdorf.com' or domain suffix errors). DO NOT hallucinate fake numbers.
+9. countryOfOrigin: Country of manufacture (e.g., 'India'). If manufactured in India (e.g., Gujarat, Mumbai), origin is 'India'.
+10. barcode: 8, 12, or 13-digit EAN/GS1 barcode number (e.g., '8904256000109'). Strip all spaces (e.g., '8 904256 000109' -> '8904256000109').
 
 RAW OCR TEXT FROM PACKAGING:
-{raw_text[:3500]}
+{raw_text[:4000]}
 
 Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSalePrice, netQuantity, manufacturer, address, manufacturingDate, expiryDate, batchNumber, customerCare, countryOfOrigin, barcode) to string values (or null if not found).
 """
@@ -446,9 +460,22 @@ Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSa
 
     # 1. Primary Path: POST Request to Pollinations AI
     try:
+        base_url = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai").rstrip("/")
         model_name = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
-        post_url = f"https://text.pollinations.ai/{model_name}"
-        payload = json.dumps({"messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
+        if "chat/completions" in base_url:
+            post_url = base_url
+        elif base_url.endswith("/v1"):
+            post_url = f"{base_url}/chat/completions"
+        elif "pollinations.ai" in base_url:
+            post_url = f"{base_url}/v1/chat/completions"
+        else:
+            post_url = f"{base_url}/{model_name}"
+
+        payload = json.dumps({
+            "model": model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": {"type": "json_object"}
+        }).encode("utf-8")
         api_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
         headers = {
             "Content-Type": "application/json",
@@ -628,9 +655,9 @@ def extract_from_text(
         is_mandatory = field_key in MANDATORY_FIELDS
         llm_val = llm_extracted.get(field_key) if llm_extracted else None
 
-        # Check if address was returned as 'address' or 'manufacturerAddress'
-        if field_key == "manufacturerAddress" and not llm_val and llm_extracted.get("address"):
-            llm_val = llm_extracted.get("address")
+        # Ensure both 'address' and 'manufacturerAddress' resolve cleanly
+        if field_key in ("address", "manufacturerAddress") and not llm_val and llm_extracted:
+            llm_val = llm_extracted.get("address") or llm_extracted.get("manufacturerAddress")
 
         if llm_val and str(llm_val).strip() and str(llm_val).lower() not in ("null", "none", "(not detected)"):
             clean_val = str(llm_val).strip()
