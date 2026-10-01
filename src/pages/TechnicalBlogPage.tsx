@@ -32,10 +32,9 @@ import { Button } from '../components/ui/Button';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
 
 export const TechnicalBlogPage: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<string>('system-architecture');
+  const [activeSection, setActiveSection] = useState<string>('inspiration');
 
   const sections = [
-    { id: 'system-architecture', title: '0. Live System Architecture' },
     { id: 'inspiration', title: '1. Inspiration: The Hidden Challenge' },
     { id: 'problem-scope', title: '2. The Problem Became Bigger Than Expected' },
     { id: 'first-mistake', title: '3. Our First Mistake: Vision LLMs' },
@@ -185,78 +184,27 @@ export const TechnicalBlogPage: React.FC = () => {
           {/* Center Blog Article Content */}
           <main className="lg:col-span-9 space-y-14 text-slate-700 dark:text-slate-300 text-base leading-relaxed">
 
-            {/* SECTION 0: LIVE ARCHITECTURE BLUEPRINT */}
-            <section id="system-architecture" className="space-y-6 scroll-mt-24">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 font-bold font-mono text-sm">
-                    00
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                      Live Autonomous System Architecture
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
-                      End-to-End Dynamic Pipeline • 7 Coordinated Layers • Real-Time Data Flow
-                    </p>
-                  </div>
+            {/* Architecture Portal Feature Banner */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/40 to-slate-50 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-blue-700 dark:text-blue-300 font-mono">
+                  <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>DEDICATED SYSTEM ARCHITECTURE PORTAL</span>
                 </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
-                  <span className="flex h-2.5 w-2.5 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                  </span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold uppercase tracking-wider">
-                    Interactive Data Stream
-                  </span>
+                <div className="text-sm font-bold text-slate-900 dark:text-white">
+                  High-Level (HLA) &amp; Low-Level (LLA) Codebase Architecture
                 </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Explore the full interactive system diagram with animated conduit flow dots, 6-stage canvas filters, and FastAPI microservice specs.
+                </p>
               </div>
-
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                Before diving into the engineering journey, explore the interactive architecture below. Every tier is live: animated pulses trace the journey of an inspection query from multi-angle optical acquisition, 6-pass canvas filtering, and OCR tokenization, through deterministic Legal Metrology rule verification and Section 36 statutory enforcement notice dispatch.
-              </p>
-
-              {/* The Live System Architecture Visual */}
-              <div className="my-6">
-                <LiveSystemArchitecture />
-              </div>
-
-              {/* Architecture Core Pillars Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
-                  <div className="text-xs font-bold text-sky-600 dark:text-sky-400 font-mono">01. HYBRID OCR PIPELINE</div>
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white">6-Stage Canvas Filtering</div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Upscaling, histogram stretching &amp; adaptive binarization eliminate glare and wrinkled plastic distortions.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
-                  <div className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">02. DETERMINISTIC ENGINE</div>
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white">Zero LLM Hallucinations</div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Legal rules (PCR 2011 Rules 6 &amp; 7) execute mathematically in &lt;12ms with 100% legal reproducibility.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
-                  <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">03. STATUTORY RAG</div>
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white">Verbatim Clause Retrieval</div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Dual BM25 + Cosine vector embeddings cite active e-Gazette notifications and statutory penalty clauses.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-xs">
-                  <div className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono">04. SECTION 36 SCN</div>
-                  <div className="text-xs font-semibold text-slate-900 dark:text-white">Human Sign-off Gate</div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Legal officers verify evidence before dispatching 14-day statutory Show Cause Notices via automated email.
-                  </p>
-                </div>
-              </div>
-            </section>
+              <Link to="/system-architecture" className="shrink-0">
+                <Button variant="primary" size="sm" className="gap-2 text-xs font-semibold">
+                  <span>Explore Architecture</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </Link>
+            </div>
 
             {/* SECTION 1 */}
             <section id="inspiration" className="space-y-6 scroll-mt-24">

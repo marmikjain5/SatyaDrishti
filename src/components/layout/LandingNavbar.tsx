@@ -15,6 +15,7 @@ export const LandingNavbar: React.FC = () => {
   const isAboutActive = location.pathname === '/about' && (!location.hash || location.hash === '#about');
   const isCapabilitiesActive = location.pathname === '/about' && location.hash === '#capabilities';
   const isWorkflowActive = location.pathname === '/about' && location.hash === '#workflow';
+  const isArchitectureActive = location.pathname === '/system-architecture' || location.pathname === '/architecture';
 
   const handleNavClick = (targetId: string) => {
     setIsMobileMenuOpen(false);
@@ -95,6 +96,18 @@ export const LandingNavbar: React.FC = () => {
             }`}
           >
             Enforcement Flow
+          </Link>
+
+          <Link
+            to="/system-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              isArchitectureActive
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            System Architecture
           </Link>
 
           <Link
@@ -206,6 +219,19 @@ export const LandingNavbar: React.FC = () => {
           >
             <GitBranch className="h-4 w-4 shrink-0" />
             <span>Enforcement Flow</span>
+          </Link>
+
+          <Link
+            to="/system-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
+              isArchitectureActive
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Layers className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span>System Architecture (HLA / LLA)</span>
           </Link>
 
           <Link
