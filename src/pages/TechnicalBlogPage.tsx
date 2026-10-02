@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles,
   BookOpen,
   ArrowRight,
   ShieldCheck,
@@ -30,9 +29,11 @@ import { LandingNavbar } from '../components/layout/LandingNavbar';
 import { LandingFooter } from '../components/layout/LandingFooter';
 import { Button } from '../components/ui/Button';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
+import './technical-blog.css';
 
 export const TechnicalBlogPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('inspiration');
+  const [readingProgress, setReadingProgress] = useState(0);
 
   const sections = [
     { id: 'inspiration', title: '1. Inspiration: The Hidden Challenge' },
@@ -67,6 +68,56 @@ export const TechnicalBlogPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const updateReadingProgress = () => {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const nextProgress = scrollableHeight > 0 ? (window.scrollY / scrollableHeight) * 100 : 0;
+      setReadingProgress(Math.min(100, Math.max(0, nextProgress)));
+    };
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
+        }
+      }),
+      { threshold: 0.08, rootMargin: '0px 0px -8% 0px' },
+    );
+
+    document.querySelectorAll('.blog-page section, .blog-page .blog-feature').forEach((element) => {
+      revealObserver.observe(element);
+    });
+
+    const articleImages = Array.from(document.querySelectorAll<HTMLImageElement>('.blog-article img'));
+    const markImageLoaded = (image: HTMLImageElement) => image.classList.add('is-loaded');
+    const updateImageParallax = () => {
+      articleImages.forEach((image) => {
+        const distanceFromCenter = image.getBoundingClientRect().top + image.offsetHeight / 2 - window.innerHeight / 2;
+        image.style.setProperty('--image-shift', `${Math.max(-12, Math.min(12, distanceFromCenter * -0.025))}px`);
+      });
+    };
+
+    articleImages.forEach((image) => {
+      if (image.complete) markImageLoaded(image);
+      else image.addEventListener('load', () => markImageLoaded(image), { once: true });
+    });
+    updateReadingProgress();
+    updateImageParallax();
+    window.addEventListener('scroll', updateReadingProgress, { passive: true });
+    window.addEventListener('scroll', updateImageParallax, { passive: true });
+    window.addEventListener('resize', updateReadingProgress);
+    window.addEventListener('resize', updateImageParallax);
+
+    return () => {
+      revealObserver.disconnect();
+      window.removeEventListener('scroll', updateReadingProgress);
+      window.removeEventListener('scroll', updateImageParallax);
+      window.removeEventListener('resize', updateReadingProgress);
+      window.removeEventListener('resize', updateImageParallax);
+    };
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -75,31 +126,18 @@ export const TechnicalBlogPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-blue-600 selection:text-white">
+    <div className="blog-page min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-blue-600 selection:text-white">
+      <div className="blog-progress" style={{ '--progress': `${readingProgress}%` } as React.CSSProperties} aria-hidden="true" />
       <LandingNavbar />
 
       {/* Hero Banner Header */}
-      <header className="relative pt-10 pb-14 border-b border-slate-200 dark:border-slate-800/80 bg-gradient-to-b from-white via-slate-50 to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] overflow-hidden transition-colors duration-300">
+      <header className="blog-hero relative pt-10 pb-14 border-b border-slate-200 dark:border-slate-800/80 bg-gradient-to-b from-white via-slate-50 to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] overflow-hidden transition-colors duration-300">
         <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-20 pointer-events-none" />
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-indigo-500/10 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <Link to="/about" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 transition-colors">
-              <span>About Platform</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-            <span className="text-slate-400 dark:text-slate-600 text-xs">/</span>
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Engineering Blog</span>
-          </div>
-
-          <div className="max-w-4xl space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>SatyaDrishti Technical Case Study &amp; Architecture Journey</span>
-            </div>
-
+        <div className="blog-hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="blog-hero-copy max-w-4xl space-y-5">
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               SatyaDrishti — <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">The Beginning</span>
             </h1>
@@ -108,62 +146,28 @@ export const TechnicalBlogPage: React.FC = () => {
               An inside look into how our team built an autonomous legal metrology compliance platform — solving low-contrast OCR, eliminating vision model hallucinations with deterministic rule engines, engineering a versioned statutory RAG pipeline, and scaling GIS risk intelligence.
             </p>
 
-            <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-slate-200 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400 font-mono">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow-md">
-                  SS
-                </div>
-                <div>
-                  <div className="text-slate-900 dark:text-white font-sans font-semibold">SatyaSetu Core Team</div>
-                  <div className="text-[10px] text-slate-500">SIH National Finalists</div>
-                </div>
-              </div>
-              <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-800 hidden sm:block" />
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                <span>11 Min Read</span>
-              </div>
-              <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-800 hidden sm:block" />
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Legal Metrology (Packaged Commodities) Rules 2011</span>
-              </div>
-            </div>
+          </div>
+
+          <div className="blog-hero-index" aria-label="Article sections">
+            <div className="blog-hero-index-label">Inside the case study</div>
+            <nav>
+              {sections.map((section) => (
+                <button key={section.id} type="button" onClick={() => scrollToSection(section.id)}>
+                  <span>{section.title.replace(/^\d+\.\s*/, '')}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       </header>
 
-      {/* Main Content Layout with Sticky Sidebar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      {/* Main Article Content */}
+      <div className="blog-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+        <div className="blog-layout grid grid-cols-1 items-start">
           
           {/* Sticky Left Table of Contents */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-24 space-y-6">
-            <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-sm dark:shadow-xl">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span>Table of Contents</span>
-              </h3>
-              <nav className="space-y-1">
-                {sections.map((sec) => (
-                  <button
-                    key={sec.id}
-                    onClick={() => scrollToSection(sec.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between ${
-                      activeSection === sec.id
-                        ? 'bg-blue-50 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 font-semibold shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span className="truncate">{sec.title}</span>
-                    {activeSection === sec.id && (
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
+          <aside className="blog-toc hidden lg:block lg:col-span-3 sticky top-24 space-y-6">
             {/* Quick Tech Stack Card */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/40 dark:to-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-3 shadow-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
@@ -181,11 +185,11 @@ export const TechnicalBlogPage: React.FC = () => {
             </div>
           </aside>
 
-          {/* Center Blog Article Content */}
-          <main className="lg:col-span-9 space-y-14 text-slate-700 dark:text-slate-300 text-base leading-relaxed">
+          {/* Blog Article Content */}
+          <main className="blog-article mx-auto w-full space-y-14 text-slate-700 dark:text-slate-300 text-base leading-relaxed">
 
             {/* Architecture Portal Feature Banner */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/40 to-slate-50 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="blog-feature p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/40 to-slate-50 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-blue-700 dark:text-blue-300 font-mono">
                   <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -225,14 +229,14 @@ export const TechnicalBlogPage: React.FC = () => {
                   Individually, these seem like small mistakes. But when multiplied across millions of packaged products sold every day — on supermarket shelves, local Kirana stores, Amazon, Flipkart, Blinkit, and Zepto — they become a massive compliance challenge.
                 </p>
 
-                <div className="my-6 p-5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 space-y-2">
+                <blockquote className="blog-pullquote my-6 p-5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 space-y-2">
                   <p className="font-semibold text-blue-900 dark:text-blue-200 text-base">
                     "The surprising part wasn't that violations existed. The surprising part was how they were being found."
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
                     In most cases, a compliance inspection still begins with an enforcement inspector holding a physical product in one hand and a thick printed rulebook in the other.
                   </p>
-                </div>
+                </blockquote>
 
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs text-slate-800 dark:text-slate-300 my-4">
                   <li className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-xs">
