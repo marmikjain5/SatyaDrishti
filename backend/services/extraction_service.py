@@ -422,9 +422,9 @@ Use these candidates as hints. Verify them against the raw text, resolve ambigui
 Your task is to accurately MAP, CLEAN, and DISAMBIGUATE statutory packaging declarations from raw OCR text into precise JSON.
 {candidates_block}
 RULES FOR PARSING, MAPPING & DISAMBIGUATION:
-1. productName: Clean, legible brand and commodity name. Repair OCR typographical noise and broken words (e.g. 'Cocod Nous' -> 'Cocoa Nourish', 'COMPLET oy' -> 'Complete Care', 'SKINLOTION' -> 'Skin Lotion'). Output the clean, human-readable product title without garbled OCR artifacts.
+1. productName: Clean, legible brand and commodity title found at the top (e.g. 'NIVEA Cocoa Nourish Body Lotion'). Output ONLY the genuine commercial product name. NEVER include marketing claim bullets (like 'Healthy looking skin'), and NEVER include cosmetic chemical ingredient fragments (like 'Paraffinum Liquidum'). Avoid weird medical hallucinated words like 'Urinary'.
 2. mrp vs unitSalePrice:
-   - mrp: Total package MRP numeric value in Indian Rupees (e.g., '550' or '550.00'). Look for '₹ 550', 'MRP 550', or '550'. Do NOT include 'Rs.' or currency symbols in the number, output clean value like '550.00'.
+   - mrp: Total package MRP numeric value in Indian Rupees (e.g., '550' or '550.00'). Look for '₹ 550', 'MRP 550', or standalone '550'. Do NOT include 'Rs.' or currency symbols in the number, output clean value like '550.00'.
    - unitSalePrice: Unit rate per ml or g (e.g., '₹ 1.38/ml' or '1.38/ml').
    - When a dot-matrix stamp has both (e.g., '₹ 550' and '₹ 1.38/ml'), 550 is MRP and 1.38/ml is unitSalePrice.
 3. manufacturingDate vs expiryDate:
@@ -438,7 +438,8 @@ RULES FOR PARSING, MAPPING & DISAMBIGUATION:
 7. batchNumber: Alphanumeric batch or lot code (e.g., 'B42856550 13' or 'B42856550'). NEVER output month/year date codes (like '12126' or '07/24') as the batch number.
 8. customerCare: Exact contact telephone/STD landline number and email found on the packaging (e.g., '(022)-62487999, care@beiersdorf.com'). Fix obvious OCR typos in email domains (e.g., 'care@BETEONCOM' -> 'care@beiersdorf.com' or domain suffix errors). DO NOT hallucinate fake numbers.
 9. countryOfOrigin: Country of manufacture (e.g., 'India'). If manufactured in India (e.g., Gujarat, Mumbai), origin is 'India'.
-10. barcode: 8, 12, or 13-digit EAN/GS1 barcode number (e.g., '8904256000109'). Strip all spaces (e.g., '8 904256 000109' -> '8904256000109').
+10. packingDate vs manufacturingDate: Packaged commodities in India declare Manufacturing Date OR Packing Date. If the package only stamps MFD (e.g., 'M 07/24') and expiry ('U 12/26') with a line timestamp (like '11:28'), '11:28' is a machine timestamp, NOT a packing date! Set packingDate to null unless a distinct packing date ('PKD' / 'Packing Date') is explicitly stated.
+11. barcode: 8, 12, or 13-digit EAN/GS1 barcode number (e.g., '8904256000109'). Strip all spaces (e.g., '8 904256 000109' -> '8904256000109').
 
 RAW OCR TEXT FROM PACKAGING:
 {raw_text[:4000]}
