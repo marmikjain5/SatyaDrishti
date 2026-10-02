@@ -167,7 +167,7 @@ export const TechnicalBlogPage: React.FC = () => {
         <div className="blog-layout grid grid-cols-1 items-start">
           
           {/* Sticky Left Table of Contents */}
-          <aside className="blog-toc hidden lg:block lg:col-span-3 sticky top-24 space-y-6">
+          <aside className="hidden">
             {/* Quick Tech Stack Card */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/40 dark:to-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-3 shadow-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
