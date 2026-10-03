@@ -49,10 +49,10 @@ export const LandingNavbar: React.FC = () => {
         </Link>
 
         {/* Center Nav Links (Desktop) */}
-        <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 text-sm font-medium">
+        <nav className="hidden md:flex shrink-0 items-center space-x-1 lg:space-x-2 xl:space-x-3 text-sm font-medium whitespace-nowrap">
           <Link
             to="/"
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               isDirectoryActive
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -65,7 +65,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/about#about"
             onClick={() => handleNavClick('about')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               isAboutActive
                 ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -77,7 +77,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/about#capabilities"
             onClick={() => handleNavClick('capabilities')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               isCapabilitiesActive
                 ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -89,7 +89,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/about#workflow"
             onClick={() => handleNavClick('workflow')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               isWorkflowActive
                 ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -101,7 +101,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/system-architecture"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               isArchitectureActive
                 ? 'bg-blue-600 text-white shadow-xs font-bold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -113,7 +113,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/technical-blog"
             onClick={() => setIsMobileMenuOpen(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               location.pathname === '/technical-blog'
                 ? 'bg-blue-600 text-white shadow-xs font-bold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
