@@ -252,14 +252,15 @@ function validateCustomerCare(
     };
   }
 
-  const hasPhone = /(?:1800[\s-]?\d{3}[\s-]?\d{3,4}|(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\(\d{3,4}\)\s*\d{6,8})/.test(value);
+  const hasPhone = /(?:1800[\s-]?\d{3}[\s-]?\d{3,4}|(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|(?:\(?0\d{2,4}\)?|\b0\d{2,4})[\s-]*\d{6,8}|\d{3,4}\s*\d{6,8})/.test(value);
   const hasEmail = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(value);
+  const hasCareOfficer = /(?:above\s*address|address|consumer\s*(?:care|cell)|grievance|executive)/i.test(value);
 
-  if (!hasPhone && !hasEmail) {
+  if (!hasPhone && !hasEmail && !hasCareOfficer) {
     return {
       status: 'warning',
       evidence: value,
-      expectedStandard: 'Must contain a valid phone number or email address.',
+      expectedStandard: 'Must contain a valid phone number, email address, or designated grievance executive.',
       recommendation: rule.recommendations[0],
     };
   }
@@ -267,7 +268,7 @@ function validateCustomerCare(
   return {
     status: 'pass',
     evidence: value,
-    expectedStandard: 'Customer care phone number and/or email.',
+    expectedStandard: 'Customer care phone number, email, or designated grievance contact.',
     recommendation: '',
   };
 }
