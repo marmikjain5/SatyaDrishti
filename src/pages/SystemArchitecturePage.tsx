@@ -88,11 +88,7 @@ export const SystemArchitecturePage: React.FC = () => {
       <LandingNavbar />
 
       {/* Hero Header */}
-      <header className="relative pt-10 pb-12 border-b border-slate-200 dark:border-slate-800/80 bg-gradient-to-b from-white via-slate-50 to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:32px_32px] opacity-20 pointer-events-none" />
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-indigo-500/10 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-
+      <header className="relative pt-10 pb-12 border-b border-slate-200 dark:border-slate-800/80 bg-[#F8FAFC] dark:bg-[#020617] overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center gap-2 mb-4">
             <Link to="/" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
@@ -109,7 +105,7 @@ export const SystemArchitecturePage: React.FC = () => {
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-              SatyaDrishti <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">Software Architecture Specification</span>
+              SatyaDrishti <span className="text-blue-600 dark:text-blue-400">Software Architecture Specification</span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
@@ -175,7 +171,7 @@ export const SystemArchitecturePage: React.FC = () => {
             </div>
 
             {/* Quick Tech Architecture Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/40 dark:to-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-3 shadow-xs">
+            <div className="bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-3 shadow-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
                 <Cpu className="h-4 w-4" />
                 <span>Codebase Stack</span>

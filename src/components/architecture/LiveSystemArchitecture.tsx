@@ -146,7 +146,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
       className={`relative w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md transition-all duration-300 font-sans overflow-hidden text-slate-800 dark:text-slate-200 ${className || ''}`}
     >
       {/* Top Header matching exact diagram & website theme */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-gradient-to-r from-slate-50 via-blue-50/30 to-slate-50 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white">

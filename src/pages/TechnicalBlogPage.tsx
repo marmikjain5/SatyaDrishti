@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
@@ -17,6 +17,10 @@ import {
   Share2,
   Bookmark,
   ChevronRight,
+  ChevronLeft,
+  Folder,
+  Maximize2,
+  Minimize2,
   Code2,
   Eye,
   Zap,
@@ -25,7 +29,6 @@ import {
   Terminal,
   Clock
 } from 'lucide-react';
-import { LandingNavbar } from '../components/layout/LandingNavbar';
 import { LandingFooter } from '../components/layout/LandingFooter';
 import { Button } from '../components/ui/Button';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
@@ -34,6 +37,9 @@ import './technical-blog.css';
 export const TechnicalBlogPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('inspiration');
   const [readingProgress, setReadingProgress] = useState(0);
+  const [outlineOpen, setOutlineOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const shellRef = useRef<HTMLDivElement>(null);
 
   const sections = [
     { id: 'inspiration', title: '1. Inspiration: The Hidden Challenge' },
@@ -67,6 +73,22 @@ export const TechnicalBlogPage: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === shellRef.current);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen?.();
+      return;
+    }
+    if (shellRef.current?.requestFullscreen) {
+      await shellRef.current.requestFullscreen();
+    }
+  };
 
   useEffect(() => {
     const updateReadingProgress = () => {
@@ -126,9 +148,55 @@ export const TechnicalBlogPage: React.FC = () => {
   };
 
   return (
-    <div className="blog-page min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-blue-600 selection:text-white">
+    <div className={`gdoc-shell blog-page min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-blue-600 selection:text-white ${isFullscreen ? 'gdoc-fullscreen' : ''}`} ref={shellRef}>
       <div className="blog-progress" style={{ '--progress': `${readingProgress}%` } as React.CSSProperties} aria-hidden="true" />
-      <LandingNavbar />
+
+      <div className="gdoc-topbar">
+        <div className="gdoc-file-icon"><FileText size={25} strokeWidth={1.7} /></div>
+        <div className="gdoc-title-wrap">
+          <input aria-label="Document title" defaultValue="SatyaDrishti — Technical Documentation & Architecture" />
+          <div className="gdoc-file-meta"><span>Technical documentation</span><span>Updated October 2026</span></div>
+        </div>
+        <div className="gdoc-top-actions">
+          <button
+            type="button"
+            className="gdoc-icon-button"
+            title={isFullscreen ? 'Exit full screen' : 'View document full screen'}
+            aria-label={isFullscreen ? 'Exit full screen' : 'View document full screen'}
+            aria-pressed={isFullscreen}
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+        </div>
+      </div>
+
+      <div className="gdoc-workspace">
+        {outlineOpen ? (
+          <aside className="gdoc-outline" aria-label="Document outline">
+            <div className="gdoc-outline-title">
+              <span>Document outline</span>
+              <button type="button" title="Collapse outline" aria-label="Collapse document outline" onClick={() => setOutlineOpen(false)}>
+                <ChevronLeft size={16} />
+              </button>
+            </div>
+            <div className="gdoc-outline-list">
+              {sections.map((section) => (
+                <button key={section.id} type="button" className={`gdoc-outline-item ${activeSection === section.id ? 'active' : ''}`} onClick={() => scrollToSection(section.id)}>
+                  {section.title}
+                </button>
+              ))}
+            </div>
+            <div className="gdoc-outline-footer"><Folder size={15} /> Technical documentation</div>
+          </aside>
+        ) : (
+          <button type="button" className="gdoc-outline-reopen" title="Show document outline" aria-label="Show document outline" onClick={() => setOutlineOpen(true)}>
+            <ChevronRight size={17} />
+          </button>
+        )}
+
+        <div className="gdoc-editor-wrap">
+          <main className="gdoc-editor">
 
       {/* Hero Banner Header */}
       <header className="blog-hero relative pt-10 pb-14 border-b border-slate-200 dark:border-slate-800/80 bg-gradient-to-b from-white via-slate-50 to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] overflow-hidden transition-colors duration-300">
@@ -827,6 +895,10 @@ export const TechnicalBlogPage: React.FC = () => {
 
               </div>
             </section>
+
+          </main>
+        </div>
+      </div>
 
           </main>
         </div>
