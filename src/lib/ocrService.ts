@@ -128,6 +128,10 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
 
       try {
         const result = await Tesseract.recognize(variant.dataUrl, 'eng', {
+          workerPath: '/ocr/worker.min.js',
+          corePath: '/ocr/tesseract-core-lstm.wasm.js',
+          langPath: '/ocr',
+          gzip: false,
           logger: (m: Tesseract.LoggerMessage) => {
             if (m.status === 'recognizing text' && typeof m.progress === 'number') {
               const passProgress = Math.round(18 + ((i + m.progress) / totalPasses) * 55);
@@ -592,6 +596,10 @@ export class HybridVisionBackendProvider implements OCRProvider {
             : (val === backendVal ? (bf.validation_status || (conf >= 80 ? 'compliant' : 'warning')) : (localDecl?.validationStatus || 'compliant'));
 
           fieldConfidence[key] = conf;
+          // Prefer real OCR bounding box; only use a placeholder if none exists.
+          // Mark inferred bounding boxes explicitly — never display as image-grounded evidence.
+          const realBbox = localDecl?.boundingBox ?? null;
+          const isInferredBbox = !realBbox;
           declarations[key] = {
             key,
             label: bf.key || localDecl?.label || key,
@@ -599,7 +607,8 @@ export class HybridVisionBackendProvider implements OCRProvider {
             confidence: conf,
             isMandatory,
             validationStatus: status,
-            boundingBox: localDecl?.boundingBox || { x0: 10, y0: 10, x1: imgDimensions.width - 10, y1: 50 },
+            boundingBox: realBbox,
+            isInferredBbox,
             rawMatch: bf.raw_match || localDecl?.rawMatch || val,
           };
 
@@ -638,6 +647,16 @@ export class HybridVisionBackendProvider implements OCRProvider {
         const engineName = responseData.extraction_engine || 'Hybrid Vision AI';
         const rawOcr = responseData.raw_text || Object.values(backendFields).map((f: any) => f.value).join('\n');
 
+        // Derive overall confidence from actual backend + local OCR signal; avoid static constant
+        const backendEngineConf = Math.round(
+          Object.values(backendFields).reduce((sum: number, f: any) => sum + (f.confidence_pct || 0), 0) /
+          Math.max(1, Object.values(backendFields).filter((f: any) => f.value && f.value !== '(Not detected)').length)
+        );
+        const localOcrConf = localRes?.confidence || 0;
+        const overallConfidence = Math.min(100, Math.max(0, Math.round(
+          backendEngineConf * 0.6 + localOcrConf * 0.4
+        )));
+
         const compliancePayload: LegalMetrologyCompliancePayload = {
           schemaVersion: '2.0.0',
           extractionTimestamp: new Date().toISOString(),
@@ -645,7 +664,7 @@ export class HybridVisionBackendProvider implements OCRProvider {
           productMetadata: {
             imageName: typeof imageSource === 'string' ? 'Scanned Packaging' : imageSource.name,
             imageDimensions: imgDimensions,
-            overallConfidence: 95,
+            overallConfidence,
             ocrPassesCount: 1,
           },
           declarations,
@@ -662,13 +681,11 @@ export class HybridVisionBackendProvider implements OCRProvider {
             {
               name: engineName,
               description: `Direct Vision LLM Extraction (${engineName})`,
-              confidence: 95,
+              confidence: overallConfidence,
               textLength: rawOcr.length,
             },
           ],
         };
-
-        const overallConfidence = 95;
 
         const extractedData: ExtractedProductData = {
           productName: declarations.productName?.value || '',

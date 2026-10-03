@@ -33,6 +33,7 @@ import { ScanHistoryTable } from '../../components/scanner/ScanHistoryTable';
 import { ComplianceReportModal } from '../../components/scanner/ComplianceReportModal';
 import { ReportHistoryModal } from '../../components/scanner/ReportHistoryModal';
 import { HistoricalIntelligencePanel } from '../../components/scanner/HistoricalIntelligencePanel';
+import { OfflineInspectionQueue } from '../../components/scanner/OfflineInspectionQueue';
 import type { ComplianceInspectionReport, ReportGenerationOptions } from '../../types/report';
 
 export const ProductScanner: React.FC = () => {
@@ -158,6 +159,7 @@ export const ProductScanner: React.FC = () => {
         </div>
       </div>
 
+      <OfflineInspectionQueue />
 
       {/* Stat Cards - Compact 3-metric banner on mobile, 4 full cards on tablet/desktop */}
       <div className="grid grid-cols-3 gap-2 sm:hidden">
@@ -415,4 +417,3 @@ export const ProductScanner: React.FC = () => {
     </div>
   );
 };
-

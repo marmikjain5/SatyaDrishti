@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  HelpCircle,
   Search,
   Filter,
   Info,
@@ -103,6 +104,11 @@ const STATUS_CONFIG: Record<
     label: 'Non-Compliant',
     badgeClass: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800/80',
     icon: XCircle,
+  },
+  indeterminate: {
+    label: 'Unable to Verify',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/80',
+    icon: HelpCircle,
   },
 };
 

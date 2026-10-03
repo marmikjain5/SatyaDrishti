@@ -77,6 +77,12 @@ export interface CrawlerInspectionRecord {
   audit: ProductAuditResult;
   scrape_method: string;
   is_live: boolean;
+  /** Raw text returned by the live scraper (Jina/ScraperAPI). Undefined if catalog fallback was used. */
+  raw_live_content?: string;
+  /** ISO timestamp of when the live fetch was attempted. */
+  fetch_timestamp?: string;
+  /** Whether findings are grounded in live scraped data or the catalog benchmark. */
+  data_source?: 'live_jina_scrape' | 'catalog_benchmark';
 }
 
 export interface CrawlerStatus {
@@ -592,14 +598,44 @@ class CrawlerService {
         method = 'fallback_catalog';
       }
 
-      const audit = this.auditProduct(item);
+      // Parse live content into product fields before auditing so the audit runs
+      // against live data, not the catalog benchmark.
+      let productForAudit = { ...item };
+      if (liveContent) {
+        method = 'jina_reader';
+        // Extract manufacturer / packer
+        const mfgMatch = liveContent.match(/(?:manufacturer|packer|marketed\s+by|packed\s+by)[:\s]+([^\n,]{5,80})/i);
+        if (mfgMatch) productForAudit.manufacturer = mfgMatch[1].trim();
+        // Extract country of origin
+        const originMatch = liveContent.match(/country\s+of\s+origin[:\s]+([A-Za-z\s]{3,30})/i);
+        if (originMatch) productForAudit.country_of_origin = originMatch[1].trim();
+        // Extract net quantity/weight
+        const qtyMatch = liveContent.match(/net\s+(?:quantity|weight|content)[:\s]+([\d.,]+\s*(?:g|kg|ml|l|gm|litre|liter)s?)/i);
+        if (qtyMatch) productForAudit.net_weight = qtyMatch[1].trim();
+        // Extract customer care (email or phone)
+        const careEmailMatch = liveContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const carePhoneMatch = liveContent.match(/(?:toll[- ]?free|helpline|consumer|customer|care)[:\s]*(\+?[\d\s\-()]{8,15})/i);
+        const careParts = [careEmailMatch?.[0], carePhoneMatch?.[1]].filter(Boolean);
+        if (careParts.length > 0) productForAudit.customer_care = careParts.join(' / ');
+        this.addLog('INFO', `[Provenance] Live fields parsed from Jina content for [${item.sku}]`);
+      } else {
+        method = 'fallback_catalog';
+        this.addLog('INFO', `[Provenance] Audit will use catalog benchmark for [${item.sku}] — live scrape unavailable`);
+      }
+
+      const audit = this.auditProduct(productForAudit);
+      const fetchTimestamp = new Date().toISOString();
       const rec: CrawlerInspectionRecord = {
         id: `CRAWL-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
         inspected_at: new Date().toLocaleString('en-IN'),
-        product: { ...item, scrape_method: method, is_live_scraped: method !== 'fallback_catalog' },
+        product: { ...productForAudit, scrape_method: method, is_live_scraped: method !== 'fallback_catalog' },
         audit,
         scrape_method: method,
         is_live: method !== 'fallback_catalog',
+        // Provenance: persist raw source, fetch timestamp, and data origin for every finding
+        raw_live_content: liveContent ?? undefined,
+        fetch_timestamp: fetchTimestamp,
+        data_source: method !== 'fallback_catalog' ? 'live_jina_scrape' : 'catalog_benchmark',
       };
 
       records.push(rec);

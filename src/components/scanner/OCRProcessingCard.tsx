@@ -164,22 +164,36 @@ export const OCRProcessingCard: React.FC = () => {
               </span>
             </div>
 
-            {/* Right: Key metric badges */}
+            {/* Right: Key metric badges — derived from actual extraction results */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="danger" size="sm" className="font-bold">
-                5 Violations
-              </Badge>
-              <Badge variant="warning" size="sm" className="font-bold">
-                1 Warning
-              </Badge>
-              <Badge variant="success" size="sm" className="gap-1 font-medium">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>6 Compliant</span>
-              </Badge>
-              <Badge variant="neutral" size="sm" className="font-medium text-slate-600">
-                13 Declarations
-              </Badge>
-            </div>
+              {extractedData?.declarations && (() => {
+                const declValues = Object.values(extractedData.declarations);
+                const violations = declValues.filter((d) => d.validationStatus === 'non-compliant' || d.validationStatus === 'missing').length;
+                const warnings = declValues.filter((d) => d.validationStatus === 'warning').length;
+                const compliant = declValues.filter((d) => d.validationStatus === 'compliant').length;
+                const total = declValues.length;
+                return (
+                  <>
+                    {violations > 0 && (
+                      <Badge variant="danger" size="sm" className="font-bold">
+                        {violations} Violation{violations !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {warnings > 0 && (
+                      <Badge variant="warning" size="sm" className="font-bold">
+                        {warnings} Warning{warnings !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    <Badge variant="success" size="sm" className="gap-1 font-medium">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>{compliant} Compliant</span>
+                    </Badge>
+                    <Badge variant="neutral" size="sm" className="font-medium text-slate-600">
+                      {total} Declaration{total !== 1 ? 's' : ''}
+                    </Badge>
+                  </>
+                );
+              })()}
           </div>
         )}
 

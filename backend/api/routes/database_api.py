@@ -243,6 +243,8 @@ class OCRScanCreateSchema(BaseModel):
     extracted_parameters: Dict[str, Any] = Field(default_factory=dict)
     bounding_boxes: List[Any] = Field(default_factory=list)
     readability_scores: Dict[str, Any] = Field(default_factory=dict)
+    rule_pack_metadata: Dict[str, Any] = Field(default_factory=dict)
+    evidence_quality: Dict[str, Any] = Field(default_factory=dict)
     status: str = "completed"
 
 
@@ -274,6 +276,8 @@ def create_ocr_scan(scan_in: OCRScanCreateSchema, db: Session = Depends(get_db))
         extracted_parameters=scan_in.extracted_parameters,
         bounding_boxes=scan_in.bounding_boxes,
         readability_scores=scan_in.readability_scores,
+        rule_pack_metadata=scan_in.rule_pack_metadata,
+        evidence_quality=scan_in.evidence_quality,
         status=scan_in.status,
     )
     db.add(scan)

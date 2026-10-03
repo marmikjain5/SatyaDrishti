@@ -41,7 +41,7 @@ export interface RuleAuditEntry {
   ruleCode: string;
   section: string;
   fieldKey: DeclarationFieldKey;
-  status: 'pass' | 'fail' | 'warning' | 'not-applicable';
+  status: 'pass' | 'fail' | 'warning' | 'unknown' | 'not-applicable';
   severity: ViolationSeverity;
   /** The OCR-extracted value used as evidence */
   evidence: string;
@@ -62,12 +62,20 @@ export interface ComplianceValidationResult {
   id: string;
   timestamp: string;
   scanId: string;
-  overallStatus: 'compliant' | 'non-compliant' | 'warning';
+  overallStatus: 'compliant' | 'non-compliant' | 'warning' | 'under-review';
   complianceScore: number; // 0–100
   violationCount: number;
   warningCount: number;
   passCount: number;
   notApplicableCount: number;
+  unknownCount?: number;
+  rulePack?: {
+    id: string;
+    version: string;
+    effectiveFrom: string;
+    citationSource: string;
+    approvalState: 'approved' | 'draft' | 'superseded';
+  };
   missingDeclarations: string[];
   audit: RuleAuditEntry[];
   recommendations: string[];

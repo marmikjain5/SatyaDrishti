@@ -87,6 +87,10 @@ export const ComplianceResultsPanel: React.FC = () => {
       label: 'NEEDS ATTENTION',
       badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
     },
+    'under-review': {
+      label: 'UNDER REVIEW',
+      badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    },
   }[result.overallStatus];
 
   return (

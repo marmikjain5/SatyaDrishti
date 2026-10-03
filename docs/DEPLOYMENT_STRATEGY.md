@@ -13,7 +13,7 @@ The current implementation of **SatyaDrishti** consists of a decoupled frontend 
   - **State Management**: Zustand stores (`scanStore`, `complianceStore`, `hygieneStore`, `authStore`, `reportStore`, `legalReviewStore`, `languageStore`).
   - **Client-Side Vision & OCR**: Browser-native `MediaDevices` API, Tesseract.js / Canvas OCR pre-processing, deterministic Legal Metrology validation engine (`src/lib/pcrRulesEngine.ts`), and RAG knowledge service (`src/lib/ragKnowledgeService.ts`).
   - **Routing**: React Router v6 with role-aware navigation (Inspector, Manufacturer, Citizen Consumer, Directorate Admin).
-  - **PWA Capabilities**: Service Worker (`public/sw.js`), Web App Manifest (`public/manifest.json`), touch targets ≥ 44x44px, offline UI shell caching.
+  - **PWA Capabilities**: Service Worker (`public/sw.js`), Web App Manifest (`public/manifest.json`), touch targets ≥ 44x44px, offline UI shell and OCR runtime/model caching.
 
 - **Backend (Python FastAPI)**:
   - **Framework**: FastAPI (`backend/main.py`) with Uvicorn ASGI server.
@@ -63,9 +63,10 @@ SatyaDrishti has been engineered with a mobile-first responsive design supportin
 
 - **Manifest**: Located at `public/manifest.json` configured with `display: "standalone"`, `scope: "/"`, `start_url: "/"`, `#0F172A` theme color, and responsive maskable vector icons.
 - **Service Worker (`public/sw.js`)**:
-  - **Conservative Caching Policy**: Caches static UI shell (`index.html`, scripts, CSS, fonts, SVG icons).
+  - **Conservative Caching Policy**: Caches the static UI shell and the local Tesseract worker, WebAssembly core, and English model; inspection and API data are not cached by the service worker.
   - **Zero Sensitive Data Caching**: Inspection records, OCR results, legal notices, and compliance API requests are explicitly routed network-first with zero permanent static disk caching to protect citizen and industrial data privacy.
-  - **Offline Fallback**: Offline users receive a functional UI shell with explicit connectivity alerts.
+  - **Offline inspection workflow**: Completed scans and original evidence images are stored in the browser's IndexedDB queue. Inspectors use **Sync Now** when connected; `POST /api/inspections/sync` idempotently stores each inspection and evidence. A reused ID with different content is reported as a conflict, and the inspector can preserve the local copy as a new inspection. Sync stores the submitted result and evidence; it does not itself constitute server-side legal verification.
+  - **Offline fallback**: The cached UI shell and OCR assets support local scanning after an online installation; sync requires a network connection and the backend.
 - **Installation**: Users on Android (Chrome/Firefox) and iOS (Safari "Add to Home Screen") can install SatyaDrishti as a standalone app with full-screen experience and hardware camera access.
 
 ---

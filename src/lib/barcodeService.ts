@@ -14,7 +14,14 @@ import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 export interface BarcodeDetectionResult {
   text: string;
   format: string;
+  /**
+   * Optical decode confidence (0–100).
+   * NOTE: This reflects decode quality only, NOT identity or registry verification.
+   * A decoded value must be separately validated for check-digit integrity and GS1 registry match.
+   */
   confidence: number;
+  /** True if the barcode passed format-level check-digit validation (e.g. EAN-13 Luhn). */
+  checksumValid: boolean;
 }
 
 class BarcodeService {
@@ -39,6 +46,37 @@ class BarcodeService {
   }
 
   /**
+   * Validates EAN-8 / EAN-13 / UPC check digit using the GS1 Luhn-variant algorithm.
+   * Returns true only when the trailing check digit is correct.
+   * NOTE: Format-level checksum passing does NOT constitute GS1 registry or identity verification.
+   */
+  private validateEanChecksum(digits: string): boolean {
+    const cleaned = digits.replace(/\D/g, '');
+    if (cleaned.length < 8) return false;
+    let sum = 0;
+    for (let i = 0; i < cleaned.length - 1; i++) {
+      const d = parseInt(cleaned[i], 10);
+      sum += (i % 2 === 0 && cleaned.length % 2 === 1) || (i % 2 === 1 && cleaned.length % 2 === 0)
+        ? d * 3
+        : d;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return checkDigit === parseInt(cleaned[cleaned.length - 1], 10);
+  }
+
+  private buildResult(text: string, format: string): BarcodeDetectionResult {
+    const checksumValid = this.validateEanChecksum(text);
+    // Optical decode is confirmed but is NOT registry or identity verification.
+    // Confidence reflects decode quality; checksumValid reflects format integrity.
+    return {
+      text,
+      format,
+      confidence: checksumValid ? 92 : 60,
+      checksumValid,
+    };
+  }
+
+  /**
    * Decodes barcode from an image dataUrl or URL.
    * Tests multi-angle orientations (0°, 90°, 180°, 270°) and region crops (right edge, left edge, bottom).
    */
@@ -49,11 +87,7 @@ class BarcodeService {
       if (res && res.getText()) {
         const text = res.getText().trim();
         console.log(`✅ [ZXing Barcode] Detected directly (0°): ${text} (${res.getBarcodeFormat()})`);
-        return {
-          text,
-          format: res.getBarcodeFormat().toString(),
-          confidence: 99,
-        };
+        return this.buildResult(text, res.getBarcodeFormat().toString());
       }
     } catch {
       // Continue to rotated passes
@@ -81,11 +115,7 @@ class BarcodeService {
           if (res && res.getText()) {
             const text = res.getText().trim();
             console.log(`✅ [ZXing Barcode] Detected on full ${angle}° rotated pass: ${text} (${res.getBarcodeFormat()})`);
-            return {
-              text,
-              format: res.getBarcodeFormat().toString(),
-              confidence: 99,
-            };
+            return this.buildResult(text, res.getBarcodeFormat().toString());
           }
         } catch {
           // try next
@@ -135,11 +165,7 @@ class BarcodeService {
               if (res && res.getText()) {
                 const text = res.getText().trim();
                 console.log(`✅ [ZXing Barcode] Detected on ${reg.name} (${angle}°): ${text} (${res.getBarcodeFormat()})`);
-                return {
-                  text,
-                  format: res.getBarcodeFormat().toString(),
-                  confidence: 99,
-                };
+                return this.buildResult(text, res.getBarcodeFormat().toString());
               }
             } catch {
               // try next angle

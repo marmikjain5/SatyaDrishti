@@ -15,6 +15,14 @@ import type {
 } from '../types/ruleEngine';
 import { LEGAL_METROLOGY_RULES } from '../data/legalMetrologyRules';
 
+export const ACTIVE_RULE_PACK = {
+  id: 'india-legal-metrology-packaged-commodities',
+  version: '2026.01',
+  effectiveFrom: '2026-01-01',
+  citationSource: 'Ministry of Consumer Affairs, Legal Metrology (Packaged Commodities) Rules, 2011 and amendments; approved frontend rule pack.',
+  approvalState: 'approved' as const,
+};
+
 // ─── Field-Specific Validators ──────────────────────────────────
 
 interface ValidationOutcome {
@@ -22,6 +30,11 @@ interface ValidationOutcome {
   evidence: string;
   expectedStandard: string;
   recommendation: string;
+}
+
+function isUnavailableField(field: DeclarationField | undefined): boolean {
+  const value = field?.value?.trim().toLowerCase() || '';
+  return !value || value === '(not detected)' || value === 'not detected' || value === 'unknown';
 }
 
 function validateProductName(
@@ -508,8 +521,10 @@ const VALIDATOR_MAP: Record<string, ValidatorFn> = {
  * Mandatory critical fields carry 2× weight.
  */
 function computeComplianceScore(audit: RuleAuditEntry[]): number {
-  const applicableEntries = audit.filter((e) => e.status !== 'not-applicable');
-  if (applicableEntries.length === 0) return 100;
+  const applicableEntries = audit.filter((e) => e.status !== 'not-applicable' && e.status !== 'unknown');
+  if (applicableEntries.length === 0) {
+    return audit.some((e) => e.status === 'unknown') ? 0 : 100;
+  }
 
   let totalWeight = 0;
   let earnedWeight = 0;
@@ -527,7 +542,7 @@ function computeComplianceScore(audit: RuleAuditEntry[]): number {
     } else if (entry.status === 'warning') {
       earnedWeight += severityWeight * 0.5;
     }
-    // 'fail' earns 0
+    // 'fail' earns 0; unknown evidence is excluded from the denominator.
   }
 
   return totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 100;
@@ -600,6 +615,27 @@ export function validateProduct(
       }
     }
 
+    // Absence is not proof of a statutory violation. Preserve uncertainty when
+    // OCR did not find a field or the field is explicitly marked unavailable.
+    if (isUnavailableField(field)) {
+      if (rule.isMandatory) missingDeclarations.push(rule.title);
+      audit.push({
+        ruleId: rule.id,
+        ruleName: rule.title,
+        ruleDescription: rule.description,
+        ruleCode: rule.ruleCode,
+        section: rule.section,
+        fieldKey: rule.fieldKey,
+        status: 'unknown',
+        severity: rule.severity,
+        evidence: '(Not detected — insufficient evidence)',
+        expectedStandard: rule.description,
+        recommendation: 'Capture a clearer view of the applicable declaration panel or verify it manually before assigning a legal finding.',
+        penaltyRange: rule.penaltyRange,
+      });
+      continue;
+    }
+
     const outcome = validator(field, rule, context);
 
     const entry: RuleAuditEntry = {
@@ -620,10 +656,6 @@ export function validateProduct(
     audit.push(entry);
 
     // Track missing mandatory declarations
-    if (outcome.status === 'fail' && rule.isMandatory && outcome.evidence === '(Not detected)') {
-      missingDeclarations.push(rule.title);
-    }
-
     // Collect recommendations from failures and warnings
     if (outcome.status === 'fail' || outcome.status === 'warning') {
       if (outcome.recommendation) {
@@ -641,18 +673,20 @@ export function validateProduct(
   }
 
   // Compute aggregates
-  const isMuesli = /muesli/i.test(productData.productName || '') || /safa/i.test(productData.manufacturer || '') || /13624999000389/i.test(context.rawText || '');
-  const violationCount = isMuesli ? 5 : audit.filter((e) => e.status === 'fail').length;
-  const warningCount = isMuesli ? 1 : audit.filter((e) => e.status === 'warning').length;
-  const passCount = isMuesli ? 6 : audit.filter((e) => e.status === 'pass').length;
-  const notApplicableCount = isMuesli ? 1 : audit.filter((e) => e.status === 'not-applicable').length;
+  const violationCount = audit.filter((e) => e.status === 'fail').length;
+  const warningCount = audit.filter((e) => e.status === 'warning').length;
+  const passCount = audit.filter((e) => e.status === 'pass').length;
+  const notApplicableCount = audit.filter((e) => e.status === 'not-applicable').length;
+  const unknownCount = audit.filter((e) => e.status === 'unknown').length;
 
-  const complianceScore = isMuesli ? 54 : computeComplianceScore(audit);
+  const complianceScore = computeComplianceScore(audit);
 
   // Determine overall status
-  let overallStatus: 'compliant' | 'non-compliant' | 'warning' = isMuesli ? 'non-compliant' : 'compliant';
+  let overallStatus: 'compliant' | 'non-compliant' | 'warning' | 'under-review' = 'compliant';
   if (violationCount > 0) {
     overallStatus = 'non-compliant';
+  } else if (unknownCount > 0) {
+    overallStatus = 'under-review';
   } else if (warningCount > 0) {
     overallStatus = 'warning';
   }
@@ -675,6 +709,8 @@ export function validateProduct(
     warningCount,
     passCount,
     notApplicableCount,
+    unknownCount,
+    rulePack: ACTIVE_RULE_PACK,
     missingDeclarations,
     audit,
     recommendations: allRecommendations,

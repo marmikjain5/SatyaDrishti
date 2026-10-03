@@ -76,6 +76,14 @@ def run_migrations():
                 conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS extracted_evidence_summary JSON DEFAULT '{}'::json;"))
                 conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS evidence_urls JSON DEFAULT '[]'::json;"))
                 conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS officer_decision_history JSON DEFAULT '[]'::json;"))
+                conn.execute(text("ALTER TABLE ocr_scans ADD COLUMN IF NOT EXISTS rule_pack_metadata JSON DEFAULT '{}'::json;"))
+                conn.execute(text("ALTER TABLE ocr_scans ADD COLUMN IF NOT EXISTS evidence_quality JSON DEFAULT '{}'::json;"))
+            if is_current_sqlite:
+                for col in ["rule_pack_metadata", "evidence_quality"]:
+                    try:
+                        conn.execute(text(f"ALTER TABLE ocr_scans ADD COLUMN {col} TEXT DEFAULT '{{}}'"))
+                    except Exception:
+                        pass
         print("[Database] Schema column migrations completed successfully.")
     except Exception as e:
         print(f"[Database] Migration notice: {e}")

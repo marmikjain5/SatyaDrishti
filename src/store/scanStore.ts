@@ -18,6 +18,7 @@ import {
 } from '../lib/scanComplaintCorrelator';
 import { consolidateMultiAngleExtractions } from '../lib/multiAngleConsolidator';
 import { useComplianceStore } from './complianceStore';
+import { offlineInspectionQueue, type QueuedInspection } from '../services/offlineInspectionQueue';
 import { verifyBatch, verifyMRP } from '../lib/batchVerificationService';
 import {
   MOCK_SCANS,
@@ -70,6 +71,7 @@ interface ScanState {
   viewScan: (scan: ScanRecord | null) => void;
   setValidationResult: (scanId: string, result: ComplianceValidationResult) => void;
   setReadabilityResult: (scanId: string, result: ReadabilityAnalysisResult) => void;
+  restoreOfflineInspections: (inspections: QueuedInspection[]) => Promise<void>;
 }
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -359,6 +361,11 @@ export const useScanStore = create<ScanState>((set, get) => ({
         activeAngleIndex: 0,
       };
 
+      await offlineInspectionQueue.enqueue(completedScan, uploadedImages, {
+        validationResult,
+        correlationResult,
+      });
+
       // Step 6: Ingest Scanned Product into Central Compliance Store
       useComplianceStore.getState().addScannedProduct(
         masterExtractedData,
@@ -524,5 +531,44 @@ export const useScanStore = create<ScanState>((set, get) => ({
         [scanId]: result,
       },
     }));
+  },
+
+  restoreOfflineInspections: async (inspections) => {
+    const inspectionsById = new Map(inspections.map((inspection) => [inspection.id, inspection]));
+    const restoredScans = await Promise.all(
+      inspections
+        .filter((inspection) => inspection.scan.status === 'completed' && inspection.scan.extractedData)
+        .map((inspection) => offlineInspectionQueue.restoreScan(inspection))
+    );
+    const restoredValidation = Object.fromEntries(
+      restoredScans.map((scan) => {
+        const queuedInspection = inspectionsById.get(scan.id);
+        const result = queuedInspection?.analysis.validationResult || validateProduct(scan.extractedData!);
+        result.scanId = scan.id;
+        return [scan.id, result];
+      })
+    );
+    const restoredCorrelation = Object.fromEntries(
+      restoredScans.map((scan) => [
+        scan.id,
+        inspectionsById.get(scan.id)!.analysis.correlationResult,
+      ])
+    );
+    const restoredReadability = Object.fromEntries(
+      restoredScans
+        .filter((scan) => scan.readabilityResult)
+        .map((scan) => [scan.id, scan.readabilityResult!])
+    );
+
+    set((state) => {
+      const existingIds = new Set(state.scans.map((scan) => scan.id));
+      const newScans = restoredScans.filter((scan) => !existingIds.has(scan.id));
+      return {
+        scans: [...newScans, ...state.scans],
+        validationResults: { ...restoredValidation, ...state.validationResults },
+        correlationResults: { ...restoredCorrelation, ...state.correlationResults },
+        readabilityResults: { ...restoredReadability, ...state.readabilityResults },
+      };
+    });
   },
 }));

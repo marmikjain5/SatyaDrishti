@@ -121,7 +121,9 @@ export class ReportGenerationEngine {
 
     let overallStatus: 'compliant' | 'non-compliant' | 'warning' = 'compliant';
     if (validationResult) {
-      overallStatus = validationResult.overallStatus;
+      overallStatus = validationResult.overallStatus === 'under-review'
+        ? 'warning'
+        : validationResult.overallStatus;
     } else if (violationCount > 0) {
       overallStatus = 'non-compliant';
     } else if (warningCount > 0) {
@@ -431,7 +433,7 @@ export class ReportGenerationEngine {
 
       let pStatus: 'compliant' | 'non-compliant' | 'warning' = 'compliant';
       if (valResult) {
-        pStatus = valResult.overallStatus;
+        pStatus = valResult.overallStatus === 'under-review' ? 'warning' : valResult.overallStatus;
       } else if (pViolations > 0) {
         pStatus = 'non-compliant';
       } else if (pWarnings > 0) {
@@ -478,7 +480,7 @@ export class ReportGenerationEngine {
             evidence: entry.evidence || 'Not Detected',
             expectedStandard: entry.expectedStandard,
             penalty: entry.status === 'fail' ? `₹${fineMax.toLocaleString('en-IN')}` : 'Nil',
-            status: entry.status,
+            status: entry.status === 'unknown' ? 'warning' : entry.status,
           });
         }
       }

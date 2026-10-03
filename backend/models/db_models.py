@@ -100,12 +100,26 @@ class OCRScanModel(Base):
     extracted_parameters = Column(JSON, default=dict)
     bounding_boxes = Column(JSON, default=list)
     readability_scores = Column(JSON, default=dict)
+    rule_pack_metadata = Column(JSON, default=dict)
+    evidence_quality = Column(JSON, default=dict)
     status = Column(String(32), nullable=False, default="completed")
     scan_timestamp = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     product_rel = relationship("ProductModel", back_populates="ocr_scans")
+
+
+class OfflineInspectionModel(Base):
+    __tablename__ = "offline_inspections"
+
+    id = Column(String(128), primary_key=True, index=True)
+    payload_digest = Column(String(64), nullable=False)
+    scan_payload = Column(JSON, nullable=False)
+    analysis_payload = Column(JSON, nullable=False)
+    evidence_images = Column(JSON, nullable=False, default=list)
+    client_created_at = Column(String(64), nullable=False)
+    synced_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class ViolationModel(Base):
@@ -207,4 +221,3 @@ class RegulatoryRuleModel(Base):
     is_active = Column(Boolean, nullable=False, default=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-

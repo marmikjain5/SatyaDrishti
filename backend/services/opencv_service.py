@@ -304,6 +304,51 @@ def denoise_and_sharpen(image: np.ndarray) -> np.ndarray:
     return sharpened
 
 
+def detect_mrp_sticker_candidates(image: np.ndarray) -> Dict[str, Any]:
+    """Return visual sticker/overlay candidates for human review only.
+
+    This deliberately does not call a sticker "fraud". It looks for rectangular,
+    high-contrast overlay-like regions and reports evidence coordinates so an
+    inspector can verify the original and covered MRP visually.
+    """
+    h, w = image.shape[:2]
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 70, 180)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    candidates = []
+    image_area = float(w * h)
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < image_area * 0.002 or area > image_area * 0.35:
+            continue
+        perimeter = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+        if len(approx) != 4 or not cv2.isContourConvex(approx):
+            continue
+        x, y, cw, ch = cv2.boundingRect(approx)
+        aspect = cw / max(ch, 1)
+        if aspect < 0.35 or aspect > 6.0:
+            continue
+        fill_ratio = area / max(float(cw * ch), 1.0)
+        if fill_ratio < 0.55:
+            continue
+        candidates.append({
+            "bbox_px": {"x": int(x), "y": int(y), "width": int(cw), "height": int(ch)},
+            "normalized": {"x": round(x / w * 100, 2), "y": round(y / h * 100, 2), "width": round(cw / w * 100, 2), "height": round(ch / h * 100, 2)},
+            "confidence": round(min(0.95, max(0.35, fill_ratio * 0.7 + min(area / image_area, 0.2))), 2),
+            "signal": "rectangular_overlay_candidate",
+        })
+
+    candidates = sorted(candidates, key=lambda item: item["confidence"], reverse=True)[:8]
+    return {
+        "review_required": bool(candidates),
+        "decision": "REVIEW_ONLY" if candidates else "NO_CANDIDATE_DETECTED",
+        "candidates": candidates,
+        "disclaimer": "Visual candidate only; not a fraud determination. Confirm against the original package and OCR evidence.",
+    }
+
+
 def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
     """
     Full End-to-End OpenCV Preprocessing Pipeline executed prior to Tesseract OCR:
@@ -361,6 +406,7 @@ def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
 
     h1, w1 = img.shape[:2]
     processed_base64 = encode_cv2_to_base64(img, quality=90)
+    sticker_signal = detect_mrp_sticker_candidates(img)
 
     print(f"[OpenCV Preprocessor] Completed {len(operations)} operations: {w0}x{h0} -> {w1}x{h1}")
 
@@ -372,5 +418,6 @@ def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
         "perspective_corrected": was_perspective_corrected,
         "background_cropped": was_cropped,
         "deskew_angle_deg": skew_deg,
+        "mrp_sticker_signal": sticker_signal,
         "processed_image_base64": processed_base64,
     }
