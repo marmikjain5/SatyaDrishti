@@ -58,4 +58,6 @@ __pycache__/
 *.pyc
 __pycache__
 /__pycache__
+
+# Project README
 README.md
