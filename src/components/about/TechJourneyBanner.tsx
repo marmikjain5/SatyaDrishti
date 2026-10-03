@@ -32,7 +32,7 @@ export const TechJourneyBanner: React.FC = () => {
                 Want to know more about our journey on the tech side of things?
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                Discover how we evolved from an OCR prototype into a deterministic compliance engine, solved relative font scaling, and engineered an autonomous legal metrology RAG pipeline.
+                Discover how we engineered an autonomous compliance checking system for the <strong>Legal Metrology (Packaged Commodities) Rules, 2011</strong> — combining multi-pass OCR &amp; Multimodal Vision AI for mandatory declarations extraction, font size and readability analysis (Rule 7/9), and deterministic rule verification.
               </p>
             </div>
           </div>

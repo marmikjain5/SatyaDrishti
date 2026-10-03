@@ -143,7 +143,7 @@ export const TechnicalBlogPage: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              An inside look into how our team built an autonomous legal metrology compliance platform — solving low-contrast OCR, eliminating vision model hallucinations with deterministic rule engines, engineering a versioned statutory RAG pipeline, and scaling GIS risk intelligence.
+              An inside look into how our team engineered an autonomous compliance checking system for packaged commodities under the <strong>Legal Metrology Act, 2009</strong> and the <strong>Legal Metrology (Packaged Commodities) Rules, 2011</strong> — combining Computer Vision (CV), multi-pass OCR, Multimodal Vision-Language Models (VLMs), Named Entity Recognition (NER), font size &amp; readability analysis (Rule 7 &amp; 9), zero-hallucination deterministic rule engines, digital PDF inspection reports, and scalable GIS enforcement intelligence.
             </p>
 
           </div>
@@ -172,15 +172,18 @@ export const TechnicalBlogPage: React.FC = () => {
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/40 dark:to-slate-900 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-3 shadow-xs">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
                 <Cpu className="h-4 w-4" />
-                <span>Tech Stack Highlights</span>
+                <span>Tech Stack &amp; Regulatory Highlights</span>
               </div>
               <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 font-mono">
-                <li>• Multi-Pass Tesseract OCR</li>
-                <li>• Pollinations AI Text LLM</li>
-                <li>• Hybrid Vector RAG (BM25 + Cosine)</li>
-                <li>• Deterministic Rule Engine</li>
-                <li>• GIS Risk Surveillance</li>
-                <li>• FastAPI + React + Tailwind</li>
+                <li>• Multi-Pass Tesseract OCR &amp; OpenCV</li>
+                <li>• Multimodal Vision LLMs (Pollinations / Ollama)</li>
+                <li>• Statutory Named Entity Recognition (NER)</li>
+                <li>• Font Size &amp; Readability Analysis (Rule 7/9)</li>
+                <li>• Deterministic Rule Engine (PCR 2011)</li>
+                <li>• Hybrid Statutory RAG (BM25 + Cosine)</li>
+                <li>• Digital Compliance Reports (PDF Export)</li>
+                <li>• Enforcement Official Dashboards &amp; GIS</li>
+                <li>• Offline Inspection Queue (PWA Background Sync)</li>
               </ul>
             </div>
           </aside>
@@ -223,56 +226,78 @@ export const TechnicalBlogPage: React.FC = () => {
 
               <div className="space-y-4">
                 <p>
-                  A missing MRP. An unreadable manufacturer address. A net quantity declaration that doesn't match the rules.
+                  Packaged commodities are widely sold through retail stores, supermarkets, and e-commerce platforms across India. Under the <strong className="text-slate-900 dark:text-white">Legal Metrology Act, 2009</strong> and the <strong className="text-slate-900 dark:text-white">Legal Metrology (Packaged Commodities) Rules, 2011 (LMPC Rules)</strong>, every packaged commodity is statutorily required to bear mandatory declarations in a specified format and manner:
                 </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 my-3 text-xs font-mono">
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">1. Rule 6(1)(a):</span> Name and complete address of manufacturer, packer, or importer
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">2. Rule 6(1)(b):</span> Net quantity with standard metric units &amp; Schedule I MPE compliance
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">3. Rule 6(1)(c):</span> Maximum Retail Price (MRP) incl. of all taxes &amp; unit sale price
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">4. Rule 6(1)(d):</span> Month and year of manufacture, packing, or import
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">5. Rule 6(1)(e):</span> Consumer care contact details (telephone, email, postal address)
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">6. Rule 6(1)(f):</span> Country of origin &amp; prescribed font size/readability (Rule 7 &amp; 9)
+                  </div>
+                </div>
+
                 <p>
-                  Individually, these seem like small mistakes. But when multiplied across millions of packaged products sold every day — on supermarket shelves, local Kirana stores, Amazon, Flipkart, Blinkit, and Zepto — they become a massive compliance challenge.
+                  These declarations are critical for ensuring market transparency, fair trade practices, and consumer protection. However, due to the astronomical volume and variety of packaged products available in supermarkets, local Kirana stores, and digital marketplaces (Amazon, Flipkart, Blinkit, Zepto, Meesho), manual inspection and compliance checking by enforcement agencies becomes time-consuming and resource-intensive.
                 </p>
 
                 <blockquote className="blog-pullquote my-6 p-5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 space-y-2">
                   <p className="font-semibold text-blue-900 dark:text-blue-200 text-base">
-                    "The surprising part wasn't that violations existed. The surprising part was how they were being found."
+                    "Non-compliances such as missing declarations, incorrect font sizes, improper MRP declarations, and dual pricing frequently escape detection under manual enforcement."
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    In most cases, a compliance inspection still begins with an enforcement inspector holding a physical product in one hand and a thick printed rulebook in the other.
+                    In traditional enforcement, a field inspection requires officers to manually cross-reference complex statutory schedules, compute numeral height millimeter standards with calipers, and hand-write violation notices.
                   </p>
                 </blockquote>
 
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs text-slate-800 dark:text-slate-300 my-4">
                   <li className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-xs">
                     <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>Every declaration checked manually</span>
+                    <span>Every mandatory declaration checked manually</span>
                   </li>
                   <li className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-xs">
                     <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>Every violation interpreted manually</span>
+                    <span>Font size and readability interpreted subjectively</span>
                   </li>
                   <li className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-xs">
                     <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>Every inspection report written manually</span>
+                    <span>Digital compliance reports drafted manually</span>
                   </li>
                   <li className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-xs">
                     <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span>Every verdict dependent on officer availability</span>
+                    <span>Inspection history trapped in disconnected paper logs</span>
                   </li>
                 </ul>
 
                 <p>
-                  As we studied the <strong className="text-slate-900 dark:text-white">Legal Metrology (Packaged Commodities) Rules, 2011</strong>, we realized something important:
+                  As we studied the <strong className="text-slate-900 dark:text-white">Legal Metrology (Packaged Commodities) Rules, 2011</strong>, we realized that both domains are fundamentally structured:
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2 shadow-xs">
-                    <div className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">System 1: The Product Label</div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">Product labels have structure. They describe what is actually printed on packaging surfaces.</p>
+                    <div className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">System 1: The Packaged Commodity Label</div>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">Package surfaces and product listings contain structured spatial text: MRP, net quantity, manufacturer address, and manufacturing dates.</p>
                   </div>
                   <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-2 shadow-xs">
-                    <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">System 2: Statutory Regulations</div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">The law also has structure. It prescribes exactly what should be printed under legal clauses.</p>
+                    <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">System 2: Statutory Legal Metrology Rules</div>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">The statutory law prescribes exact standards: mandatory fields, minimum font size relative to PDP area, and Schedule I permissible error limits.</p>
                   </div>
                 </div>
 
                 <p className="text-lg font-medium text-slate-900 dark:text-white italic">
-                  Comparing two structured systems is exactly the kind of problem software can solve. That realization became the starting point of SatyaDrishti.
+                  Developing an automated software system capable of scanning packaged commodity labels, product images, and product listings to detect, extract, and validate mandatory declarations—and instantly flag violations—became our defining problem statement.
                 </p>
               </div>
 
@@ -281,19 +306,19 @@ export const TechnicalBlogPage: React.FC = () => {
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">SATYADRISHTI CORE VISION</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">SATYADRISHTI CORE VISION &amp; COMPLIANCE SCOPE</span>
                   </div>
                   <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-500/20">
-                    AUTOMATED VERIFICATION
+                    AUTOMATED REGULATORY VERIFICATION
                   </span>
                 </div>
                 <div className="text-center py-6 space-y-3">
                   <div className="inline-block p-4 rounded-full bg-blue-50 dark:bg-blue-600/10 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400">
                     <Eye className="h-10 w-10" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Autonomous Intelligence for Statutory Packaging Verification</h3>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Automated Compliance Checking for Legal Metrology Rules, 2011</h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-                    Bridging cutting-edge optical recognition with statutory consumer laws to ensure transparency, consumer safety, and mandatory compliance enforcement.
+                    Scanning packaged commodity labels, product images, and e-commerce listings to automatically detect mandatory declarations, verify font size &amp; readability, and generate digital compliance reports.
                   </p>
                 </div>
               </div>
@@ -314,45 +339,45 @@ export const TechnicalBlogPage: React.FC = () => {
 
               <div className="space-y-4">
                 <p>
-                  Initially, we thought the challenge was straightforward:
+                  Initially, our architecture outlined a direct linear pipeline:
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-700 dark:text-slate-300 py-2">
-                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">1. Take a Picture</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">1. Image Upload &amp; Scanning</span>
                   <span>→</span>
-                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">2. Run OCR</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">2. Computer Vision &amp; OCR</span>
                   <span>→</span>
-                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">3. Extract Text</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">3. Mandatory Declaration Extraction</span>
                   <span>→</span>
-                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">4. Compare Rules</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">4. Rule 2011 Validation</span>
                   <span>→</span>
-                  <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">5. Verdict</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">5. Digital Compliance Report PDF</span>
                 </div>
 
                 <p>
-                  Simple, right? Until we started analyzing real-world retail products in supermarket sweeps:
+                  However, when we deployed test scans across supermarket shelves and physical retail stores, the operational realities of packaged commodities exposed key edge cases:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Curved Surface Distortion</div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Labels wrapped tightly around cylindrical bottles warped OCR character dimensions.</p>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Curved Surface Distortion &amp; Placement</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Labels wrapped tightly around cylindrical cans and pouches warped text aspect ratios, distorting font size and readability analysis.</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Dot-Matrix Stamps</div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Low-contrast dot-matrix batch codes &amp; MFD stamps were barely legible even to human eyes.</p>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Low-Contrast Dot-Matrix Stamps</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Dot-matrix batch codes, manufacturing dates, and MRP stamps required OpenCV adaptive thresholding to accurately verify completeness.</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Multi-Surface Division</div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Mandatory information was split across front PDP, side panels, and top carton flaps.</p>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">Multi-Surface Principal Display Panel (PDP)</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Mandatory information was distributed across front PDP, side panels, and top flaps, necessitating multi-image photograph attachments.</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">E-Commerce Discrepancies</div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">A product physically compliant in a store had missing declarations on its Amazon listing.</p>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">E-Commerce Product Listing Discrepancies</div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Digital listings on Amazon, Flipkart, and Blinkit showed missing declarations, omitted unit sale prices, and deceptive claims.</p>
                   </div>
                 </div>
 
                 <p>
-                  Suddenly, the challenge wasn't just reading labels — it was understanding compliance across both physical retail and digital marketplaces. That changed the scope of the project completely.
+                  Suddenly, the software system needed to support full end-to-end statutory enforcement: automated detection, extraction, and validation of mandatory declarations; font size and readability analysis; missing or misleading declaration detection; generation of compliance reports and violation summaries in PDF and editable formats; maintaining a repository of scanned products and compliance history; and providing role-based dashboards for enforcement officials.
                 </p>
               </div>
             </section>
@@ -372,19 +397,19 @@ export const TechnicalBlogPage: React.FC = () => {
 
               <div className="space-y-4">
                 <p>
-                  When we started building SatyaDrishti, we believed the fastest solution would be to let a multimodal vision LLM handle everything — extract declarations, interpret the label context, and directly output whether the product was compliant.
+                  When we began building the automated declaration extraction and validation pipeline, we hypothesized that modern Multimodal Vision-Language Models (VLMs) and Vision Transformers (ViT) could autonomously handle both visual packaging perception and statutory compliance checking in a single inference pass.
                 </p>
                 <p>
-                  For the first few days, this approach seemed promising. We would upload a product image, receive formatted information, and even get explanations for potential violations. The results looked convincing during initial demos.
+                  We tested end-to-end multimodal deep learning models (such as Pollinations AI and Ollama Qwen2.5-VL) on raw packaged commodity photos. The models performed remarkably well at Computer Vision (CV) tasks: detecting packaging boundaries, recognizing brand typography, extracting text from irregular packaging shapes, and locating mandatory declaration fields like MRP, net quantity, and manufacturer address.
                 </p>
 
                 <div className="p-5 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 space-y-3">
                   <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-sm">
                     <AlertTriangle className="h-5 w-5" />
-                    <span>The Reliability Flaw: Probabilistic Compliance vs Legal Rigor</span>
+                    <span>The Reliability Flaw: Probabilistic AI vs Statutory Legal Metrology Rigor</span>
                   </div>
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                    The problem appeared when we started testing the exact same product multiple times and comparing the output with actual Legal Metrology rules. Sometimes the model highlighted the correct issue but referenced a different clause. In a few cases, it interpreted the same declaration differently depending on how the image was cropped or illuminated.
+                    The fundamental issue emerged when we tested the exact same packaged commodity under varying lighting conditions, camera angles, and crops. While the deep learning model identified mandatory declarations, its compliance verdicts were probabilistic. Sometimes it cited Rule 6(1)(a) correctly; other times it hallucinated sub-clauses, miscalculated font size height ratios, or applied subjective tolerances to Schedule I Maximum Permissible Error (MPE) thresholds. In statutory law enforcement, probabilistic verdicts are legally unenforceable.
                   </p>
                 </div>
               </div>
@@ -405,16 +430,16 @@ export const TechnicalBlogPage: React.FC = () => {
 
               <div className="space-y-4">
                 <p>
-                  Even if a vision model was correct 95% of the time, a statutory compliance verdict could not depend on probability. An enforcement officer reviewing the same product twice must arrive at the exact same conclusion. Our platform needed to guarantee that same consistency.
+                  Even if an AI vision model achieved 95% classification accuracy, an enforcement officer issuing a statutory Show Cause Notice (SCN) under Section 36 of the Legal Metrology Act, 2009 cannot rely on statistical probability. Scanning the same product twice must produce an identical, mathematically provable verdict.
                 </p>
 
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/60 dark:to-indigo-950/60 border border-blue-200 dark:border-blue-800/60 space-y-3 shadow-xs">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Scale className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span>The Architectural Pivot</span>
+                    <span>The Neuro-Symbolic Architectural Pivot</span>
                   </h3>
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                    Instead of allowing AI to decide legal compliance, we restricted its responsibility strictly to <strong>extracting and organizing text from packaging labels</strong>. The final compliance verdict would always come from a <strong>deterministic rule engine</strong> built directly on version-controlled Legal Metrology regulations.
+                    We transitioned to a <strong>neuro-symbolic compliance architecture</strong>: Deep learning AI (Computer Vision, multi-pass Tesseract OCR, OpenCV contour binarization, Spatial Layout Analysis, and Multimodal LLMs) is strictly confined to <strong>perceptual text detection, packaging segmentation, and Named Entity Recognition (NER)</strong>. All legal adjudication is handled by a <strong>deterministic, zero-hallucination rule engine</strong> codifying the exact statutory clauses of the Legal Metrology (Packaged Commodities) Rules, 2011.
                   </p>
                 </div>
 
@@ -473,50 +498,50 @@ export const TechnicalBlogPage: React.FC = () => {
                   05
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  The Question That Forced Us To Think Differently
+                  The Question That Forced Us To Think Differently — The Statutory RAG Knowledge Layer
                 </h2>
               </div>
 
               <div className="space-y-4">
                 <p>
-                  As we moved deeper into the project, something interesting started happening. The toughest challenges didn't come from the code — they came from the questions people asked us during evaluations.
+                  As we advanced our architecture, the most critical engineering hurdles were raised by regulatory domain experts during technical reviews:
                 </p>
 
                 <div className="p-5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 space-y-2">
-                  <div className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider font-mono">College SIH Evaluation Moment</div>
+                  <div className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider font-mono">Regulatory Review Challenge</div>
                   <p className="text-lg font-bold text-slate-900 dark:text-white italic">
-                    "What is your database? Where does your legal knowledge come from?"
+                    "What is your statutory reference architecture? Where does your legal knowledge come from when gazette amendments are notified?"
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    When asked, we initially started explaining PostgreSQL, Supabase, and violation records. The judge clarified: <em>"Where does your legal knowledge come from when laws change?"</em> The room went silent.
+                    When asked, we initially described standard PostgreSQL database models. The regulatory assessor countered: <em>"A product manufactured in 2022 cannot be penalized under a 2024 gazette amendment. How does your compliance checking system guarantee temporal legal fidelity?"</em>
                   </p>
                 </div>
 
                 <p>
-                  That single question completely changed how we looked at the platform. Laws change. Gazette notifications are issued. Amendments become active. Rules get superseded. A static database was never going to be enough.
+                  Statutory rules evolve: the Legal Metrology Act, 2009 receives official e-Gazette notifications, G.S.R. amendments, and CCPA advisory orders. Static databases become obsolete. We designed an automated <strong>Regulatory Retrieval-Augmented Generation (RAG)</strong> knowledge pipeline:
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
                     <div className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
                       <Database className="h-4 w-4" />
-                      <span>1. Ingestion Layer</span>
+                      <span>1. Gazette Ingestion Pipeline</span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Ingests gazette notifications, Legal Metrology amendments, and FSSAI rules into a structured repository.</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Continuously ingests official e-Gazette notifications, Legal Metrology amendments, and Schedule tables into vectorized statutory embeddings.</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
                     <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
                       <Search className="h-4 w-4" />
                       <span>2. Hybrid RAG Retrieval</span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Combines BM25 keyword matching with 64D dense vector similarity to surface applicable clauses.</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Combines BM25 lexical keyword matching with dense vector embeddings (cosine similarity) to pinpoint exact legal sub-clauses and penalties.</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-xs">
                     <div className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                       <Clock className="h-4 w-4" />
-                      <span>3. Version Resolver</span>
+                      <span>3. Temporal Version Resolver</span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Ensures only regulations active on the product's manufacturing date are evaluated.</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Resolves the exact statutory legal regime effective on the product's detected month and year of manufacture, packing, or import.</p>
                   </div>
                 </div>
               </div>
@@ -531,36 +556,36 @@ export const TechnicalBlogPage: React.FC = () => {
                   06
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  The Question That Ruined Our Weekend — Relative Font Geometry
+                  Font Size &amp; Readability Analysis — Rule 7 &amp; Rule 9 Geometric Normalization
                 </h2>
               </div>
 
               <div className="space-y-4">
                 <p>
-                  Another challenge arrived from a discussion that initially sounded almost trivial. A teammate asked:
+                  Under <strong className="text-slate-900 dark:text-white">Rule 7 and Rule 9 of the Legal Metrology (Packaged Commodities) Rules, 2011</strong>, mandatory declarations (specifically net quantity and numeral declarations) must satisfy strict minimum height requirements based on the total area of the <strong>Principal Display Panel (PDP)</strong>, alongside contrast ratio readability requirements.
                 </p>
                 <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 font-mono text-xs shadow-xs">
-                  "Your system checks font readability, right? What happens if I zoom into the image before uploading it?"
+                  "How do you reliably verify font size in millimeters from a smartphone photo when camera distance, optical zoom, and digital cropping alter raw pixel dimensions?"
                 </div>
 
                 <p>
-                  Suddenly the problem became exponentially harder. Imagine two users uploading the same product. One uploads the full photo, while the other uploads a heavily zoomed-in crop. The font hasn't changed on the package, but the pixel height has quadrupled!
+                  Raw pixel height is meaningless without physical scale reference. Two different photos of the same package—one captured close-up and one from two meters away—yield wildly different pixel dimensions.
                 </p>
 
                 <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
-                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-mono">The Mindset Shift</div>
+                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-mono">Computer Vision Geometric Normalization</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40">
-                      <div className="text-xs font-bold text-red-600 dark:text-red-400 line-through">Old Question</div>
-                      <div className="text-sm font-mono text-slate-900 dark:text-white mt-1">"How big is the text in the image pixels?"</div>
+                      <div className="text-xs font-bold text-red-600 dark:text-red-400 line-through">Flawed Pixel Metric</div>
+                      <div className="text-sm font-mono text-slate-900 dark:text-white mt-1">"How many pixels high is the font on screen?"</div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40">
-                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">New Correct Question</div>
-                      <div className="text-sm font-mono text-slate-900 dark:text-white mt-1">"How big is the text relative to the overall package size?"</div>
+                      <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Normalized PDP Geometry</div>
+                      <div className="text-sm font-mono text-slate-900 dark:text-white mt-1">"What is numeral height relative to the Principal Display Panel (PDP) bounding polygon?"</div>
                     </div>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-2">
-                    Rather than relying on raw pixel measurements, we began normalizing extracted text box dimensions against overall package surface bounding polygons. The law evaluates the physical package, not the camera zoom level.
+                    We engineered an OpenCV contour segmentation algorithm that isolates package boundaries, computes Principal Display Panel (PDP) surface area, and calculates normalized numeral and letter height. The system simultaneously measures the WCAG contrast ratio between declaration text and the background packaging surface to check readability and non-compliance objectively.
                   </p>
                 </div>
               </div>
@@ -575,16 +600,16 @@ export const TechnicalBlogPage: React.FC = () => {
                   07
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  When E-Commerce Entered The Conversation
+                  E-Commerce Marketplace Product Listing Scanning &amp; Digital Compliance
                 </h2>
               </div>
 
               <div className="space-y-4">
                 <p>
-                  As we expanded our focus to online marketplaces (Amazon, Flipkart, Blinkit, Zepto, Meesho), we assumed digital products would be easier. After all, information is stored as structured web text.
+                  Packaged commodities are increasingly sold through online platforms (Amazon, Flipkart, Blinkit, Zepto, Meesho). Under <strong className="text-slate-900 dark:text-white">Rule 6(10) and Rule 6(11) of the Legal Metrology (Packaged Commodities) Rules, 2011</strong>, e-commerce entities are mandated to display all statutory declarations on digital product listings: manufacturer details, net quantity, Maximum Retail Price (MRP), unit sale price, month/year of import or packing, and country of origin.
                 </p>
                 <p>
-                  The reality was very different. Information was scattered across specification tables, embedded in promotional images, or buried in seller bullet points. What made it harder was that <em>missing information did not always mean a violation</em> — sometimes a page loaded incompletely.
+                  We expanded our compliance checking system with an autonomous crawler capable of parsing structured product listings and scanning product gallery images. It cross-checks digital claims against physical packaging OCR to detect missing declarations, improper MRP declarations, dual pricing, and origin obfuscation across e-commerce channels.
                 </p>
 
                 {/* E-Commerce Crawler Mockup Card */}
@@ -592,18 +617,18 @@ export const TechnicalBlogPage: React.FC = () => {
                   <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">AUTONOMOUS E-COMMERCE COMPLIANCE CRAWLER</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">AUTONOMOUS E-COMMERCE PRODUCT LISTING SCANNER</span>
                     </div>
                     <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-0.5 rounded font-mono font-semibold">LIVE CRAWL STREAM</span>
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-xs space-y-2">
-                    <div className="text-slate-600 dark:text-slate-400">Target URL: <span className="text-sky-600 dark:text-sky-300 font-semibold">https://www.amazon.in/dp/B08L7V... (Fortune Sunflower Oil 1L)</span></div>
+                    <div className="text-slate-600 dark:text-slate-400">Target Product Listing: <span className="text-sky-600 dark:text-sky-300 font-semibold">https://www.amazon.in/dp/B08L7V... (Fortune Sunflower Oil 1L)</span></div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px]">
                       <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Declared MRP:</span> <span className="text-slate-900 dark:text-white font-bold">₹139.00</span></div>
-                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Net Vol:</span> <span className="text-slate-900 dark:text-white font-bold">1 L (810g)</span></div>
-                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Origin:</span> <span className="text-emerald-600 dark:text-emerald-400 font-bold">India</span></div>
-                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Compliance:</span> <span className="text-emerald-600 dark:text-emerald-400 font-bold">100% Compliant</span></div>
+                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Net Quantity:</span> <span className="text-slate-900 dark:text-white font-bold">1 L (810g)</span></div>
+                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">Country of Origin:</span> <span className="text-emerald-600 dark:text-emerald-400 font-bold">India</span></div>
+                      <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"><span className="text-slate-500">PCR 2011 Verdict:</span> <span className="text-emerald-600 dark:text-emerald-400 font-bold">100% Compliant</span></div>
                     </div>
                   </div>
                 </div>
@@ -619,22 +644,22 @@ export const TechnicalBlogPage: React.FC = () => {
                   08
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  The Moment We Realized Inspectors Can't Be Everywhere
+                  Attachment of Photographs &amp; Supporting Evidence — Citizen to Officer Synergy
                 </h2>
               </div>
 
               <div className="space-y-4">
                 <p>
-                  India has millions of packaged products moving through stores, warehouses, and e-commerce fulfillment centers every day. Even the most efficient inspection team cannot physically inspect everything.
+                  With millions of packaged goods sold daily across supermarkets and neighborhood stores, manual inspection alone cannot guarantee total coverage. We integrated a citizen grievance engine that feeds directly into the regulatory enforcement pipeline.
                 </p>
 
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950 border border-indigo-200 dark:border-indigo-800/50 space-y-3 shadow-xs">
                   <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-sm">
                     <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                    <span>Crowd-Sourced Consumer Complaint Network</span>
+                    <span>Evidence Attachment &amp; Chain of Custody</span>
                   </div>
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                    We built a dedicated Consumer Complaint Portal allowing citizens to scan a product or upload photographic evidence. Submissions enter the exact same statutory compliance pipeline used by enforcement officers. If a violation is detected, it is automatically tagged with GPS location and routed to the Zonal Inspector Dashboard for on-site verification.
+                    Consumers and enforcement officers can capture or upload photographs and supporting evidence (packaging labels, retail price tags, and cash memos). The system automatically geotags submissions, performs OCR receipt reconciliation to detect overcharging beyond the declared Maximum Retail Price (MRP), and routes tamper-evident violation evidence directly to the assigned Zonal Enforcement Inspector.
                   </p>
                 </div>
               </div>
@@ -649,42 +674,46 @@ export const TechnicalBlogPage: React.FC = () => {
                   09
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  From Individual Violations To GIS Compliance Intelligence
+                  Enforcement Official Dashboards &amp; Repository of Scanned Products
                 </h2>
               </div>
 
               <div className="space-y-4">
                 <p>
-                  Finding a single violation is useful. Finding patterns across an entire state is powerful.
+                  To convert individual violations into systematic regulatory governance, SatyaDrishti maintains a centralized <strong>repository of scanned products and compliance history</strong> paired with interactive <strong>dashboards for enforcement officials</strong>.
                 </p>
 
                 <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">MANUFACTURER &amp; SELLER GIS RISK INTELLIGENCE</span>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">ENFORCEMENT OFFICIAL GIS RISK DASHBOARD</span>
                     </div>
                     <span className="text-[10px] bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300 px-2 py-0.5 rounded font-mono font-semibold">BENGALURU INDUSTRIAL CORRIDOR</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                      <div className="text-slate-500 text-[10px]">CRITICAL TIER (80+)</div>
+                      <div className="text-slate-500 text-[10px]">CRITICAL RISK TIER (80+)</div>
                       <div className="text-red-600 dark:text-red-400 font-bold text-lg">1 Offender</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Flagged for Zonal Raid</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Flagged for Surprise Inspection Raid</div>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                       <div className="text-slate-500 text-[10px]">REPEAT OFFENCE RATE</div>
                       <div className="text-amber-600 dark:text-amber-400 font-bold text-lg">30% Rate</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Cross-Platform Recurrence</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Cross-Platform SKU Recurrence</div>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                       <div className="text-slate-500 text-[10px]">TOTAL SCN NOTICES</div>
                       <div className="text-slate-900 dark:text-white font-bold text-lg">10 Notices</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Under Sec 36 LM Act 2009</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Under Sec 36 Legal Metrology Act 2009</div>
                     </div>
                   </div>
                 </div>
+
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  With <strong>role-based user access</strong> (Zonal Enforcement Inspectors, Directorate Supervisors, and Consumer Users) and secure authentication, officers can instantly access a comprehensive <strong>search and retrieval facility</strong> to track previously scanned products, review inspection timelines, inspect barcode audit trails, and assess brand compliance histories.
+                </p>
               </div>
             </section>
 
@@ -697,7 +726,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   10
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  What We Learned &amp; What's Next for SatyaDrishti
+                  Digital Compliance Reports (PDF/Editable) &amp; Software Deployment Framework
                 </h2>
               </div>
 
@@ -705,34 +734,45 @@ export const TechnicalBlogPage: React.FC = () => {
                 <div className="p-6 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 space-y-4 shadow-md dark:shadow-2xl">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span>The Ultimate Lesson: Defining System Boundaries</span>
+                    <span>System Architecture: Clear Responsibility Boundaries</span>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                      <div className="font-bold text-blue-700 dark:text-blue-400">AI Responsibilities</div>
+                      <div className="font-bold text-blue-700 dark:text-blue-400">AI &amp; Computer Vision</div>
                       <ul className="text-slate-600 dark:text-slate-400 space-y-1 font-mono">
-                        <li>• Reading label text</li>
-                        <li>• Extracting key declarations</li>
-                        <li>• Auto-correcting OCR typos</li>
+                        <li>• Multi-pass OCR &amp; label extraction</li>
+                        <li>• Font size &amp; readability geometry</li>
+                        <li>• Statutory Named Entity Recognition</li>
                       </ul>
                     </div>
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                      <div className="font-bold text-emerald-700 dark:text-emerald-400">Deterministic Engine</div>
+                      <div className="font-bold text-emerald-700 dark:text-emerald-400">Deterministic Rule Engine</div>
                       <ul className="text-slate-600 dark:text-slate-400 space-y-1 font-mono">
-                        <li>• Interpreting legal clauses</li>
-                        <li>• Applying metric thresholds</li>
-                        <li>• Generating compliance verdicts</li>
+                        <li>• Legal Metrology Rules, 2011 clauses</li>
+                        <li>• Schedule I MPE error verification</li>
+                        <li>• Automated PDF compliance reports</li>
                       </ul>
                     </div>
                     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                      <div className="font-bold text-purple-700 dark:text-purple-400">Human Officers</div>
+                      <div className="font-bold text-purple-700 dark:text-purple-400">Enforcement Officials</div>
                       <ul className="text-slate-600 dark:text-slate-400 space-y-1 font-mono">
-                        <li>• Reviewing enforcement raids</li>
-                        <li>• Handling appeals/disputes</li>
-                        <li>• Issuing final legal SCN notices</li>
+                        <li>• Role-based dashboard oversight</li>
+                        <li>• Section 36 SCN notice authorization</li>
+                        <li>• Field raid &amp; surprise audit action</li>
                       </ul>
                     </div>
                   </div>
+                </div>
+
+                {/* Technical Deployment Framework Card */}
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50/60 dark:from-blue-950/40 dark:to-slate-900 border border-blue-200 dark:border-blue-800/60 space-y-3 shadow-xs">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span>Digital Compliance Report Generation in PDF &amp; Editable Formats</span>
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    SatyaDrishti automatically compiles comprehensive <strong>digital compliance reports and violation summaries in PDF and editable JSON formats</strong>. Every report contains high-resolution annotated photographs with bounding-box canvas overlays, detected declaration field tables, font size readability measurements, statutory clause violation summaries, and auto-generated Show Cause Notice (SCN) drafts under Section 36 of the Legal Metrology Act, 2009.
+                  </p>
                 </div>
 
                 {/* Future Roadmap Grid */}
