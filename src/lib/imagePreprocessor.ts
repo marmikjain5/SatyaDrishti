@@ -334,6 +334,23 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
     });
   }
 
+  // 4. Inverted Luminance Pass (Transforms white text on dark packaging into crisp dark-on-white text for Tesseract)
+  {
+    const { canvas, ctx } = imageToCanvas(img, 1);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = invertColors(pixels);
+    pixels = enhanceContrast(pixels, 1.6);
+    pixels = sharpen(pixels, canvas.width);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'inverted_dark_packaging',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Inverted luminance for white text on dark packaging (dark bottles, blue tubes, dark boxes)',
+      scale: 1,
+    });
+  }
+
   return {
     variants,
     dimensions: { width, height },

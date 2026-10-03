@@ -13,7 +13,6 @@ export const OCRProcessingCard: React.FC = () => {
   const isComplete = currentScan?.status === 'completed';
   const isError = currentScan?.status === 'error';
   const valResult = currentScan ? validationResults[currentScan.id] : null;
-  const complianceScore = valResult?.complianceScore ?? 54;
 
   // Parse pass info from status message (e.g., "Pass 2/6: Adaptive Threshold")
   const passMatch = currentStatusMessage.match(/Pass (\d+)\/(\d+)/);
@@ -33,6 +32,11 @@ export const OCRProcessingCard: React.FC = () => {
   const compliantCount = extractedData?.declarations
     ? Object.values(extractedData.declarations).filter((d) => d.validationStatus === 'compliant').length
     : 0;
+
+  const complianceScore = valResult?.complianceScore ?? (extractedData?.compliancePayload?.mandatorySummary?.compliancePercentage ?? 70);
+  const violationsCount = valResult?.violationCount ?? (extractedData?.compliancePayload?.mandatorySummary?.missingCount ?? 0);
+  const warningsCount = valResult?.warningCount ?? (extractedData?.compliancePayload?.mandatorySummary?.warningCount ?? 0);
+  const passCount = valResult?.passCount ?? (extractedData?.compliancePayload?.mandatorySummary?.compliantCount ?? compliantCount);
 
   return (
     <Card className="border border-slate-200/90 shadow-subtle">
@@ -166,18 +170,22 @@ export const OCRProcessingCard: React.FC = () => {
 
             {/* Right: Key metric badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="danger" size="sm" className="font-bold">
-                5 Violations
-              </Badge>
-              <Badge variant="warning" size="sm" className="font-bold">
-                1 Warning
-              </Badge>
+              {violationsCount > 0 && (
+                <Badge variant="danger" size="sm" className="font-bold">
+                  {violationsCount} {violationsCount === 1 ? 'Violation' : 'Violations'}
+                </Badge>
+              )}
+              {warningsCount > 0 && (
+                <Badge variant="warning" size="sm" className="font-bold">
+                  {warningsCount} {warningsCount === 1 ? 'Warning' : 'Warnings'}
+                </Badge>
+              )}
               <Badge variant="success" size="sm" className="gap-1 font-medium">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>6 Compliant</span>
+                <span>{passCount} Compliant</span>
               </Badge>
               <Badge variant="neutral" size="sm" className="font-medium text-slate-600">
-                13 Declarations
+                {detectedDeclarationsCount}/{totalDeclarationsCount} Declarations
               </Badge>
             </div>
           </div>
