@@ -199,6 +199,7 @@ export const OCRProcessingCard: React.FC = () => {
                 );
               })()}
             </div>
+          </div>
         )}
 
             {/* Optical Pass Confidence Breakdown */}

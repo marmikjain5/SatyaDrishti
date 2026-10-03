@@ -105,15 +105,15 @@ export const SystemArchitecturePage: React.FC = () => {
           <div className="max-w-4xl space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
               <Layers className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Full System Architecture</span>
+              <span>Technical Documentation &amp; Deployment Framework</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-              SatyaDrishti <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">Architecture Specification</span>
+              SatyaDrishti <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">Software Architecture Specification</span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              Clean architecture specification covering the <strong>High-Level Architecture (HLA)</strong> with live dataflow animation, the <strong>Low-Level Architecture (LLA)</strong> with core functions and execution graphs, and the <strong>Database Schemas &amp; Data Layer</strong>.
+              Technical documentation describing the software architecture and deployment framework for the <strong>Legal Metrology (Packaged Commodities) Rules, 2011 compliance checking system</strong> — covering the <strong>High-Level Architecture (HLA)</strong> with live dataflow animation, the <strong>Low-Level Architecture (LLA)</strong> with Computer Vision, OCR, and deterministic rule engine execution graphs, and the <strong>Database Schemas &amp; Data Layer</strong>.
             </p>
           </div>
         </div>
