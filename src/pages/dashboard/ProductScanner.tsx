@@ -255,7 +255,7 @@ export const ProductScanner: React.FC = () => {
         </div>
       )}
 
-      {/* Scan Options — calibration method & product category */}
+      {/* Scan Options — calibration method */}
       <ScanOptionsCard
         value={scanOptions}
         onChange={setScanOptions}
