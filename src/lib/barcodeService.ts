@@ -22,6 +22,8 @@ export interface BarcodeDetectionResult {
   confidence: number;
   /** True if the barcode passed format-level check-digit validation (e.g. EAN-13 Luhn). */
   checksumValid: boolean;
+  /** Optically measured barcode pixel width across guard/data bars (for scale calibration) */
+  barcodeWidthPx?: number;
 }
 
 class BarcodeService {
@@ -64,8 +66,34 @@ class BarcodeService {
     return checkDigit === parseInt(cleaned[cleaned.length - 1], 10);
   }
 
-  private buildResult(text: string, format: string): BarcodeDetectionResult {
+  /**
+   * Computes the maximum Euclidean distance span between detected result points.
+   * For 1D barcodes (EAN-13, UPC), this corresponds to the width across the bar pattern.
+   */
+  private computePointsSpan(points?: any[]): number | undefined {
+    if (!points || points.length < 2) return undefined;
+    let maxDist = 0;
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        const p1 = points[i];
+        const p2 = points[j];
+        if (!p1 || !p2) continue;
+        const x1 = typeof p1.getX === 'function' ? p1.getX() : p1.x;
+        const y1 = typeof p1.getY === 'function' ? p1.getY() : p1.y;
+        const x2 = typeof p2.getX === 'function' ? p2.getX() : p2.x;
+        const y2 = typeof p2.getY === 'function' ? p2.getY() : p2.y;
+        if (typeof x1 === 'number' && typeof x2 === 'number' && typeof y1 === 'number' && typeof y2 === 'number') {
+          const dist = Math.hypot(x2 - x1, y2 - y1);
+          if (dist > maxDist) maxDist = dist;
+        }
+      }
+    }
+    return maxDist > 10 ? Math.round(maxDist) : undefined;
+  }
+
+  private buildResult(text: string, format: string, resultPoints?: any[]): BarcodeDetectionResult {
     const checksumValid = this.validateEanChecksum(text);
+    const barcodeWidthPx = this.computePointsSpan(resultPoints);
     // Optical decode is confirmed but is NOT registry or identity verification.
     // Confidence reflects decode quality; checksumValid reflects format integrity.
     return {
@@ -73,6 +101,7 @@ class BarcodeService {
       format,
       confidence: checksumValid ? 92 : 60,
       checksumValid,
+      barcodeWidthPx,
     };
   }
 
@@ -87,7 +116,7 @@ class BarcodeService {
       if (res && res.getText()) {
         const text = res.getText().trim();
         console.log(`✅ [ZXing Barcode] Detected directly (0°): ${text} (${res.getBarcodeFormat()})`);
-        return this.buildResult(text, res.getBarcodeFormat().toString());
+        return this.buildResult(text, res.getBarcodeFormat().toString(), res.getResultPoints?.());
       }
     } catch {
       // Continue to rotated passes
@@ -115,7 +144,7 @@ class BarcodeService {
           if (res && res.getText()) {
             const text = res.getText().trim();
             console.log(`✅ [ZXing Barcode] Detected on full ${angle}° rotated pass: ${text} (${res.getBarcodeFormat()})`);
-            return this.buildResult(text, res.getBarcodeFormat().toString());
+            return this.buildResult(text, res.getBarcodeFormat().toString(), res.getResultPoints?.());
           }
         } catch {
           // try next
@@ -165,7 +194,7 @@ class BarcodeService {
               if (res && res.getText()) {
                 const text = res.getText().trim();
                 console.log(`✅ [ZXing Barcode] Detected on ${reg.name} (${angle}°): ${text} (${res.getBarcodeFormat()})`);
-                return this.buildResult(text, res.getBarcodeFormat().toString());
+                return this.buildResult(text, res.getBarcodeFormat().toString(), res.getResultPoints?.());
               }
             } catch {
               // try next angle

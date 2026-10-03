@@ -49,13 +49,18 @@ export const RULE7_TABLE_I: TableIBand[] = [
 
 // ─── Reference Object Dimensions (mm) ───────────────────────────
 
-export type ReferenceObjectType = 'coin_10' | 'id_card' | 'ean_barcode' | 'none';
+export type ReferenceObjectType = 'coin_10' | 'coin_5' | 'id_card' | 'ean_barcode' | 'none';
 
 export const REFERENCE_OBJECT_DIMS: Record<ReferenceObjectType, { widthMm: number; heightMm: number; label: string }> = {
   coin_10: {
     widthMm: 27.0,
     heightMm: 27.0,
     label: '₹10 Coin (27.0 mm diameter, RBI-confirmed)',
+  },
+  coin_5: {
+    widthMm: 25.0,
+    heightMm: 25.0,
+    label: '₹5 Coin (25.0 mm diameter, RBI-confirmed)',
   },
   id_card: {
     widthMm: 85.6,

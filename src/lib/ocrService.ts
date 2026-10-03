@@ -330,6 +330,7 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
             confidence: 99,
             validationStatus: 'compliant',
             validationMessage: `Statutory 1D/2D barcode (${opticalBc.format}) optically decoded with 100% precision.`,
+            barcodeWidthPx: opticalBc.barcodeWidthPx,
           };
         }
       } catch (bcErr) {
@@ -769,6 +770,7 @@ export class HybridVisionBackendProvider implements OCRProvider {
               declarations.barcode.validationStatus = 'compliant';
               declarations.barcode.rawMatch = bc.text;
               declarations.barcode.validationMessage = `Statutory barcode (${bc.format}) optically decoded with 100% precision.`;
+              declarations.barcode.barcodeWidthPx = bc.barcodeWidthPx;
               fieldConfidence.barcode = 99;
             }
           } catch (e) {

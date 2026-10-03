@@ -140,6 +140,13 @@ export interface ReadabilityAnalysisResult {
     packageHeightPx?: number;
     uncertaintyMm?: number;
     reason?: string;
+    sourceLabel?: string;
+    calibrationSourceLabel?: string;
+    details?: string;
+    pdpAreaCm2?: number;
+    minNumeralHeightMm?: number;
+    minNumeralHeightPt?: number;
+    scaleMmPerPx?: number;
   };
   /** Original image dimensions */
   imageDimensions: { width: number; height: number };

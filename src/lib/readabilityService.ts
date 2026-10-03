@@ -42,12 +42,19 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () =>
 }
 
 export interface PhysicalCalibration {
-  method: 'aruco' | 'reference-object' | 'manual';
+  method: 'aruco' | 'reference-object' | 'manual' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'package-default';
   packageWidthMm?: number;
   packageHeightMm?: number;
   packageWidthPx?: number;
   packageHeightPx?: number;
   uncertaintyMm?: number;
+  minNumeralHeightMm?: number;
+  minNumeralHeightPt?: number;
+  pdpAreaCm2?: number;
+  calibrationSourceLabel?: string;
+  sourceLabel?: string;
+  details?: string;
+  scaleMmPerPx?: number;
 }
 
 export interface ReadabilityAnalysisOptions {
@@ -311,26 +318,34 @@ function estimateFontSizeMetrics(
 
   const physicalHeightMm = calibration?.packageHeightMm;
   const physicalHeightPx = calibration?.packageHeightPx || imgH;
-  const measurementStatus: MeasurementStatus = physicalHeightMm && physicalHeightPx
+  const measurementStatus: MeasurementStatus = (physicalHeightMm && physicalHeightPx) || calibration?.scaleMmPerPx
     ? 'measured'
     : 'unavailable';
   const estimatedMm = measurementStatus === 'measured'
-    ? Math.round(((bboxHeightPx / physicalHeightPx) * physicalHeightMm!) * 10) / 10
+    ? (calibration?.scaleMmPerPx
+        ? Math.round(bboxHeightPx * calibration.scaleMmPerPx * 10) / 10
+        : Math.round(((bboxHeightPx / physicalHeightPx) * physicalHeightMm!) * 10) / 10)
     : 0;
   const estimatedPt = Math.round((estimatedMm * (72 / 25.4)) * 10) / 10;
 
-  const isBelowThreshold = measurementStatus === 'measured' && (estimatedPt < threshold.minPt || estimatedMm < threshold.minMm);
+  // Apply Legal Metrology Schedule II statutory numeral tier if available for this package's PDP area
+  const effectiveMinMm = (calibration?.minNumeralHeightMm && (threshold.category === 'statutory_declaration' || threshold.minMm >= 1.5))
+    ? Math.max(threshold.minMm, calibration.minNumeralHeightMm)
+    : threshold.minMm;
+  const effectiveMinPt = Math.round((effectiveMinMm * (72 / 25.4)) * 10) / 10;
+
+  const isBelowThreshold = measurementStatus === 'measured' && (estimatedPt < effectiveMinPt || estimatedMm < effectiveMinMm);
 
   return {
     pt: estimatedPt,
     mm: estimatedMm,
     px: bboxHeightPx,
     relativeHeightPercent: relativePercent,
-    minThresholdPt: threshold.minPt,
-    minThresholdMm: threshold.minMm,
+    minThresholdPt: effectiveMinPt,
+    minThresholdMm: effectiveMinMm,
     isBelowThreshold,
     measurementStatus,
-    calibrationMethod: calibration?.method,
+    calibrationMethod: calibration?.calibrationSourceLabel || calibration?.sourceLabel || calibration?.method,
     formatted: measurementStatus === 'measured'
       ? `${estimatedPt.toFixed(1)} pt (${estimatedMm.toFixed(1)} mm)`
       : 'Unavailable — calibrated scale required',
