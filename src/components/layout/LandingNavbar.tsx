@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers, GitBranch, Home } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { AnimatedThemeToggler } from '../ui/AnimatedThemeToggler';
@@ -13,8 +13,6 @@ export const LandingNavbar: React.FC = () => {
 
   const isDirectoryActive = location.pathname === '/' || location.pathname === '/directory' || location.pathname === '/verify';
   const isAboutActive = location.pathname === '/about' && (!location.hash || location.hash === '#about');
-  const isCapabilitiesActive = location.pathname === '/about' && location.hash === '#capabilities';
-  const isWorkflowActive = location.pathname === '/about' && location.hash === '#workflow';
   const isArchitectureActive = location.pathname === '/system-architecture' || location.pathname === '/architecture';
 
   const handleNavClick = (targetId: string) => {
@@ -72,30 +70,6 @@ export const LandingNavbar: React.FC = () => {
             }`}
           >
             About Platform
-          </Link>
-
-          <Link
-            to="/about#capabilities"
-            onClick={() => handleNavClick('capabilities')}
-            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              isCapabilitiesActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            Core Capabilities
-          </Link>
-
-          <Link
-            to="/about#workflow"
-            onClick={() => handleNavClick('workflow')}
-            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              isWorkflowActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            Enforcement Flow
           </Link>
 
           <Link
@@ -193,32 +167,6 @@ export const LandingNavbar: React.FC = () => {
           >
             <BookOpen className="h-4 w-4 shrink-0" />
             <span>About Platform</span>
-          </Link>
-
-          <Link
-            to="/about#capabilities"
-            onClick={() => handleNavClick('capabilities')}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
-              isCapabilitiesActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Layers className="h-4 w-4 shrink-0" />
-            <span>Core Capabilities</span>
-          </Link>
-
-          <Link
-            to="/about#workflow"
-            onClick={() => handleNavClick('workflow')}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
-              isWorkflowActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <GitBranch className="h-4 w-4 shrink-0" />
-            <span>Enforcement Flow</span>
           </Link>
 
           <Link

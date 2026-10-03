@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, Code2, BookOpen } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 export const TechJourneyBanner: React.FC = () => {
   return (
@@ -40,14 +41,11 @@ export const TechJourneyBanner: React.FC = () => {
           {/* Right Action CTA */}
           <div className="flex items-center shrink-0 w-full md:w-auto justify-end pt-2 md:pt-0">
             <Link to="/technical-blog" className="w-full sm:w-auto">
-              <button
-                type="button"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 sm:px-8 sm:py-4 rounded-xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:via-indigo-500 hover:to-blue-600 shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 border border-blue-400/30 cursor-pointer"
-              >
-                <BookOpen className="h-5 w-5 text-blue-200 shrink-0" />
-                <span className="tracking-wide">Read Technical Story</span>
-                <ArrowRight className="h-5 w-5 text-blue-200 shrink-0" />
-              </button>
+              <Button variant="primary" size="sm" className="w-full sm:w-auto gap-2 text-xs font-semibold">
+                <BookOpen className="h-3.5 w-3.5 text-blue-300" />
+                <span>Read Technical Story</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
             </Link>
           </div>
         </div>
