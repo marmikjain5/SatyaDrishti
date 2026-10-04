@@ -15,13 +15,15 @@ import {
   Barcode,
   XCircle,
   Cpu,
+  ScanLine,
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import type { ReferenceObjectType } from '../../lib/rule7Measurement';
+import { getLidarCompatibility } from '../../services/lidarCompatibilityService';
 
 // ─── Calibration Method ───────────────────────────────────────────
 
-export type CalibrationMethod = 'none' | 'reference_object' | 'artwork_dpi';
+export type CalibrationMethod = 'none' | 'reference_object' | 'artwork_dpi' | 'lidar_depth';
 
 interface CalibrationOption {
   value: CalibrationMethod;
@@ -49,6 +51,12 @@ const CALIBRATION_OPTIONS: CalibrationOption[] = [
     description: 'If scanning a pre-print digital artwork file, enter the DPI to convert pixels to mm.',
     icon: Cpu,
   },
+  {
+    value: 'lidar_depth',
+    label: 'LiDAR depth (ARKit native bridge)',
+    description: 'Uses an iPhone/iPad ARKit wrapper when connected. If unavailable, the result stays unable to verify.',
+    icon: ScanLine,
+  },
 ];
 
 const REFERENCE_OBJECT_OPTIONS: { value: ReferenceObjectType; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -74,6 +82,7 @@ interface ScanOptionsCardProps {
 // ─── Component ────────────────────────────────────────────────────
 
 export const ScanOptionsCard: React.FC<ScanOptionsCardProps> = ({ value, onChange, disabled }) => {
+  const lidar = getLidarCompatibility();
   const set = <K extends keyof ScanOptionsValue>(key: K, val: ScanOptionsValue[K]) =>
     onChange({ ...value, [key]: val });
 
@@ -171,6 +180,12 @@ export const ScanOptionsCard: React.FC<ScanOptionsCardProps> = ({ value, onChang
               />
               <p className="text-[10px] text-slate-400">Common values: 72 (screen), 150, 300 (print), 600</p>
             </div>
+          )}
+
+          {value.calibrationMethod === 'lidar_depth' && (
+            <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+              {lidar.connected ? 'ARKit bridge connected. LiDAR calibration can be requested.' : 'ARKit bridge not connected in this browser. LiDAR remains unavailable until the native iOS wrapper is connected.'}
+            </p>
           )}
         </div>
 

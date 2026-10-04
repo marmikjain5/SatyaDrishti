@@ -8,6 +8,14 @@ export interface InspectionEvidenceImage {
   name: string;
   type: string;
   blob: Blob;
+  sizeBytes: number;
+  sha256: string;
+}
+
+export interface InspectionRetryEvent {
+  at: string;
+  message: string;
+  retryAt: string;
 }
 
 export interface QueuedInspection {
@@ -23,6 +31,11 @@ export interface QueuedInspection {
   updatedAt: string;
   lastError?: string;
   conflictMessage?: string;
+  idempotencyKey: string;
+  retryCount: number;
+  nextRetryAt?: string;
+  retryHistory: InspectionRetryEvent[];
+  lastSyncAt?: string;
 }
 
 interface SyncResult {
@@ -32,10 +45,14 @@ interface SyncResult {
 }
 
 const DATABASE_NAME = 'satyadrishti-offline-inspections';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const STORE_NAME = 'inspections';
 const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || '';
 const UPDATED_EVENT = 'satyadrishti:inspection-queue-updated';
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_INSPECTION_BYTES = 24 * 1024 * 1024;
+const SYNC_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_RETRY_DELAY_MS = 30 * 60 * 1000;
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -77,6 +94,27 @@ async function transaction<T>(
 
 function notifyUpdated(): void {
   window.dispatchEvent(new Event(UPDATED_EVENT));
+}
+
+type QueueRecordWithLegacyMetadata = Omit<QueuedInspection, 'idempotencyKey' | 'retryCount' | 'retryHistory'>
+  & Partial<Pick<QueuedInspection, 'idempotencyKey' | 'retryCount' | 'retryHistory'>>;
+
+export function normalizedRecord(record: QueueRecordWithLegacyMetadata): QueuedInspection {
+  return {
+    ...record,
+    idempotencyKey: record.idempotencyKey || record.id,
+    retryCount: record.retryCount || 0,
+    retryHistory: record.retryHistory || [],
+  };
+}
+
+async function sha256(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function retryDelayMs(retryCount: number): number {
+  return Math.min(2 ** Math.max(0, retryCount - 1) * 60_000, MAX_RETRY_DELAY_MS);
 }
 
 function inspectionSnapshot(scan: ScanRecord): ScanRecord {
@@ -121,7 +159,7 @@ async function save(record: QueuedInspection): Promise<void> {
 
 async function updateRecord(
   id: string,
-  updates: Partial<Pick<QueuedInspection, 'status' | 'updatedAt' | 'lastError' | 'conflictMessage'>>
+  updates: Partial<Pick<QueuedInspection, 'status' | 'updatedAt' | 'lastError' | 'conflictMessage' | 'retryCount' | 'nextRetryAt' | 'retryHistory' | 'lastSyncAt'>>
 ): Promise<void> {
   await transaction<void>('readwrite', (store, resolve, reject) => {
     const request = store.get(id);
@@ -152,9 +190,27 @@ async function buildSyncPayload(record: QueuedInspection) {
         name: image.name,
         mimeType: image.type,
         dataUrl: await dataUrlFromBlob(image.blob),
+        sizeBytes: image.sizeBytes,
+        sha256: image.sha256,
       }))
     ),
   };
+}
+
+async function cleanupSyncedRecords(records: QueuedInspection[]): Promise<QueuedInspection[]> {
+  const cutoff = Date.now() - SYNC_RETENTION_MS;
+  const expired = records.filter(
+    (record) => record.status === 'synced' && Date.parse(record.updatedAt) < cutoff
+  );
+  for (const record of expired) {
+    await transaction<void>('readwrite', (store, resolve, reject) => {
+      const request = store.delete(record.id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error ?? new Error('Could not clean up synced inspection.'));
+    });
+  }
+  if (expired.length > 0) notifyUpdated();
+  return records.filter((record) => !expired.some((item) => item.id === record.id));
 }
 
 export const offlineInspectionQueue = {
@@ -162,9 +218,9 @@ export const offlineInspectionQueue = {
     return transaction<QueuedInspection[]>('readonly', (store, resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () =>
-        resolve((request.result as QueuedInspection[]).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        resolve((request.result as QueuedInspection[]).map(normalizedRecord).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       request.onerror = () => reject(request.error ?? new Error('Could not load offline inspections.'));
-    });
+    }).then((records) => cleanupSyncedRecords(records));
   },
 
   async enqueue(
@@ -173,18 +229,33 @@ export const offlineInspectionQueue = {
     analysis: QueuedInspection['analysis']
   ): Promise<void> {
     const now = new Date().toISOString();
+    const evidenceImages = await Promise.all(images.map(async (image) => {
+      const blob = image.file;
+      if (blob.size > MAX_IMAGE_BYTES) {
+        throw new Error(`${image.name} is too large to save offline. Maximum size is 8 MB.`);
+      }
+      return {
+        name: image.name,
+        type: blob.type || 'image/jpeg',
+        blob,
+        sizeBytes: blob.size,
+        sha256: await sha256(blob),
+      };
+    }));
+    if (evidenceImages.reduce((total, image) => total + image.sizeBytes, 0) > MAX_INSPECTION_BYTES) {
+      throw new Error('This inspection has too much evidence to save offline. Maximum size is 24 MB.');
+    }
     await save({
       id: scan.id,
       scan: inspectionSnapshot(scan),
       analysis,
-      evidenceImages: images.map((image) => ({
-        name: image.name,
-        type: image.file.type || 'image/jpeg',
-        blob: image.file,
-      })),
+      evidenceImages,
       status: 'pending',
       createdAt: now,
       updatedAt: now,
+      idempotencyKey: scan.id,
+      retryCount: 0,
+      retryHistory: [],
     });
   },
 
@@ -222,15 +293,25 @@ export const offlineInspectionQueue = {
   },
 
   async syncPending(): Promise<void> {
+    if (!navigator.onLine) return;
     const records = (await this.list()).filter(
-      (record) => record.status === 'pending' || record.status === 'failed'
+      (record) => (record.status === 'pending' || record.status === 'failed')
+        && (!record.nextRetryAt || Date.parse(record.nextRetryAt) <= Date.now())
     );
     for (const record of records) {
       await updateRecord(record.id, { status: 'syncing', lastError: undefined });
       try {
+        for (const evidence of record.evidenceImages) {
+          if (evidence.blob.size !== evidence.sizeBytes || await sha256(evidence.blob) !== evidence.sha256) {
+            throw new Error(`Evidence integrity check failed for ${evidence.name}. The inspection was not uploaded.`);
+          }
+        }
         const response = await fetch(`${BACKEND_BASE_URL}/api/inspections/sync`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': record.idempotencyKey,
+          },
           body: JSON.stringify({ inspections: [await buildSyncPayload(record)] }),
         });
         if (!response.ok) {
@@ -245,14 +326,30 @@ export const offlineInspectionQueue = {
           await updateRecord(record.id, {
             status: 'conflict',
             conflictMessage: item.message || 'A different inspection already exists on the server with this ID.',
+            nextRetryAt: undefined,
           });
         } else {
-          await updateRecord(record.id, { status: 'synced', conflictMessage: undefined });
+          await updateRecord(record.id, {
+            status: 'synced',
+            conflictMessage: undefined,
+            retryCount: 0,
+            nextRetryAt: undefined,
+            lastSyncAt: new Date().toISOString(),
+          });
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Inspection sync failed.';
+        const retryCount = record.retryCount + 1;
+        const nextRetryAt = new Date(Date.now() + retryDelayMs(retryCount)).toISOString();
         await updateRecord(record.id, {
           status: 'failed',
-          lastError: error instanceof Error ? error.message : 'Inspection sync failed.',
+          lastError: message,
+          retryCount,
+          nextRetryAt,
+          retryHistory: [
+            ...record.retryHistory,
+            { at: new Date().toISOString(), message, retryAt: nextRetryAt },
+          ].slice(-10),
         });
       }
     }

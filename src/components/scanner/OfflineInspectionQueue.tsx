@@ -63,6 +63,15 @@ export const OfflineInspectionQueue: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const syncOnReconnect = () => {
+      if (!navigator.onLine) return;
+      void offlineInspectionQueue.syncPending().then(() => refreshQueue());
+    };
+    window.addEventListener('online', syncOnReconnect);
+    return () => window.removeEventListener('online', syncOnReconnect);
+  }, [refreshQueue]);
+
   const saveAsNew = async (id: string) => {
     try {
       await offlineInspectionQueue.saveConflictAsNewInspection(id);
@@ -144,6 +153,12 @@ export const OfflineInspectionQueue: React.FC = () => {
                   <p className="mt-1 flex items-start gap-1 text-[11px] text-red-600 dark:text-red-400">
                     <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                     {inspection.conflictMessage || inspection.lastError}
+                  </p>
+                )}
+                {inspection.status === 'failed' && inspection.nextRetryAt && (
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    Retry scheduled for {new Date(inspection.nextRetryAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {inspection.retryCount > 0 ? ` · Attempt ${inspection.retryCount}` : ''}
                   </p>
                 )}
               </div>

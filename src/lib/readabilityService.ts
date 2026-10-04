@@ -42,7 +42,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () =>
 }
 
 export interface PhysicalCalibration {
-  method: 'aruco' | 'reference-object' | 'manual' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'unavailable';
+  method: 'aruco' | 'reference-object' | 'manual' | 'lidar' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'unavailable';
   packageWidthMm?: number;
   packageHeightMm?: number;
   packageWidthPx?: number;

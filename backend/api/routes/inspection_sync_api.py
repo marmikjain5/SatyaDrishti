@@ -3,6 +3,7 @@
 import hashlib
 import json
 import sys
+import base64
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -25,6 +26,8 @@ class EvidenceImageSchema(BaseModel):
     name: str = Field(min_length=1, max_length=512)
     mimeType: str = Field(min_length=1, max_length=128)
     dataUrl: str = Field(min_length=1, max_length=30_000_000)
+    sizeBytes: int = Field(default=0, ge=0, le=8_388_608)
+    sha256: str = Field(default="", pattern=r"^[0-9a-fA-F]{64}$")
 
     @field_validator("dataUrl")
     @classmethod
@@ -32,6 +35,21 @@ class EvidenceImageSchema(BaseModel):
         if not value.startswith("data:image/") or ";base64," not in value:
             raise ValueError("Evidence must be a base64 image data URL.")
         return value
+
+    @model_validator(mode="after")
+    def validate_integrity(self):
+        if not self.sha256 and self.sizeBytes == 0:
+            return self
+        encoded = self.dataUrl.split(";base64,", 1)[1]
+        try:
+            content = base64.b64decode(encoded, validate=True)
+        except (ValueError, UnicodeError) as error:
+            raise ValueError("Evidence image is not valid base64 data.") from error
+        if self.sizeBytes != len(content):
+            raise ValueError(f"Evidence size does not match the declared size for {self.name}.")
+        if hashlib.sha256(content).hexdigest().lower() != self.sha256.lower():
+            raise ValueError(f"Evidence integrity digest does not match for {self.name}.")
+        return self
 
 
 class OfflineInspectionSchema(BaseModel):
