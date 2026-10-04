@@ -381,8 +381,22 @@ def update_violation(
 
 
 # ============================================================================
-# 5. COMPLAINTS ENDPOINTS
+# 5. COMPLAINTS ENDPOINTS (with Supabase pgvector Deduplication & Semantic Search)
 # ============================================================================
+try:
+    from backend.services.complaint_vector_service import (
+        search_similar_complaints,
+        save_complaint_embedding,
+        check_pgvector_readiness,
+    )
+except ImportError:
+    from services.complaint_vector_service import (
+        search_similar_complaints,
+        save_complaint_embedding,
+        check_pgvector_readiness,
+    )
+
+
 class ComplaintCreateSchema(BaseModel):
     id: Optional[str] = None
     ticket_id: Optional[str] = None
@@ -407,6 +421,39 @@ class ComplaintCreateSchema(BaseModel):
     assigned_officer: Optional[str] = None
     officer_decision_history: List[Any] = Field(default_factory=list)
     submitted_at: Optional[str] = None
+
+
+class ComplaintSimilarSearchSchema(BaseModel):
+    query_text: str
+    brand: Optional[str] = None
+    product_name: Optional[str] = None
+    limit: int = 5
+    threshold: float = 0.35
+
+
+@router.get("/complaints/vector-status")
+def get_complaints_vector_status(db: Session = Depends(get_db)):
+    """Check whether Supabase pgvector extension is active or running in-memory fallback."""
+    return check_pgvector_readiness(db)
+
+
+@router.post("/complaints/search-similar")
+def search_similar_complaints_endpoint(
+    req: ComplaintSimilarSearchSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Search for semantically similar complaints or potential duplicates
+    using Supabase pgvector (HNSW Cosine Distance) with seamless in-memory fallback.
+    """
+    return search_similar_complaints(
+        db=db,
+        query_text=req.query_text,
+        brand=req.brand,
+        product_name=req.product_name,
+        limit=req.limit,
+        threshold=req.threshold,
+    )
 
 
 @router.get("/complaints")
@@ -456,6 +503,14 @@ def create_complaint(c_in: ComplaintCreateSchema, db: Session = Depends(get_db))
     db.add(complaint)
     db.commit()
     db.refresh(complaint)
+
+    # Automatically compute and store vector embedding (Supabase pgvector / fallback)
+    try:
+        embed_text = f"{complaint.brand} {complaint.product_name} {complaint.category} {complaint.description}"
+        save_complaint_embedding(db, complaint.id, embed_text)
+    except Exception as embed_err:
+        print(f"[ComplaintAPI] Warning: embedding could not be persisted: {embed_err}")
+
     return complaint
 
 

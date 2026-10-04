@@ -78,6 +78,14 @@ def run_migrations():
                 conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS officer_decision_history JSON DEFAULT '[]'::json;"))
                 conn.execute(text("ALTER TABLE ocr_scans ADD COLUMN IF NOT EXISTS rule_pack_metadata JSON DEFAULT '{}'::json;"))
                 conn.execute(text("ALTER TABLE ocr_scans ADD COLUMN IF NOT EXISTS evidence_quality JSON DEFAULT '{}'::json;"))
+                
+                # Try adding pgvector extension & 64-dim embedding column (Supabase)
+                try:
+                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    conn.execute(text("ALTER TABLE complaints ADD COLUMN IF NOT EXISTS embedding vector(64);"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS complaints_embedding_hnsw_idx ON complaints USING hnsw (embedding vector_cosine_ops);"))
+                except Exception as vec_err:
+                    pass  # Non-fatal: in-memory fallback will activate seamlessly
             if is_current_sqlite:
                 for col in ["rule_pack_metadata", "evidence_quality"]:
                     try:
