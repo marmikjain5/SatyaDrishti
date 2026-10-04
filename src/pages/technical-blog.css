@@ -481,7 +481,7 @@
 
 .gdoc-topbar {
   position: sticky;
-  top: 0;
+  top: 4rem;
   z-index: 70;
   display: flex;
   align-items: center;
@@ -549,7 +549,7 @@
 .gdoc-workspace { display: flex; align-items: stretch; min-height: 0; flex: 1; }
 .gdoc-outline {
   position: sticky;
-  top: 4.25rem;
+  top: 8.25rem;
   align-self: flex-start;
   display: flex;
   width: 18rem;
@@ -651,6 +651,8 @@
 .gdoc-editor .blog-article h2 { max-width: none; font-size: clamp(1.55rem, 3vw, 2.25rem) !important; }
 
 .gdoc-fullscreen .gdoc-editor-wrap { min-height: calc(100vh - 4.25rem); }
+.gdoc-fullscreen .gdoc-topbar { top: 0; }
+.gdoc-fullscreen .gdoc-outline { top: 4.25rem; }
 .gdoc-fullscreen > footer { display: none; }
 
 @media (max-width: 900px) {
@@ -663,7 +665,7 @@
   .gdoc-topbar { padding-inline: 0.55rem; }
   .gdoc-file-icon { width: 2.25rem; }
   .gdoc-file-meta span:last-child { display: none; }
-  .gdoc-outline { position: fixed; top: 4.25rem; left: 0; z-index: 60; width: min(18rem, 86vw); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2); }
+  .gdoc-outline { position: fixed; top: 8.25rem; left: 0; z-index: 60; width: min(18rem, 86vw); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2); }
   .gdoc-editor .blog-hero { padding: 2.5rem 1.25rem 2rem !important; }
   .gdoc-editor .blog-shell { padding-inline: 1.25rem; }
 }

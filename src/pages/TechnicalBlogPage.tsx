@@ -30,6 +30,7 @@ import {
   Clock
 } from 'lucide-react';
 import { LandingFooter } from '../components/layout/LandingFooter';
+import { LandingNavbar } from '../components/layout/LandingNavbar';
 import { Button } from '../components/ui/Button';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
 import './technical-blog.css';
@@ -149,6 +150,7 @@ export const TechnicalBlogPage: React.FC = () => {
 
   return (
     <div className={`gdoc-shell blog-page min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#020617] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-blue-600 selection:text-white ${isFullscreen ? 'gdoc-fullscreen' : ''}`} ref={shellRef}>
+      <LandingNavbar />
       <div className="blog-progress" style={{ '--progress': `${readingProgress}%` } as React.CSSProperties} aria-hidden="true" />
 
       <div className="gdoc-topbar">
@@ -258,28 +260,6 @@ export const TechnicalBlogPage: React.FC = () => {
 
           {/* Blog Article Content */}
           <main className="blog-article mx-auto w-full space-y-14 text-slate-700 dark:text-slate-300 text-base leading-relaxed">
-
-            {/* Architecture Portal Feature Banner */}
-            <div className="blog-feature p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/40 to-slate-50 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-700 dark:text-blue-300 font-mono">
-                  <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span>DEDICATED SYSTEM ARCHITECTURE PORTAL</span>
-                </div>
-                <div className="text-sm font-bold text-slate-900 dark:text-white">
-                  High-Level (HLA) &amp; Low-Level (LLA) Codebase Architecture
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Explore the full interactive system diagram with animated conduit flow dots, 6-stage canvas filters, and FastAPI microservice specs.
-                </p>
-              </div>
-              <Link to="/system-architecture" className="shrink-0">
-                <Button variant="primary" size="sm" className="gap-2 text-xs font-semibold">
-                  <span>Explore Architecture</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
-            </div>
 
             {/* SECTION 1 */}
             <section id="inspiration" className="space-y-6 scroll-mt-24">
@@ -891,6 +871,13 @@ export const TechnicalBlogPage: React.FC = () => {
                       </button>
                     </Link>
                   </div>
+                  <Link to="/system-architecture" className="inline-flex">
+                    <Button variant="primary" size="sm" className="gap-2 text-xs font-semibold">
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Explore System Architecture</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
                 </div>
 
               </div>

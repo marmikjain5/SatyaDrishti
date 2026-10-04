@@ -349,6 +349,75 @@ def detect_mrp_sticker_candidates(image: np.ndarray) -> Dict[str, Any]:
     }
 
 
+def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, Any]:
+    """Detect a selected physical reference object for pixel-to-mm calibration.
+
+    The detector returns a candidate box only. The caller must still verify that
+    the object is flat beside the package and that the selected denomination/type
+    matches the object in the image.
+    """
+    image = decode_image_to_cv2(image_input)
+    if image is None:
+        return {"status": "error", "message": "Could not decode reference image.", "candidates": []}
+
+    h, w = image.shape[:2]
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    candidates = []
+
+    if reference_type in {"coin_5", "coin_10"}:
+        blurred = cv2.medianBlur(gray, 5)
+        circles = cv2.HoughCircles(
+            blurred,
+            cv2.HOUGH_GRADIENT,
+            dp=1.2,
+            minDist=max(20, min(h, w) // 8),
+            param1=100,
+            param2=28,
+            minRadius=max(8, min(h, w) // 80),
+            maxRadius=max(12, min(h, w) // 3),
+        )
+        if circles is not None:
+            for cx, cy, radius in np.round(circles[0]).astype(int)[:5]:
+                if cx - radius < 0 or cy - radius < 0 or cx + radius >= w or cy + radius >= h:
+                    continue
+                candidates.append({
+                    "bbox_px": {"x": int(cx - radius), "y": int(cy - radius), "width": int(radius * 2), "height": int(radius * 2)},
+                    "shape": "circle",
+                    "confidence": 0.7,
+                })
+    elif reference_type == "id_card":
+        edges = cv2.Canny(gray, 60, 160)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        image_area = float(w * h)
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area < image_area * 0.01 or area > image_area * 0.6:
+                continue
+            perimeter = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+            if len(approx) != 4:
+                continue
+            rx, ry, rw, rh = cv2.boundingRect(approx)
+            aspect = max(rw, rh) / max(min(rw, rh), 1)
+            if 1.35 <= aspect <= 2.15:
+                fill_ratio = area / max(float(rw * rh), 1.0)
+                candidates.append({
+                    "bbox_px": {"x": int(rx), "y": int(ry), "width": int(rw), "height": int(rh)},
+                    "shape": "quadrilateral",
+                    "confidence": round(min(0.95, max(0.45, fill_ratio)), 2),
+                })
+
+    candidates = sorted(candidates, key=lambda item: item["confidence"], reverse=True)[:5]
+    return {
+        "status": "success",
+        "reference_type": reference_type,
+        "image_dimensions": {"width": w, "height": h},
+        "candidates": candidates,
+        "requires_visual_confirmation": True,
+        "disclaimer": "Candidate detection only. Confirm the object and same-plane placement before using it for measurement.",
+    }
+
+
 def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
     """
     Full End-to-End OpenCV Preprocessing Pipeline executed prior to Tesseract OCR:

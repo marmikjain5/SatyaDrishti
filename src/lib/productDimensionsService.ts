@@ -9,7 +9,7 @@
  */
 
 export interface ProductDimensionCalibration {
-  source: 'open-food-facts' | 'local-registry' | 'barcode-optical-ruler' | 'package-default';
+  source: 'open-food-facts' | 'local-registry' | 'barcode-optical-ruler' | 'unavailable';
   sourceLabel: string;
   productName?: string;
   brand?: string;
@@ -446,29 +446,21 @@ class ProductDimensionsService {
       };
     }
 
-    // ── 5. Standard Retail Packaging Baseline Fallback ────────────
-    // Standard Indian retail consumer pack baseline (140mm x 200mm carton/pouch, PDP 280 cm²)
-    const defaultWidthMm = 140;
-    const defaultHeightMm = 200;
-    const defaultPdpArea = 280;
-    const tier = getScheduleIITier(defaultPdpArea);
-    const scaleMmPerPx = Math.round((defaultHeightMm / imgH) * 1000) / 1000;
-
-    console.log(`📦 [Scale Calibration] Standard Retail Packaging Baseline (140x200mm) applied.`);
-
+    // ── 5. No defensible physical scale available ──────────────────
+    // Never invent package dimensions for a legal font-size decision.
     return {
-      source: 'package-default',
-      sourceLabel: `Standard Retail Packaging Baseline (PDP 280 cm²)`,
+      source: 'unavailable',
+      sourceLabel: 'Package size unable to verify',
       productName: productName || 'Packaged Commodity',
       barcode,
-      packageWidthMm: defaultWidthMm,
-      packageHeightMm: defaultHeightMm,
-      pdpAreaCm2: defaultPdpArea,
-      scaleMmPerPx,
-      minNumeralHeightMm: tier.minMm,
-      minNumeralHeightPt: tier.minPt,
-      scheduleTierName: tier.tierName,
-      details: `Estimated from standard packaged commodity geometry (140mm × 200mm, PDP Area: 280 cm²)`,
+      packageWidthMm: 0,
+      packageHeightMm: 0,
+      pdpAreaCm2: 0,
+      scaleMmPerPx: 0,
+      minNumeralHeightMm: 0,
+      minNumeralHeightPt: 0,
+      scheduleTierName: 'Unable to verify without a physical scale reference',
+      details: 'No approved package dimensions, reference object, or optical scale was available before the calibration timeout.',
     };
   }
 }

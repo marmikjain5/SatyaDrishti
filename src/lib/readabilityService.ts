@@ -42,7 +42,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () =>
 }
 
 export interface PhysicalCalibration {
-  method: 'aruco' | 'reference-object' | 'manual' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'package-default';
+  method: 'aruco' | 'reference-object' | 'manual' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'unavailable';
   packageWidthMm?: number;
   packageHeightMm?: number;
   packageWidthPx?: number;
@@ -655,7 +655,12 @@ export class ReadabilityAnalysisEngine {
       timestamp: new Date().toISOString(),
       engineVersion: 'SatyaDrishti-Readability-5.0',
       calibration: calibration
-        ? { status: 'measured', ...calibration }
+        ? {
+            status: calibration.packageHeightMm && (calibration.packageHeightPx || calibration.scaleMmPerPx)
+              ? 'measured'
+              : 'unavailable',
+            ...calibration,
+          }
         : { status: 'unavailable', reason: 'No approved physical scale calibration was supplied before the analysis deadline.' },
       imageDimensions,
       summary,

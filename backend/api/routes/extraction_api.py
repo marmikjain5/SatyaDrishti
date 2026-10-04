@@ -33,7 +33,7 @@ try:
         StatutoryAuditReport,
         ViolationSeverity,
     )
-    from services.opencv_service import preprocess_packaging_for_ocr
+    from services.opencv_service import preprocess_packaging_for_ocr, detect_reference_object
     from database import SessionLocal
     from models.db_models import RegulatoryRuleModel
 except ImportError:
@@ -45,7 +45,7 @@ except ImportError:
         ExtractionResult,
     )
     from backend.services.validation_service import validate_product_compliance, StatutoryAuditReport, ViolationSeverity
-    from backend.services.opencv_service import preprocess_packaging_for_ocr
+    from backend.services.opencv_service import preprocess_packaging_for_ocr, detect_reference_object
     from backend.database import SessionLocal
     from backend.models.db_models import RegulatoryRuleModel
 
@@ -474,6 +474,15 @@ _handler = ExtractionAPIHandler()
 def preprocess_image_endpoint(payload: Dict[str, Any] = Body(...)):
     """Run OpenCV packaging optical preprocessing (crop, perspective warp, deskew, upscale, CLAHE)."""
     return _handler.handle_preprocess_image(payload)
+
+@router.post("/detect-reference-object")
+def detect_reference_object_endpoint(payload: Dict[str, Any] = Body(...)):
+    """Detect a selected coin or ID-card candidate for scale calibration."""
+    image_data = payload.get("image_base64") or payload.get("image_path")
+    reference_type = payload.get("reference_type", "")
+    if not image_data or reference_type not in {"coin_5", "coin_10", "id_card"}:
+        return {"status": "error", "message": "image_base64/image_path and a supported reference_type are required."}
+    return detect_reference_object(image_data, reference_type)
 
 @router.post("/extract")
 def extract_endpoint(payload: Dict[str, Any] = Body(...)):

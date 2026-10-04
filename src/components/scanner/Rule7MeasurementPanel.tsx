@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Scale,
   Microscope,
+  ScanSearch,
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { useScanStore } from '../../store/scanStore';
@@ -97,6 +98,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
   const { currentScan } = useScanStore();
 
   const [calibration, setCalibration] = useState<CalibrationResult | null>(null);
+  const [isDetectingReference, setIsDetectingReference] = useState(false);
   const [result, setResult] = useState<Rule7MeasurementResult | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
@@ -270,6 +272,40 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     setResult(res);
   }, [currentScan]);
 
+  const autoDetectReference = useCallback(async () => {
+    if (!currentScan?.imageDataUrl || scanOptions.calibrationMethod !== 'reference_object') return;
+    setIsDetectingReference(true);
+    setError(null);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 2500);
+      const response = await fetch(`${apiUrl}/api/v1/detect-reference-object`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: currentScan.imageDataUrl, reference_type: refType }),
+        signal: controller.signal,
+      });
+      window.clearTimeout(timer);
+      const payload = await response.json();
+      const candidate = payload?.candidates?.[0];
+      if (!response.ok || payload?.status !== 'success' || !candidate?.bbox_px) {
+        throw new Error('No reliable reference-object candidate was found. Mark it manually.');
+      }
+      const box = candidate.bbox_px;
+      const bounds: CoinBounds = { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height };
+      const cal = calibrateFromBounds(bounds, refType);
+      if (!cal) throw new Error('The detected reference object is too small for calibration.');
+      setDrawRect(bounds);
+      setCalibration(cal);
+      runMeasurement(cal);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Reference detection timed out. Mark the object manually.');
+    } finally {
+      setIsDetectingReference(false);
+    }
+  }, [currentScan, refType, runMeasurement, scanOptions.calibrationMethod]);
+
   // Auto-run without calibration when no reference object selected
   useEffect(() => {
     if (currentScan?.status === 'completed' && scanOptions.calibrationMethod !== 'reference_object') {
@@ -370,10 +406,20 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
                     Reference: {calibration.refWidthPx}×{calibration.refHeightPx} px = {calibration.refWidthMm}×{calibration.refHeightMm} mm
                   </p>
                 ) : (
-                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
-                    Click and drag on the image below to mark the {refType === 'coin_10' ? '₹10 coin' : refType === 'id_card' ? 'ID card' : 'barcode'}.
-                    This sets the real-world scale for mm measurement.
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
+                      Detect the {refType === 'coin_10' ? '₹10 coin' : refType === 'id_card' ? 'ID card' : 'barcode'} automatically, or mark it manually below.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={autoDetectReference}
+                      disabled={isDetectingReference}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <ScanSearch className="h-3.5 w-3.5" />
+                      {isDetectingReference ? 'Detecting with OpenCV…' : 'Auto-detect reference'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
