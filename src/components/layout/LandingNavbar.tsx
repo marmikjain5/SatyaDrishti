@@ -26,7 +26,7 @@ export const LandingNavbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-[100] w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-colors">
       {/* Main Nav Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
@@ -93,7 +93,7 @@ export const LandingNavbar: React.FC = () => {
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Technical Blog
+            Blog
           </Link>
         </nav>
 
@@ -192,7 +192,7 @@ export const LandingNavbar: React.FC = () => {
             }`}
           >
             <BookOpen className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-            <span>Technical Blog &amp; Story</span>
+            <span>Blog</span>
           </Link>
 
           {/* Auth Button in Mobile Menu */}
