@@ -8,9 +8,10 @@ const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'i
 const ACCEPTED_EXTENSIONS = '.png,.jpg,.jpeg,.webp,.heic,.heif,image/*';
 
 export const ImageUploader: React.FC = () => {
-  const { addImages, isProcessing } = useScanStore();
+  const { addImages, isProcessing, scanMode } = useScanStore();
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const validateAndAdd = useCallback(
     (files: FileList | File[]) => {
@@ -36,22 +37,22 @@ export const ImageUploader: React.FC = () => {
       e.stopPropagation();
       setIsDragActive(false);
 
-      if (isProcessing) return;
+      if (isDisabled) return;
 
       if (e.dataTransfer.files?.length) {
         validateAndAdd(e.dataTransfer.files);
       }
     },
-    [isProcessing, validateAndAdd]
+    [isDisabled, validateAndAdd]
   );
 
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!isProcessing) setIsDragActive(true);
+      if (!isDisabled) setIsDragActive(true);
     },
-    [isProcessing]
+    [isDisabled]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -59,6 +60,10 @@ export const ImageUploader: React.FC = () => {
     e.stopPropagation();
     setIsDragActive(false);
   }, []);
+
+  const handleClick = () => {
+    if (!isProcessing) inputRef.current?.click();
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -98,8 +103,8 @@ export const ImageUploader: React.FC = () => {
           className={cn(
             'relative flex flex-col items-center justify-center gap-3.5 rounded-xl border-2 border-dashed p-6 sm:p-8 transition-all duration-200',
             isDragActive
-              ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/20'
-              : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/20 dark:hover:bg-blue-950/10',
+              ? 'border-blue-500 bg-blue-50/60'
+              : 'border-slate-300 bg-slate-50/40 hover:border-slate-400 hover:bg-slate-50/80',
             isProcessing && 'opacity-50 pointer-events-none cursor-not-allowed'
           )}
         >
@@ -107,8 +112,8 @@ export const ImageUploader: React.FC = () => {
             className={cn(
               'flex items-center justify-center h-12 w-12 rounded-2xl border shadow-xs transition-transform',
               isDragActive
-                ? 'bg-blue-100 dark:bg-blue-900/60 border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                ? 'bg-blue-100 border-blue-300 text-blue-600'
+                : 'bg-slate-100 border-slate-200 text-slate-500'
             )}
           >
             {isDragActive ? (
@@ -118,15 +123,15 @@ export const ImageUploader: React.FC = () => {
             )}
           </div>
 
-          <div className="text-center max-w-md px-2">
-            <p className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
-              {isDragActive ? 'Drop packaging images here' : 'Capture or Upload Packaging'}
+          <div className="text-center">
+            <p className="text-sm font-semibold text-slate-800">
+              {isDragActive ? 'Drop product packaging images here' : 'Upload Product Packaging Images'}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Snap product declarations using your <span className="font-semibold text-blue-600 dark:text-blue-400">Back Camera</span> or select files from your device
+            <p className="text-xs text-slate-500 mt-1">
+              Select multiple photos of the <span className="font-semibold text-blue-600">same product</span> from different angles (Front, Back, Side, Nutritional Panel)
             </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              JPG, PNG, WebP • Multi-angle images are consolidated into a single statutory audit
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              PNG, JPG, JPEG, WebP • Multi-angle images will be consolidated into a single compliance audit
             </p>
           </div>
 

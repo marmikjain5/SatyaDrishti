@@ -237,3 +237,48 @@ export interface MRPVerificationResult {
   /** Human-readable message summarising the result */
   message: string;
 }
+
+// ─── Parallel Multi-Product Scanning Types ──────────────────────────────────
+
+/**
+ * Scanning mode selection.
+ * - 'single-product': Existing multi-angle mode — multiple images = one product, different angles.
+ * - 'parallel-products': New mode — each image = one independent product scanned concurrently.
+ */
+export type ScanMode = 'single-product' | 'parallel-products';
+
+/** Status stages for a parallel scan job */
+export type ParallelJobStatus = 'queued' | 'scanning' | 'validating' | 'completed' | 'failed';
+
+/**
+ * Represents an independent product scan job in parallel mode.
+ * Each job runs the full pipeline independently and produces its own ScanRecord.
+ */
+export interface ParallelScanJob {
+  /** Unique job identifier */
+  id: string;
+  /** Status of this job */
+  status: ParallelJobStatus;
+  /** Progress 0-100 for this job */
+  progress: number;
+  /** Current processing stage message */
+  statusMessage: string;
+  /** Source image data URL */
+  imageDataUrl: string;
+  /** Original filename */
+  imageName: string;
+  /** The source File object */
+  file: File;
+  /** OCR extraction confidence (populated after OCR) */
+  confidence: number;
+  /** Extracted product data (populated after extraction) */
+  extractedData: ExtractedProductData | null;
+  /** Error message if failed */
+  errorMessage?: string;
+  /** The resulting ScanRecord ID once completed (links to scans[]) */
+  completedScanId?: string;
+  /** Timestamps */
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+}
