@@ -19,9 +19,22 @@ export const ACTIVE_RULE_PACK = {
   id: 'india-legal-metrology-packaged-commodities',
   version: '2026.01',
   effectiveFrom: '2026-01-01',
-  citationSource: 'Ministry of Consumer Affairs, Legal Metrology (Packaged Commodities) Rules, 2011 and amendments; approved frontend rule pack.',
+  effectiveTo: null,
+  citationSource: 'Ministry of Consumer Affairs, Legal Metrology (Packaged Commodities) Rules, 2011 and amendments.',
+  sourceUrl: 'https://consumeraffairs.nic.in/acts-and-rules/legal-metrology',
+  gazetteReferences: ['G.S.R. 202(E)', 'G.S.R. 1537(E)', 'G.S.R. 779(E)'],
+  verifiedAt: '2026-01-01',
+  verifiedBy: 'SatyaDrishti Legal Metrology Rule Pack Maintainer',
+  presentationOnly: false,
   approvalState: 'approved' as const,
 };
+
+export function isRulePackEffectiveOn(evaluationDate: string | Date): boolean {
+  const date = typeof evaluationDate === 'string' ? evaluationDate.slice(0, 10) : evaluationDate.toISOString().slice(0, 10);
+  const effectiveTo: string | null = ACTIVE_RULE_PACK.effectiveTo;
+  return date >= ACTIVE_RULE_PACK.effectiveFrom
+    && (effectiveTo === null || date <= (effectiveTo as string));
+}
 
 // ─── Field-Specific Validators ──────────────────────────────────
 
@@ -560,8 +573,29 @@ function computeComplianceScore(audit: RuleAuditEntry[]): number {
  */
 export function validateProduct(
   productData: ExtractedProductData,
-  rules: LegalMetrologyRule[] = LEGAL_METROLOGY_RULES
+  rules: LegalMetrologyRule[] = LEGAL_METROLOGY_RULES,
+  evaluationDate: string | Date = new Date()
 ): ComplianceValidationResult {
+  if (!isRulePackEffectiveOn(evaluationDate)) {
+    return {
+      id: `val-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      timestamp: new Intl.DateTimeFormat('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }).format(new Date()),
+      scanId: '',
+      overallStatus: 'under-review',
+      complianceScore: 0,
+      violationCount: 0,
+      warningCount: 0,
+      passCount: 0,
+      notApplicableCount: 0,
+      unknownCount: rules.length,
+      rulePack: { ...ACTIVE_RULE_PACK, approvalState: 'superseded' as const },
+      missingDeclarations: [],
+      audit: [],
+      recommendations: ['No approved rule pack was effective on the inspection date. Route this inspection for legal review before issuing a finding.'],
+    };
+  }
   const context: ValidationContext = {
     rawText: productData.rawText || '',
     countryOfOrigin: productData.countryOfOrigin || '',

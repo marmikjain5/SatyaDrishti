@@ -73,7 +73,13 @@ export interface ComplianceValidationResult {
     id: string;
     version: string;
     effectiveFrom: string;
+    effectiveTo?: string | null;
     citationSource: string;
+    sourceUrl?: string;
+    gazetteReferences?: string[];
+    verifiedAt?: string;
+    verifiedBy?: string;
+    presentationOnly?: boolean;
     approvalState: 'approved' | 'draft' | 'superseded';
   };
   missingDeclarations: string[];

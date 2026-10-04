@@ -188,6 +188,14 @@ export const RegulatoryRAGPortal: React.FC = () => {
         </div>
       </div>
 
+      {/* Transparency note: the production RAG store and the presentation fixture are distinct. */}
+      <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/70 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+        <p className="font-semibold text-slate-800 dark:text-slate-100">Data source note</p>
+        <p className="mt-1 leading-relaxed">
+          Production regulatory retrieval uses Gazette documents embedded with pgvector on Supabase. This page also includes a small set of frontend demonstration rules so the crawler, search, graph, and approval workflow can be shown when the Supabase environment is not connected. Demonstration rules are not used as the production legal source.
+        </p>
+      </div>
+
       {/* Crawled Notification Alert Banner */}
       {crawledAlert && (
         <div className="p-3 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-blue-500/40 text-blue-700 dark:text-blue-200 rounded-lg flex items-center justify-between text-xs font-mono animate-in fade-in">

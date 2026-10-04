@@ -369,6 +369,7 @@ export class ReportGenerationEngine {
       evidence,
       recommendations,
       verdict,
+      rulePack: validationResult?.rulePack,
       digitalSignature,
     };
   }
