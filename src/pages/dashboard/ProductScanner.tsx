@@ -285,21 +285,15 @@ export const ProductScanner: React.FC = () => {
           </div>
         </div>
       )}
-
-
       {/* Packaging Capture & Upload Zone */}
-
       {/* ══ Scan Mode Selector ══════════════════════════════════════ */}
       <ScanModeSelector />
-
       {/* Capture/Upload Section */}
       <div className="min-w-0">
         <ImageUploader />
       </div>
-
       {/* Image Previews + Actions */}
       <ImagePreviewPanel />
-
       {/* Action Bar */}
       {uploadedImages.length > 0 && (
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-subtle px-4 py-3">
