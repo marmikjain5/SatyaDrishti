@@ -381,22 +381,8 @@ def update_violation(
 
 
 # ============================================================================
-# 5. COMPLAINTS ENDPOINTS (with Supabase pgvector Deduplication & Semantic Search)
+# 5. COMPLAINTS ENDPOINTS
 # ============================================================================
-try:
-    from backend.services.complaint_vector_service import (
-        search_similar_complaints,
-        save_complaint_embedding,
-        check_pgvector_readiness,
-    )
-except ImportError:
-    from services.complaint_vector_service import (
-        search_similar_complaints,
-        save_complaint_embedding,
-        check_pgvector_readiness,
-    )
-
-
 class ComplaintCreateSchema(BaseModel):
     id: Optional[str] = None
     ticket_id: Optional[str] = None
@@ -421,39 +407,6 @@ class ComplaintCreateSchema(BaseModel):
     assigned_officer: Optional[str] = None
     officer_decision_history: List[Any] = Field(default_factory=list)
     submitted_at: Optional[str] = None
-
-
-class ComplaintSimilarSearchSchema(BaseModel):
-    query_text: str
-    brand: Optional[str] = None
-    product_name: Optional[str] = None
-    limit: int = 5
-    threshold: float = 0.35
-
-
-@router.get("/complaints/vector-status")
-def get_complaints_vector_status(db: Session = Depends(get_db)):
-    """Check whether Supabase pgvector extension is active or running in-memory fallback."""
-    return check_pgvector_readiness(db)
-
-
-@router.post("/complaints/search-similar")
-def search_similar_complaints_endpoint(
-    req: ComplaintSimilarSearchSchema,
-    db: Session = Depends(get_db),
-):
-    """
-    Search for semantically similar complaints or potential duplicates
-    using Supabase pgvector (HNSW Cosine Distance) with seamless in-memory fallback.
-    """
-    return search_similar_complaints(
-        db=db,
-        query_text=req.query_text,
-        brand=req.brand,
-        product_name=req.product_name,
-        limit=req.limit,
-        threshold=req.threshold,
-    )
 
 
 @router.get("/complaints")
@@ -503,14 +456,6 @@ def create_complaint(c_in: ComplaintCreateSchema, db: Session = Depends(get_db))
     db.add(complaint)
     db.commit()
     db.refresh(complaint)
-
-    # Automatically compute and store vector embedding (Supabase pgvector / fallback)
-    try:
-        embed_text = f"{complaint.brand} {complaint.product_name} {complaint.category} {complaint.description}"
-        save_complaint_embedding(db, complaint.id, embed_text)
-    except Exception as embed_err:
-        print(f"[ComplaintAPI] Warning: embedding could not be persisted: {embed_err}")
-
     return complaint
 
 
@@ -535,8 +480,62 @@ def update_complaint(
 
 
 # ============================================================================
-# 6. REGULATORY RULES CRUD
+# 6. REGULATORY RULES CRUD & SUPABASE PGVECTOR SEMANTIC RETRIEVAL
 # ============================================================================
+try:
+    from backend.services.rule_vector_service import (
+        search_rules_vector,
+        save_rule_embedding,
+        seed_all_rule_embeddings,
+        check_rules_pgvector_readiness,
+    )
+except ImportError:
+    from services.rule_vector_service import (
+        search_rules_vector,
+        save_rule_embedding,
+        seed_all_rule_embeddings,
+        check_rules_pgvector_readiness,
+    )
+
+
+class RuleVectorSearchSchema(BaseModel):
+    query_text: str
+    category: Optional[str] = None
+    limit: int = 5
+    threshold: float = 0.25
+
+
+@router.get("/rules/vector-status")
+def get_rules_vector_status(db: Session = Depends(get_db)):
+    """Check whether Supabase pgvector extension is active on regulatory_rules."""
+    return check_rules_pgvector_readiness(db)
+
+
+@router.post("/rules/search-vector")
+def search_regulatory_rules_vector(
+    req: RuleVectorSearchSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Search for gazette-verified statutory rules using Supabase pgvector HNSW Cosine Distance,
+    with an automatic deterministic fallback for SQLite or unindexed databases.
+    """
+    return search_rules_vector(
+        db=db,
+        query_text=req.query_text,
+        category=req.category,
+        limit=req.limit,
+        threshold=req.threshold,
+    )
+
+
+@router.post("/rules/seed-embeddings")
+def seed_regulatory_rules_embeddings(db: Session = Depends(get_db)):
+    """Populate/sync vector embeddings for all statutory rules in the database."""
+    count = seed_all_rule_embeddings(db)
+    return {"status": "success", "embeddings_seeded": count}
+
+
 class RegulatoryRuleCreateSchema(BaseModel):
     id: Optional[str] = None
     rule_code: str
@@ -596,4 +595,12 @@ def create_regulatory_rule(rule_in: RegulatoryRuleCreateSchema, db: Session = De
     db.add(rule)
     db.commit()
     db.refresh(rule)
+
+    # Automatically compute and store vector embedding (Supabase pgvector / fallback)
+    try:
+        text_rep = f"{rule.act_name} {rule.section_clause} {rule.title} {rule.target_field} {rule.description}"
+        save_rule_embedding(db, rule.id, text_rep)
+    except Exception as e:
+        print(f"[RulesAPI] Warning: embedding could not be persisted: {e}")
+
     return rule

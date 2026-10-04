@@ -50,7 +50,6 @@ import { transliterateText } from '../../lib/indicTransliteration';
 import { cn } from '../../lib/utils';
 import { ShopSearchInput } from '../../components/citizen/ShopSearchInput';
 import { sendSurpriseInspectionNoticeEmail, SendEmailResult } from '../../services/gmailService';
-import { complaintService } from '../../services/complaintService';
 
 export const ConsumerComplaintsPortal: React.FC = () => {
   const { user } = useAuthStore();
@@ -70,26 +69,10 @@ export const ConsumerComplaintsPortal: React.FC = () => {
   const isInspector = user?.role === 'inspector';
   const isAdmin = user?.role === 'admin';
 
-  // Active Tab inside Case Dossier Modal (supports Supabase pgvector semantic search)
-  const [dossierTab, setDossierTab] = useState<'correlation' | 'evidence' | 'rag' | 'audit' | 'pgvector'>('correlation');
+  // Active Tab inside Case Dossier Modal
+  const [dossierTab, setDossierTab] = useState<'correlation' | 'evidence' | 'rag' | 'audit'>('correlation');
   const [selectedEvidenceIndex, setSelectedEvidenceIndex] = useState<number>(0);
   const [showAnnotatedCopy, setShowAnnotatedCopy] = useState<boolean>(true);
-
-  // pgvector Semantic Precedents & Duplicate Detection State
-  const [precedentsLoading, setPrecedentsLoading] = useState(false);
-  const [precedentsResult, setPrecedentsResult] = useState<{
-    total_matches: number;
-    engine: string;
-    is_pgvector: boolean;
-    matches: any[];
-  } | null>(null);
-  const [formDuplicateChecking, setFormDuplicateChecking] = useState(false);
-  const [formDuplicateResult, setFormDuplicateResult] = useState<{
-    total_matches: number;
-    engine: string;
-    is_pgvector: boolean;
-    matches: any[];
-  } | null>(null);
 
   // Officer Action Form State
   const [officerActionType, setOfficerActionType] = useState<OfficerActionType>('ACCEPT_INVESTIGATION');
@@ -131,49 +114,6 @@ export const ConsumerComplaintsPortal: React.FC = () => {
       }));
     }
   }, [user]);
-
-  // Load pgvector precedents whenever the pgvector dossier tab is opened
-  useEffect(() => {
-    if (dossierTab === 'pgvector' && selectedComplaint) {
-      setPrecedentsLoading(true);
-      complaintService
-        .searchSimilarComplaints({
-          queryText: selectedComplaint.description,
-          brand: selectedComplaint.brand,
-          productName: selectedComplaint.productName,
-          limit: 5,
-          threshold: 0.35,
-        })
-        .then((res) => {
-          setPrecedentsResult(res);
-        })
-        .catch((err) => {
-          console.warn('pgvector search error:', err);
-        })
-        .finally(() => {
-          setPrecedentsLoading(false);
-        });
-    }
-  }, [dossierTab, selectedComplaint]);
-
-  const handleCheckFormDuplicates = async () => {
-    if (!newComplaintData.description || newComplaintData.description.length < 20) return;
-    setFormDuplicateChecking(true);
-    try {
-      const res = await complaintService.searchSimilarComplaints({
-        queryText: newComplaintData.description,
-        brand: newComplaintData.brand,
-        productName: newComplaintData.productName,
-        limit: 3,
-        threshold: 0.40,
-      });
-      setFormDuplicateResult(res);
-    } catch (e) {
-      console.warn('Form duplicate check error:', e);
-    } finally {
-      setFormDuplicateChecking(false);
-    }
-  };
 
   // Role-based Grievance filtering:
   // - Consumer: shows personal grievances
@@ -1120,22 +1060,6 @@ export const ConsumerComplaintsPortal: React.FC = () => {
                 <Clock className={cn('h-3.5 w-3.5', dossierTab === 'audit' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                 <span>{isConsumer ? 'Official Case Timeline' : 'Audit Timeline'} ({selectedComplaint.officerDecisionHistory?.length || 0})</span>
               </button>
-
-              <button
-                onClick={() => setDossierTab('pgvector')}
-                className={cn(
-                  'pb-2.5 pt-1 text-xs inline-flex items-center gap-1.5 whitespace-nowrap -mb-px border-b-2 font-medium transition-colors',
-                  dossierTab === 'pgvector'
-                    ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-300 font-semibold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                )}
-              >
-                <Sparkles className={cn('h-3.5 w-3.5', dossierTab === 'pgvector' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500')} />
-                <span>pgvector Precedents</span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                  Vector DB
-                </span>
-              </button>
             </div>
 
             {/* TAB 1: 4-WAY CASE CORRELATION */}
@@ -1444,141 +1368,6 @@ export const ConsumerComplaintsPortal: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* TAB 6: SUPABASE PGVECTOR PRECEDENTS & PATTERN CLUSTERS */}
-            {dossierTab === 'pgvector' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-white dark:from-indigo-950/40 dark:via-blue-950/20 dark:to-slate-900">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-sm">
-                      <Sparkles className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          Supabase pgvector Semantic Search &amp; Precedent Clustering
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/80 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
-                          {precedentsResult?.engine || 'HNSW Cosine Vector Index'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Correlates <span className="font-semibold text-slate-700 dark:text-slate-300">"{selectedComplaint.brand}"</span> across all filed consumer grievances and official enforcement records.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs shrink-0"
-                    onClick={() => {
-                      if (!selectedComplaint) return;
-                      setPrecedentsLoading(true);
-                      complaintService
-                        .searchSimilarComplaints({
-                          queryText: selectedComplaint.description,
-                          brand: selectedComplaint.brand,
-                          productName: selectedComplaint.productName,
-                          limit: 5,
-                          threshold: 0.35,
-                        })
-                        .then(setPrecedentsResult)
-                        .finally(() => setPrecedentsLoading(false));
-                    }}
-                    disabled={precedentsLoading}
-                  >
-                    {precedentsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
-                    Re-Query Vector DB
-                  </Button>
-                </div>
-
-                {precedentsLoading ? (
-                  <div className="py-12 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
-                    <span className="text-xs font-mono">Running HNSW Vector Cosine Distance on PostgreSQL...</span>
-                  </div>
-                ) : precedentsResult && precedentsResult.matches.length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="text-[11px] font-mono text-slate-500 flex items-center justify-between">
-                      <span>Found {precedentsResult.matches.length} semantically correlated grievances</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                        {precedentsResult.is_pgvector ? '✓ Native pgvector vector(64) execution' : '✓ Zero-config Vector Engine active'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {precedentsResult.matches.map((item: any, idx: number) => {
-                        const isCurrentCase = item.id === selectedComplaint.id || item.ticket_id === selectedComplaint.ticketId;
-                        return (
-                          <div
-                            key={idx}
-                            className={cn(
-                              'p-3.5 rounded-xl border text-xs transition-all',
-                              item.is_likely_duplicate
-                                ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800'
-                                : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800',
-                              isCurrentCase && 'ring-2 ring-blue-500/50'
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-mono font-bold text-slate-900 dark:text-white">
-                                    {item.ticket_id}
-                                  </span>
-                                  {isCurrentCase && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-semibold">
-                                      Current Case
-                                    </span>
-                                  )}
-                                  {item.is_likely_duplicate && (
-                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
-                                      ⚠️ High Pattern Match (&gt;72%)
-                                    </span>
-                                  )}
-                                  <span className="text-[10px] text-slate-500 font-mono">
-                                    {item.brand} • {item.product_name}
-                                  </span>
-                                </div>
-                                <div className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mt-1">
-                                  Pattern: {item.pattern}
-                                </div>
-                              </div>
-
-                              <div className="text-right shrink-0">
-                                <div className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">
-                                  {Math.round(item.similarity_score * 100)}%
-                                </div>
-                                <div className="text-[9px] uppercase font-mono text-slate-400 tracking-wider">
-                                  Similarity
-                                </div>
-                              </div>
-                            </div>
-
-                            <p className="mt-2 text-slate-600 dark:text-slate-300 line-clamp-2 text-[11px] italic bg-white dark:bg-slate-950 p-2 rounded-lg border border-slate-200/70 dark:border-slate-800/70">
-                              "{item.description}"
-                            </p>
-
-                            <div className="mt-2.5 flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
-                              <span>Platform: {item.platform} • Status: {item.status}</span>
-                              <span>Filed: {item.submitted_at || 'Recent'}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs">
-                    <Database className="h-6 w-6 mx-auto mb-2 text-slate-400" />
-                    <p className="font-semibold text-slate-700 dark:text-slate-300">No Historical Precedents or Duplicates</p>
-                    <p className="text-[11px] mt-1 max-w-sm mx-auto">
-                      pgvector cosine distance found no matching grievance tickets exceeding the similarity threshold. This appears to be an isolated incident.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </Modal>
       )}
@@ -1735,62 +1524,6 @@ export const ConsumerComplaintsPortal: React.FC = () => {
                 {newComplaintData.description.length} chars
                 {newComplaintData.description.length < 30 && ` (min 30)`}
               </div>
-            </div>
-
-            {/* pgvector Real-time Duplicate / Pattern Detection */}
-            <div className="mt-2.5">
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCheckFormDuplicates}
-                  disabled={formDuplicateChecking || newComplaintData.description.length < 20}
-                  className="text-[11px] h-7 px-2.5 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
-                >
-                  {formDuplicateChecking ? (
-                    <Loader2 className="h-3 w-3 animate-spin mr-1 text-indigo-500" />
-                  ) : (
-                    <Sparkles className="h-3 w-3 mr-1 text-indigo-500" />
-                  )}
-                  Check Similar / Duplicate Grievances (pgvector)
-                </Button>
-
-                {formDuplicateResult && (
-                  <span className="text-[10px] font-mono text-slate-400">
-                    Engine: {formDuplicateResult.is_pgvector ? 'Supabase pgvector' : 'Cosine Fallback'}
-                  </span>
-                )}
-              </div>
-
-              {formDuplicateResult && formDuplicateResult.matches && (
-                <div className="mt-2 space-y-2">
-                  {formDuplicateResult.matches.filter((m: any) => m.similarity_score >= 0.50).length > 0 ? (
-                    <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-xl text-xs space-y-1.5">
-                      <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
-                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span>Similar Grievance Already Reported for this Brand</span>
-                      </div>
-                      <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                        pgvector detected {formDuplicateResult.matches.length} prior complaint(s) with matching non-compliance patterns. Your submission will be cross-referenced as corroborating evidence for regulatory enforcement.
-                      </p>
-                      <div className="divide-y divide-amber-200 dark:divide-amber-800/60 pt-1">
-                        {formDuplicateResult.matches.slice(0, 2).map((m: any, idx: number) => (
-                          <div key={idx} className="pt-1.5 first:pt-0 flex items-center justify-between text-[11px] font-mono">
-                            <span className="text-slate-800 dark:text-slate-200 font-semibold">{m.ticket_id} ({m.brand})</span>
-                            <span className="text-amber-700 dark:text-amber-300 font-bold">{Math.round(m.similarity_score * 100)}% Match</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      <span className="text-[11px]">No duplicate found via pgvector. This grievance appears unique.</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

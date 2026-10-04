@@ -30,6 +30,8 @@ import {
   KNOWLEDGE_GRAPH_NODES,
   KNOWLEDGE_GRAPH_EDGES,
   queryRegulatoryRAG,
+  queryRegulatoryVectorRAG,
+  VectorRAGResult,
   RegulatoryAuthority,
   RegulatoryRuleItem,
 } from '../../lib/ragKnowledgeService';
@@ -43,6 +45,31 @@ export const RegulatoryRAGPortal: React.FC = () => {
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawledAlert, setCrawledAlert] = useState<string | null>(null);
   const [evaluationDate, setEvaluationDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [vectorRAGResult, setVectorRAGResult] = useState<VectorRAGResult | null>(null);
+  const [isVectorSearching, setIsVectorSearching] = useState(false);
+
+  // Trigger Supabase pgvector semantic search with automatic client fallback
+  React.useEffect(() => {
+    let active = true;
+    setIsVectorSearching(true);
+    queryRegulatoryVectorRAG({
+      queryText: searchQuery,
+      authorityFilter: selectedAuthority === 'all' ? undefined : selectedAuthority,
+      evaluationDate,
+    })
+      .then((res) => {
+        if (active) {
+          setVectorRAGResult(res);
+          setIsVectorSearching(false);
+        }
+      })
+      .catch(() => {
+        if (active) setIsVectorSearching(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [searchQuery, selectedAuthority, evaluationDate]);
 
   const handleTriggerGazetteCrawler = () => {
     setIsCrawling(true);
@@ -294,19 +321,35 @@ export const RegulatoryRAGPortal: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* RAG Telemetry Trace Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+          {/* RAG Telemetry Trace Bar & Engine Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-xs font-mono text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-2 min-w-0">
-              <Cpu className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-              <div className="truncate">
-                <span className="text-slate-500 font-medium">RAG Pipeline:</span>{' '}
-                <span className="text-slate-700 dark:text-slate-200">Hybrid Vector Search + Knowledge Graph Filtered</span>{' '}
-                <span className="text-blue-400 font-semibold">({searchResults.matchedChunks.length} chunks retrieved)</span>
+              <Cpu className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+              <div className="truncate flex items-center gap-2 flex-wrap">
+                <span className="text-slate-500 font-medium">Vector Engine:</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  {vectorRAGResult?.engine || 'Supabase pgvector (HNSW Cosine Distance)'}
+                </span>
+                {vectorRAGResult?.is_pgvector ? (
+                  <span className="text-emerald-500 font-semibold text-[11px] hidden md:inline">
+                    ✓ Native PostgreSQL pgvector
+                  </span>
+                ) : (
+                  <span className="text-blue-500 font-semibold text-[11px] hidden md:inline">
+                    ⚡ Client Deterministic Fallback Active
+                  </span>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0 text-slate-600 dark:text-slate-300">
-              <span className="text-emerald-400 font-bold">{searchResults.graphTrace.nodesTraversed}</span>
-              <span className="text-slate-400">Graph Nodes Traversed</span>
+            <div className="flex items-center gap-3 shrink-0 text-slate-600 dark:text-slate-300">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                {vectorRAGResult?.rules?.length || searchResults.matchedChunks.length} Rules Retrieved
+              </span>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <span className="text-emerald-500 font-bold">{searchResults.graphTrace.nodesTraversed}</span>
+                <span className="text-slate-400 text-[11px]">Graph Nodes</span>
+              </div>
             </div>
           </div>
 

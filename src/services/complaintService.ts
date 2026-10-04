@@ -203,62 +203,6 @@ export const complaintService = {
       throw err;
     }
   },
-
-  /**
-   * Performs semantic similarity search and duplicate grievance detection
-   * using Supabase pgvector (or fallback in-memory engine).
-   */
-  async searchSimilarComplaints(params: {
-    queryText: string;
-    brand?: string;
-    productName?: string;
-    limit?: number;
-    threshold?: number;
-  }): Promise<{
-    total_matches: number;
-    engine: string;
-    is_pgvector: boolean;
-    matches: Array<{
-      id: string;
-      ticket_id: string;
-      consumer_name: string;
-      product_name: string;
-      brand: string;
-      platform: string;
-      category: string;
-      description: string;
-      status: string;
-      submitted_at?: string;
-      similarity_score: number;
-      is_likely_duplicate: boolean;
-      pattern: string;
-    }>;
-  }> {
-    try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/complaints/search-similar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          query_text: params.queryText,
-          brand: params.brand,
-          product_name: params.productName,
-          limit: params.limit || 4,
-          threshold: params.threshold || 0.35,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to search similar complaints: ${res.statusText}`);
-      }
-
-      return await res.json();
-    } catch (err) {
-      console.warn('[ComplaintService] Similar search notice (graceful empty fallback):', err);
-      return { total_matches: 0, engine: 'Client Local Engine', is_pgvector: false, matches: [] };
-    }
-  },
 };
+
 

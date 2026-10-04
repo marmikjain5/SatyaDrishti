@@ -610,3 +610,149 @@ export function queryRegulatoryRAG(params: RAGSearchQuery): RAGSearchResult {
     },
   };
 }
+
+export interface VectorRAGRuleItem {
+  id: string;
+  rule_code: string;
+  act_name: string;
+  section_clause: string;
+  target_field: string;
+  title: string;
+  description: string;
+  category_scope: string;
+  severity: string;
+  is_mandatory: boolean;
+  min_fine_inr: number;
+  max_fine_inr: number;
+  imprisonment_months: number;
+  gazette_notification_no?: string;
+  gazette_date?: string;
+  effective_from: string;
+  similarity_score: number;
+}
+
+export interface VectorRAGResult {
+  engine: string;
+  is_pgvector: boolean;
+  total_matches: number;
+  rules: VectorRAGRuleItem[];
+  fallbackResult?: RAGSearchResult;
+}
+
+/**
+ * Queries Supabase pgvector HNSW Cosine Distance on the PostgreSQL regulatory_rules table.
+ * Automatically and seamlessly falls back to the client-side deterministic RAG engine if offline or unreachable.
+ */
+export async function queryRegulatoryVectorRAG(params: RAGSearchQuery): Promise<VectorRAGResult> {
+  const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const localFallback = queryRegulatoryRAG(params);
+
+  try {
+    const query = params.queryText || params.fieldKey || '';
+    if (!query) {
+      return {
+        engine: 'Client Local Corpus',
+        is_pgvector: false,
+        total_matches: localFallback.matchedChunks.length,
+        rules: localFallback.matchedChunks.map((c) => ({
+          id: c.chunkId,
+          rule_code: c.ruleCode,
+          act_name: c.authority,
+          section_clause: c.section,
+          target_field: c.ruleCode,
+          title: c.title,
+          description: c.content,
+          category_scope: c.categories.join(', '),
+          severity: 'CRITICAL',
+          is_mandatory: true,
+          min_fine_inr: c.penalties.minFine,
+          max_fine_inr: c.penalties.maxFine,
+          imprisonment_months: c.penalties.imprisonmentMonths || 0,
+          effective_from: c.effectiveDate,
+          similarity_score: c.relevanceScore,
+        })),
+        fallbackResult: localFallback,
+      };
+    }
+
+    const res = await fetch(`${BACKEND_BASE_URL}/api/rules/search-vector`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query_text: query,
+        category: params.productCategory,
+        limit: 6,
+        threshold: 0.20,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Vector endpoint status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data && Array.isArray(data.rules) && data.rules.length > 0) {
+      return {
+        engine: data.engine || 'Supabase pgvector (HNSW Cosine Distance)',
+        is_pgvector: !!data.is_pgvector,
+        total_matches: data.total_matches || data.rules.length,
+        rules: data.rules,
+        fallbackResult: localFallback,
+      };
+    }
+
+    // If pgvector returned empty, use local fallback
+    return {
+      engine: 'Client Deterministic Engine (Empty Vector Result Fallback)',
+      is_pgvector: false,
+      total_matches: localFallback.matchedChunks.length,
+      rules: localFallback.matchedChunks.map((c) => ({
+        id: c.chunkId,
+        rule_code: c.ruleCode,
+        act_name: c.authority,
+        section_clause: c.section,
+        target_field: c.ruleCode,
+        title: c.title,
+        description: c.content,
+        category_scope: c.categories.join(', '),
+        severity: 'CRITICAL',
+        is_mandatory: true,
+        min_fine_inr: c.penalties.minFine,
+        max_fine_inr: c.penalties.maxFine,
+        imprisonment_months: c.penalties.imprisonmentMonths || 0,
+        effective_from: c.effectiveDate,
+        similarity_score: c.relevanceScore,
+      })),
+      fallbackResult: localFallback,
+    };
+  } catch (err) {
+    console.warn('[RAG] Backend pgvector unreachable, using client deterministic fallback:', err);
+    return {
+      engine: 'Client-Side In-Memory Engine (Offline Fallback)',
+      is_pgvector: false,
+      total_matches: localFallback.matchedChunks.length,
+      rules: localFallback.matchedChunks.map((c) => ({
+        id: c.chunkId,
+        rule_code: c.ruleCode,
+        act_name: c.authority,
+        section_clause: c.section,
+        target_field: c.ruleCode,
+        title: c.title,
+        description: c.content,
+        category_scope: c.categories.join(', '),
+        severity: 'CRITICAL',
+        is_mandatory: true,
+        min_fine_inr: c.penalties.minFine,
+        max_fine_inr: c.penalties.maxFine,
+        imprisonment_months: c.penalties.imprisonmentMonths || 0,
+        effective_from: c.effectiveDate,
+        similarity_score: c.relevanceScore,
+      })),
+      fallbackResult: localFallback,
+    };
+  }
+}
+
