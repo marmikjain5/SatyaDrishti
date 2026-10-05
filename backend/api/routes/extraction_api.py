@@ -385,6 +385,7 @@ class ExtractionAPIHandler:
         serialized = _serialize_extraction_result(result)
         serialized["opencv_enhancements"] = cv_telemetry
         serialized["mrp_sticker_signal"] = cv_res.get("mrp_sticker_signal") if 'cv_res' in locals() else None
+        serialized["package_bounds"] = cv_res.get("package_bounds") if 'cv_res' in locals() else None
         return {
             "status": "success",
             "extraction": serialized,

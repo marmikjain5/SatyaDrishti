@@ -228,7 +228,7 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
     return true;
   });
 
-  // Regions displayed on image overlay
+  // Regions displayed on image overlay (grounded on the cropped packaging label)
   const overlayRegions = regions.filter((region) => {
     if (overlayMode === 'flagged') return region.flags.length > 0 || region.status !== 'compliant';
     if (overlayMode === 'declarations') return region.fieldKey !== undefined;

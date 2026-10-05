@@ -76,6 +76,9 @@ export interface TextRegionReadability {
   rawText: string;
   /** Bounding box coordinates mapped to image */
   boundingBox: BoundingBox;
+  /** Whether the bounding box is grounded in optical OCR detections vs inferred */
+  hasOpticalBBox?: boolean;
+  isInferredBbox?: boolean;
   /** Estimated font size metrics */
   fontSize: FontSizeMetrics;
   /** Tesseract OCR confidence (0–100%) */

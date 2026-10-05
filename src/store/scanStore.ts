@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import type {
   ScanRecord,
   UploadedImage,
@@ -308,12 +308,13 @@ export const useScanStore = create<ScanState>((set, get) => ({
           // ignore readability errors for sub-angles
         }
 
+        const angleDisplayImage = image.dataUrl;
         const angleRecord: ScanAngle = {
           id: `${scanId}-angle-${i + 1}`,
           angleIndex: i + 1,
           label: angleLabel,
           imageName: image.name,
-          imageDataUrl: image.dataUrl,
+          imageDataUrl: angleDisplayImage,
           extractedData: ocrResult.extractedData,
           confidence: ocrResult.confidence,
           rawText: ocrResult.rawText,
@@ -381,9 +382,11 @@ export const useScanStore = create<ScanState>((set, get) => ({
         imageDimensions: masterDims,
       });
 
+      const displayImageDataUrl = primaryImage.dataUrl;
+
       const masterReadability = await readabilityService.analyze(
         scanId,
-        primaryImage.dataUrl,
+        displayImageDataUrl,
         masterExtractedData,
         masterDims,
         {
@@ -405,6 +408,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
 
       const completedScan: ScanRecord = {
         ...initialScanRecord,
+        imageDataUrl: displayImageDataUrl,
         status: 'completed',
         progress: 100,
         confidence: masterConfidence,

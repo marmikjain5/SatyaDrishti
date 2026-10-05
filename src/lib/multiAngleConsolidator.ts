@@ -240,6 +240,8 @@ export function consolidateMultiAngleExtractions(
     compliancePayload,
     imageDimensions: primaryDimensions,
     ocrPassResults: allPassSummaries,
+    croppedImageDataUrl: angles[0]?.extractedData?.croppedImageDataUrl || undefined,
+    packageBounds: angles.find((a) => a.extractedData?.packageBounds)?.extractedData?.packageBounds,
   };
 
   return {

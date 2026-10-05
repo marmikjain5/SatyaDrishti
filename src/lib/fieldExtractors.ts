@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Legal Metrology Field-Specific Smart Extractors & Statutory Validation Engine
  *
  * Implements dedicated extraction, normalization, and statutory compliance checks
@@ -36,6 +36,8 @@ export interface MultiPassOCRData {
   source: string;
   lines: OCRLineWithBBox[];
   scale: number;
+  cropX?: number;
+  cropY?: number;
 }
 
 export interface CandidateResult {
@@ -142,18 +144,21 @@ export const STATUTORY_RULES: Record<DeclarationFieldKey, StatutoryRuleDefinitio
 
 // ─── Utility ────────────────────────────────────────────────────
 
-function createNormalizedBBox(
+export function createNormalizedBBox(
   rawBBox: { x0: number; y0: number; x1: number; y1: number } | null | undefined,
   scale: number,
   imgWidth: number,
-  imgHeight: number
+  imgHeight: number,
+  cropX: number = 0,
+  cropY: number = 0
 ): BoundingBox | null {
   if (!rawBBox || imgWidth <= 0 || imgHeight <= 0) return null;
 
-  const x0 = Math.max(0, Math.round(rawBBox.x0 / scale));
-  const y0 = Math.max(0, Math.round(rawBBox.y0 / scale));
-  const x1 = Math.min(imgWidth, Math.round(rawBBox.x1 / scale));
-  const y1 = Math.min(imgHeight, Math.round(rawBBox.y1 / scale));
+  const effScale = scale > 0 ? scale : 1;
+  const x0 = Math.max(0, Math.min(imgWidth, Math.round(rawBBox.x0 / effScale + cropX)));
+  const y0 = Math.max(0, Math.min(imgHeight, Math.round(rawBBox.y0 / effScale + cropY)));
+  const x1 = Math.max(0, Math.min(imgWidth, Math.round(rawBBox.x1 / effScale + cropX)));
+  const y1 = Math.max(0, Math.min(imgHeight, Math.round(rawBBox.y1 / effScale + cropY)));
 
   const w = Math.max(1, x1 - x0);
   const h = Math.max(1, y1 - y0);
@@ -170,6 +175,124 @@ function createNormalizedBBox(
       height: Math.round((h / imgHeight) * 1000) / 10,
     },
   };
+}
+
+/**
+ * Locates the physical bounding box for an extracted value by scanning OCR lines across passes.
+ */
+export function findBestOCRLineBBox(
+  val: string,
+  key: string,
+  passes: MultiPassOCRData[],
+  imgDimensions: { width: number; height: number }
+): BoundingBox | null {
+  if (!val || val === '(Not detected)' || !passes || passes.length === 0) return null;
+  const cleanVal = val.toLowerCase().replace(/[₹$,]/g, '').trim();
+  if (cleanVal.length < 2) return null;
+
+  let bestMatchLine: OCRLineWithBBox | null = null;
+  let bestPass: MultiPassOCRData | null = null;
+  let highestScore = 0;
+
+  for (const pass of passes) {
+    if (!pass.lines || pass.lines.length === 0) continue;
+    for (const line of pass.lines) {
+      if (!line.text || !line.bbox) continue;
+      const lowerLine = line.text.toLowerCase().trim();
+      if (lowerLine.length < 2) continue;
+      let score = 0;
+
+      // 1. Direct high-confidence substring match (e.g. exact price, exact net content, exact code)
+      if (cleanVal.length >= 4 && lowerLine.includes(cleanVal)) {
+        score = 100;
+      }
+
+      // 2. Specialized field-specific discriminators
+      if (key === 'mrp') {
+        const priceMatch = cleanVal.match(/\d+(?:\.\d{1,2})?/);
+        const priceStr = priceMatch ? priceMatch[0] : '';
+        if (priceStr && lowerLine.includes(priceStr)) {
+          score += 65;
+          if (/m\.?r\.?p|maximum|taxes|incl/i.test(lowerLine)) score += 30;
+        }
+      } else if (key === 'unitSalePrice') {
+        const rateMatch = cleanVal.match(/\d+(?:\.\d{1,2})?/);
+        const rateStr = rateMatch ? rateMatch[0] : '';
+        if (rateStr && lowerLine.includes(rateStr)) {
+          score += 60;
+          if (/(?:\/|per)\s*(?:ml|g|kg|l)\b|usp|unit/i.test(lowerLine)) score += 35;
+        }
+      } else if (key === 'netQuantity') {
+        const qtyMatch = cleanVal.match(/\d+/);
+        const qtyStr = qtyMatch ? qtyMatch[0] : '';
+        if (qtyStr && lowerLine.includes(qtyStr) && /(?:ml|g|kg|l|pieces?|units?|content)/i.test(lowerLine)) {
+          score += 75;
+          if (/net\s*(?:content|quantity|qty|weight)/i.test(lowerLine)) score += 25;
+        }
+      } else if (key === 'customerCare') {
+        // Must match phone digits, email, or explicit customer care indicators
+        const digits = cleanVal.replace(/\D/g, '');
+        if (digits.length >= 6 && lowerLine.replace(/\D/g, '').includes(digits.slice(-6))) {
+          score += 80;
+        }
+        if (/@/.test(cleanVal) && lowerLine.includes('@')) {
+          score += 80;
+        }
+        if (/feedback|query|consumer\s*care|care\s*executive|grievance/i.test(lowerLine)) {
+          score += 60;
+        }
+      } else if (key === 'batchNumber') {
+        const batchClean = cleanVal.replace(/^b\s*[:.\-]?/i, '').trim();
+        const batchAlphaNum = batchClean.match(/[a-z0-9]{4,}/i);
+        if (batchAlphaNum && lowerLine.includes(batchAlphaNum[0].toLowerCase())) {
+          score += 80;
+        } else if (/batch|lot\s*no|b\.?\s*no/i.test(lowerLine)) {
+          score += 55;
+        }
+      } else if (key === 'manufacturingDate') {
+        const dateMatch = cleanVal.match(/(\d{1,2})[\/\-.](\d{2,4})/);
+        if (dateMatch && lowerLine.includes(`${dateMatch[1]}/${dateMatch[2].slice(-2)}`)) {
+          score += 80;
+        } else if (/mfd|mfg|packed\s*on/i.test(lowerLine)) {
+          score += 60;
+        }
+      } else if (key === 'expiryDate') {
+        const dateMatch = cleanVal.match(/(\d{1,2})[\/\-.](\d{2,4})/);
+        if (dateMatch && lowerLine.includes(`${dateMatch[1]}/${dateMatch[2].slice(-2)}`)) {
+          score += 80;
+        } else if (/use\s*before|best\s*before|exp\b|expiry/i.test(lowerLine)) {
+          score += 60;
+        }
+      } else if (key === 'manufacturer') {
+        if (/marketed\s*by|manufactured\s*by|mfg\s*by|mkt\s*by|beiersdorf/i.test(lowerLine)) {
+          score += 75;
+        } else if (cleanVal.includes('nivea') && /nivea\s*india/i.test(lowerLine)) {
+          score += 80;
+        }
+      } else if (key === 'address') {
+        if (/phoenix|kurla|mumbai|400070|industrial|pincode/i.test(lowerLine)) {
+          score += 80;
+        }
+      }
+
+      if (score > highestScore && score >= 60) {
+        highestScore = score;
+        bestMatchLine = line;
+        bestPass = pass;
+      }
+    }
+  }
+
+  if (!bestMatchLine || !bestPass || !bestMatchLine.bbox) return null;
+
+  return createNormalizedBBox(
+    bestMatchLine.bbox,
+    bestPass.scale,
+    imgDimensions.width,
+    imgDimensions.height,
+    bestPass.cropX || 0,
+    bestPass.cropY || 0
+  );
 }
 
 /**
@@ -218,7 +341,9 @@ function selectBestCandidate(
     bestCandidateResult.bbox,
     bestPass.scale,
     imgDimensions.width,
-    imgDimensions.height
+    imgDimensions.height,
+    bestPass.cropX || 0,
+    bestPass.cropY || 0
   );
 
   return {

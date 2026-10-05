@@ -24,6 +24,9 @@ def decode_image_to_cv2(image_input: Union[str, bytes, Path]) -> Optional[np.nda
     binary bytes, or local file path) into an OpenCV BGR numpy array.
     """
     try:
+        if isinstance(image_input, np.ndarray):
+            return image_input
+
         if isinstance(image_input, bytes):
             nparr = np.frombuffer(image_input, np.uint8)
             return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -418,16 +421,77 @@ def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, 
     }
 
 
-def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
+def detect_package_contour_bounds(image: np.ndarray) -> Dict[str, Any]:
+    """
+    Detects the physical product package / bottle / container within the image frame.
+    Returns normalized bounding box percentage coordinates:
+    {
+        "x": float,
+        "y": float,
+        "width": float,
+        "height": float,
+        "detected": bool
+    }
+    """
+    h, w = image.shape[:2]
+    total_area = float(h * w)
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 0)
+
+    # Adaptive / Otsu segmentation to separate bottle/container from background
+    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Invert if borders are predominantly white
+    border_vals = np.concatenate([thresh[0, :], thresh[-1, :], thresh[:, 0], thresh[:, -1]])
+    if np.mean(border_vals) > 127:
+        thresh = cv2.bitwise_not(thresh)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (11, 11))
+    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
+
+    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    best_c = None
+    best_area = 0
+    for c in contours:
+        area = cv2.contourArea(c)
+        if (0.12 * total_area) <= area <= (0.92 * total_area):
+            if area > best_area:
+                best_area = area
+                best_c = c
+
+    if best_c is not None:
+        bx, by, bw, bh = cv2.boundingRect(best_c)
+        if bw >= int(w * 0.20) and bh >= int(h * 0.25):
+            return {
+                "x": round((bx / w) * 100, 2),
+                "y": round((by / h) * 100, 2),
+                "width": round((bw / w) * 100, 2),
+                "height": round((bh / h) * 100, 2),
+                "detected": True,
+            }
+
+    # Aspect ratio heuristics for common smartphone packaging scans
+    aspect = w / max(h, 1)
+    if aspect < 0.85:
+        # Tall portrait container (e.g. mobile photo of a bottle/shampoo/spray/pack)
+        return {"x": 22.0, "y": 3.0, "width": 66.0, "height": 93.0, "detected": False}
+    elif aspect > 1.25:
+        # Wide / landscape photo with container standing in center
+        return {"x": 33.0, "y": 4.0, "width": 34.0, "height": 92.0, "detected": False}
+    else:
+        # Near-square (e.g. 1:1 or 4:3)
+        return {"x": 18.0, "y": 4.0, "width": 64.0, "height": 92.0, "detected": False}
+
+
+def preprocess_packaging_for_ocr(image_input: Any, preserve_geometry: bool = True) -> Dict[str, Any]:
     """
     Full End-to-End OpenCV Preprocessing Pipeline executed prior to Tesseract OCR:
       1. Decode input into OpenCV BGR matrix
-      2. Perspective Correction (4-point homographic warp for angled shots)
-      3. Package Contour Cropping (Background clutter removal)
-      4. Text Deskewing (Rotational alignment)
-      5. CLAHE Illumination & Glare Neutralization
-      6. Super-Resolution Small Text Upscaling (2x bicubic)
-      7. Edge Sharpening & Bilateral Denoising
+      2. Detect packaging contour boundaries for spatial bounding box anchoring
+      3. CLAHE Illumination & Glare Neutralization (Preserves 1:1 coordinates)
+      4. Bilateral Denoising & Spatial Stroke Sharpening (Preserves 1:1 coordinates)
+      5. Optional cropping if preserve_geometry=False
     """
     img = decode_image_to_cv2(image_input)
     if img is None:
@@ -436,57 +500,45 @@ def preprocess_packaging_for_ocr(image_input: Any) -> Dict[str, Any]:
             "message": "Failed to decode image input into OpenCV format.",
             "operations_applied": [],
             "processed_image_base64": None,
+            "package_bounds": {"x": 22.0, "y": 3.0, "width": 66.0, "height": 93.0, "detected": False},
         }
 
     h0, w0 = img.shape[:2]
     operations = []
 
-    # Step 1: Perspective Correction (Flatten angled package shot)
-    img_warped, was_perspective_corrected = detect_and_correct_perspective(img)
-    if was_perspective_corrected:
-        img = img_warped
-        operations.append("Perspective Correction (4-point homography flat rectangle transform)")
+    # Detect package contour boundaries for spatial box anchoring
+    package_bounds = detect_package_contour_bounds(img)
+    operations.append(f"Packaging Contour Anchoring ({package_bounds['width']:.1f}%x{package_bounds['height']:.1f}% container bounds)")
 
-    # Step 2: Package / Label Contour Cropping (Remove irrelevant table/background clutter)
-    img_cropped, was_cropped = crop_package_contour(img)
-    if was_cropped:
-        img = img_cropped
-        operations.append("Packaging Contour Crop (Background clutter eliminated)")
+    # Optional cropping (only if explicitly requested to alter geometry)
+    was_cropped = False
+    if not preserve_geometry:
+        img_cropped, was_cropped = crop_package_contour(img)
+        if was_cropped:
+            img = img_cropped
+            operations.append("Packaging Contour Crop (Background clutter eliminated)")
 
-    # Step 3: Rotational Deskewing (Align text horizontally)
-    img_deskewed, skew_deg = deskew_text(img)
-    if abs(skew_deg) > 0.0:
-        img = img_deskewed
-        operations.append(f"Optical Deskewing (Rotated {skew_deg}° upright)")
-
-    # Step 4: CLAHE Illumination & Glare Removal
+    # Step 2: CLAHE Illumination & Glare Removal
     img = enhance_contrast_clahe(img)
     operations.append("CLAHE Illumination Normalization (Specular glare & curved shadow compensation)")
 
-    # Step 5: Upscaling Small Text Numerals
-    img_upscaled, was_upscaled = upscale_for_small_text(img, target_min_dim=1400)
-    if was_upscaled:
-        img = img_upscaled
-        operations.append("Super-Resolution Upscaling (Bicubic interpolation for micro-text legibility)")
-
-    # Step 6: Bilateral Denoising & Spatial Stroke Sharpening
+    # Step 3: Bilateral Denoising & Spatial Stroke Sharpening
     img = denoise_and_sharpen(img)
     operations.append("Bilateral Denoising & 3×3 Unsharp Stroke Sharpening")
 
     h1, w1 = img.shape[:2]
-    processed_base64 = encode_cv2_to_base64(img, quality=90)
+    processed_base64 = encode_cv2_to_base64(img, quality=92)
     sticker_signal = detect_mrp_sticker_candidates(img)
 
-    print(f"[OpenCV Preprocessor] Completed {len(operations)} operations: {w0}x{h0} -> {w1}x{h1}")
+    print(f"[OpenCV Preprocessor] Completed {len(operations)} operations: {w0}x{h0} -> {w1}x{h1} (Package Detected: {package_bounds['detected']})")
 
     return {
         "status": "success",
         "original_dimensions": {"width": w0, "height": h0},
         "processed_dimensions": {"width": w1, "height": h1},
         "operations_applied": operations,
-        "perspective_corrected": was_perspective_corrected,
-        "background_cropped": was_cropped,
-        "deskew_angle_deg": skew_deg,
-        "mrp_sticker_signal": sticker_signal,
         "processed_image_base64": processed_base64,
+        "was_cropped": was_cropped,
+        "package_bounds": package_bounds,
+        "mrp_sticker_signal": sticker_signal,
     }

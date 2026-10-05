@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Legal Metrology Extraction Engine Types (PS 26034)
  *
  * Comprehensive data schema for Statutory Packaged Commodity Declarations under:
@@ -64,6 +64,7 @@ export interface DeclarationField {
   sourceAngle?: string; // e.g. "Angle 2 (Back Panel)"
   sourceAngleIndex?: number;
   boundingBox: BoundingBox | null;
+  isInferredBbox?: boolean;
   validationStatus: ValidationStatus;
   validationMessage: string;
   ruleCode: string; // Statutory Rule Mapping
@@ -140,7 +141,12 @@ export interface ExtractedProductData {
     dataUrl: string;
     description: string;
     scale: number;
+    cropX?: number;
+    cropY?: number;
   }>;
+  ocrPasses?: any[];
+  croppedImageDataUrl?: string;
+  packageBounds?: { x: number; y: number; width: number; height: number };
 }
 
 /** A single uploaded image pending or processed */

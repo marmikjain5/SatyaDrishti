@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Image Preprocessor
  *
  * Canvas-based preprocessing pipeline that generates multiple optimized
@@ -13,6 +13,8 @@ export interface PreprocessedVariant {
   dataUrl: string;
   description: string;
   scale: number;
+  cropX?: number;
+  cropY?: number;
 }
 
 export interface PreprocessingResult {
@@ -267,6 +269,8 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
       dataUrl: canvas.toDataURL('image/png'),
       description: 'Grayscale + high contrast + edge sharpen',
       scale: 1,
+      cropX: 0,
+      cropY: 0,
     });
   }
 
@@ -290,6 +294,8 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
       dataUrl: canvas.toDataURL('image/png'),
       description: 'Statutory declaration panel zoom (MRP, USP, Stamp)',
       scale: 2.2,
+      cropX: 0,
+      cropY: cropY,
     });
   }
 
@@ -331,6 +337,8 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
       dataUrl: canvas.toDataURL('image/png'),
       description: 'Isolated stamp panel + contrast stretch',
       scale: 2.5,
+      cropX: cropX,
+      cropY: cropY,
     });
   }
 
@@ -348,6 +356,8 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
       dataUrl: canvas.toDataURL('image/png'),
       description: 'Inverted luminance for white text on dark packaging (dark bottles, blue tubes, dark boxes)',
       scale: 1,
+      cropX: 0,
+      cropY: 0,
     });
   }
 

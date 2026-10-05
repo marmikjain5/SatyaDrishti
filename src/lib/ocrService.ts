@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Legal Metrology OCR Extraction Service Layer
  *
  * Multi-pass pipeline with statutory declaration extraction, bounding box mapping,
@@ -17,7 +17,7 @@ import type {
   LegalMetrologyCompliancePayload,
 } from '../types/scan';
 import { preprocessImage } from './imagePreprocessor';
-import { extractAllLegalDeclarations } from './fieldExtractors';
+import { extractAllLegalDeclarations, findBestOCRLineBBox } from './fieldExtractors';
 import type { MultiPassOCRData, OCRLineWithBBox } from './fieldExtractors';
 import {
   isChocolateMuesliPackage,
@@ -31,6 +31,30 @@ import { barcodeService } from './barcodeService';
 async function checkIsMuesli(imageSource: string | File, dataUrl: string): Promise<boolean> {
   // Disabled hardcoded demo override  -  always run real OCR & Vision LLM pipeline
   return false;
+}
+
+/**
+ * Estimates physical packaging container boundaries within the image frame
+ * based on camera aspect ratio when optical contour detection is unavailable.
+ */
+export function estimatePackageBounds(imgDimensions: { width: number; height: number }): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const { width, height } = imgDimensions;
+  const aspect = width / Math.max(1, height);
+  if (aspect <= 0.85) {
+    // Tall portrait container (e.g. mobile photo of a bottle/shampoo/spray/pack)
+    return { x: 22, y: 3, width: 66, height: 93 };
+  } else if (aspect >= 1.25) {
+    // Wide / landscape photo with container standing in center
+    return { x: 33, y: 4, width: 34, height: 92 };
+  } else {
+    // Near-square (e.g. 1:1 or 4:3)
+    return { x: 18, y: 4, width: 64, height: 92 };
+  }
 }
 
 // ─── Provider Interface ─────────────────────────────────────────
@@ -151,6 +175,7 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
 
     // ── Step 0: OpenCV Optical Packaging Preprocessing (Cropping, Perspective, Deskew, CLAHE, Super-Resolution)
     let opticalDataUrl = dataUrl;
+    let detectedPackageBounds: { x: number; y: number; width: number; height: number } | undefined;
     try {
       onProgress?.(8, 'Pass 1/6: Optical Preprocessing & CLAHE Normalization');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -171,9 +196,19 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
           clearTimeout(timeoutId);
           if (cvRes.ok) {
             const cvData = await cvRes.json();
-            if (cvData.status === 'success' && cvData.processed_image_base64) {
-              opticalDataUrl = cvData.processed_image_base64;
-              console.log('✅ [OpenCV Preprocessor] Optical operations applied:', cvData.operations_applied);
+            if (cvData.status === 'success') {
+              if (cvData.processed_image_base64) {
+                opticalDataUrl = cvData.processed_image_base64;
+              }
+              if (cvData.package_bounds) {
+                detectedPackageBounds = {
+                  x: cvData.package_bounds.x,
+                  y: cvData.package_bounds.y,
+                  width: cvData.package_bounds.width,
+                  height: cvData.package_bounds.height,
+                };
+              }
+              console.log('✅ [OpenCV Preprocessor] Optical operations applied:', cvData.operations_applied, 'Package Bounds:', detectedPackageBounds);
               break;
             }
           }
@@ -270,6 +305,8 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
           source: variant.name,
           lines,
           scale: variant.scale,
+          cropX: variant.cropX || 0,
+          cropY: variant.cropY || 0,
         });
 
         passSummaries.push({
@@ -508,6 +545,9 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
         },
       ],
       preprocessedVariants: variants,
+      ocrPasses: passOCRData,
+      croppedImageDataUrl: opticalDataUrl !== dataUrl ? opticalDataUrl : undefined,
+      packageBounds: detectedPackageBounds || estimatePackageBounds(imgDimensions),
     };
 
     onProgress?.(100, 'Legal Metrology Extraction Complete');
@@ -734,9 +774,11 @@ export class HybridVisionBackendProvider implements OCRProvider {
             : (val === backendVal ? (bf.validation_status || (conf >= 80 ? 'compliant' : 'warning')) : (localDecl?.validationStatus || 'compliant'));
 
           fieldConfidence[key] = conf;
-          // Prefer real OCR bounding box; only use a placeholder if none exists.
-          // Mark inferred bounding boxes explicitly  -  never display as image-grounded evidence.
-          const realBbox = localDecl?.boundingBox ?? null;
+          // Prefer real OCR bounding box; locate in OCR passes if local regex missed it
+          let realBbox = localDecl?.boundingBox ?? null;
+          if (!realBbox && val && localRes?.extractedData?.ocrPasses) {
+            realBbox = findBestOCRLineBBox(val, key, localRes.extractedData.ocrPasses, imgDimensions);
+          }
           const isInferredBbox = !realBbox;
           declarations[key] = {
             key,
@@ -885,6 +927,9 @@ export class HybridVisionBackendProvider implements OCRProvider {
               textLength: rawOcr.length,
             },
           ],
+          ocrPasses: localRes?.extractedData?.ocrPasses,
+          croppedImageDataUrl: localRes?.extractedData?.croppedImageDataUrl,
+          packageBounds: responseData.package_bounds || localRes?.extractedData?.packageBounds || estimatePackageBounds(imgDimensions),
         };
 
         onProgress?.(100, `Extraction complete via ${engineName}`);

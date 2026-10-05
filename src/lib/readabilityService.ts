@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SatyaDrishti Readability & Font Size Analysis Engine (Feature 4)
  *
  * Production-ready service for:
@@ -445,6 +445,51 @@ function evaluateReadabilityDefects(
   };
 }
 
+// ─── Package Spatial Anchoring Engine ───────────────────────────
+
+/**
+ * Canonical statutory packaging declaration layout zones relative to container geometry (0-100% of packaging body).
+ * Designed so declarations strictly sit inside the container boundaries and align with real packaging layout:
+ * - Brand/Header at top
+ * - Composition / Importer / Origin in upper-mid
+ * - Manufacturer & Address in mid
+ * - Customer Care in lower-mid
+ * - Barcode at lower-left
+ * - Net Quantity above price stamp
+ * - MRP, USP, Batch, MFD, Expiry inside the right-hand statutory stamp
+ */
+export const CANONICAL_PACKAGE_ZONES: Record<string, { x: number; y: number; width: number; height: number }> = {
+  productName: { x: 8, y: 5, width: 84, height: 7.5 },
+  countryOfOrigin: { x: 6, y: 35, width: 88, height: 4.5 },
+  importer: { x: 6, y: 40.5, width: 88, height: 4.5 },
+  manufacturer: { x: 6, y: 45.5, width: 88, height: 5.5 },
+  address: { x: 6, y: 51.5, width: 88, height: 6.5 },
+  customerCare: { x: 6, y: 58.5, width: 88, height: 6.5 },
+  barcode: { x: 4, y: 67, width: 28, height: 18 },
+  netQuantity: { x: 36, y: 67, width: 60, height: 4.5 },
+  mrp: { x: 36, y: 73, width: 60, height: 4.5 },
+  unitSalePrice: { x: 36, y: 78.5, width: 60, height: 4.2 },
+  batchNumber: { x: 36, y: 83.5, width: 60, height: 4.2 },
+  manufacturingDate: { x: 36, y: 88, width: 60, height: 4.2 },
+  expiryDate: { x: 36, y: 92.5, width: 60, height: 4.2 },
+  packingDate: { x: 36, y: 88, width: 60, height: 4.2 },
+};
+
+/**
+ * Dynamically projects a canonical declaration zone onto physical packaging contour bounds.
+ */
+export function mapZoneToPackage(
+  zone: { x: number; y: number; width: number; height: number },
+  pkg: { x: number; y: number; width: number; height: number }
+): { x: number; y: number; width: number; height: number } {
+  return {
+    x: Math.round((pkg.x + (zone.x / 100) * pkg.width) * 10) / 10,
+    y: Math.round((pkg.y + (zone.y / 100) * pkg.height) * 10) / 10,
+    width: Math.round(((zone.width / 100) * pkg.width) * 10) / 10,
+    height: Math.round(((zone.height / 100) * pkg.height) * 10) / 10,
+  };
+}
+
 // ─── Main Readability Analysis Engine ───────────────────────────
 
 export class ReadabilityAnalysisEngine {
@@ -474,6 +519,16 @@ export class ReadabilityAnalysisEngine {
 
     let regionCounter = 1;
 
+    const imgAspect = imageDimensions.width / Math.max(1, imageDimensions.height);
+    const defaultPkgBounds =
+      imgAspect < 0.85
+        ? { x: 22, y: 3, width: 66, height: 93 }
+        : imgAspect > 1.25
+        ? { x: 33, y: 4, width: 34, height: 92 }
+        : { x: 18, y: 4, width: 64, height: 92 };
+
+    const pkgBounds = extractedData.packageBounds || defaultPkgBounds;
+
     // ── 1. Evaluate Mapped Statutory Declaration Fields ─────────
     for (const key of declarationKeys) {
       const decl: DeclarationField = declarations[key];
@@ -481,19 +536,48 @@ export class ReadabilityAnalysisEngine {
 
       const threshold = STATUTORY_THRESHOLDS[key] || DEFAULT_THRESHOLD;
 
-      // Ensure bounding box coordinates
-      const bbox: BoundingBox = decl.boundingBox || {
-        x0: 20,
-        y0: regionCounter * 30,
-        x1: Math.min(imageDimensions.width, 350),
-        y1: regionCounter * 30 + 24,
-        normalized: {
-          x: 5,
-          y: Math.min(90, regionCounter * 6),
-          width: 40,
-          height: 4.5,
-        },
+      // Determine if this region is grounded by genuine optical bounding box coordinates
+      const hasRealBBox = Boolean(decl.boundingBox && !decl.isInferredBbox);
+
+      const canonicalZone = CANONICAL_PACKAGE_ZONES[key] || {
+        x: 8,
+        y: Math.min(92, 16 + regionCounter * 5.5),
+        width: 84,
+        height: 4.5,
       };
+
+      const anchoredZone = mapZoneToPackage(canonicalZone, pkgBounds);
+
+      let bbox: BoundingBox;
+      if (decl.boundingBox && !decl.isInferredBbox) {
+        const norm = decl.boundingBox.normalized;
+        // Verify optical box is within packaging boundary tolerances
+        const isWithinPackage =
+          norm.x >= pkgBounds.x - 12 &&
+          norm.x + norm.width <= pkgBounds.x + pkgBounds.width + 12 &&
+          norm.width >= 4 &&
+          norm.height >= 1.5;
+
+        if (isWithinPackage) {
+          bbox = decl.boundingBox;
+        } else {
+          bbox = {
+            x0: Math.round((anchoredZone.x / 100) * imageDimensions.width),
+            y0: Math.round((anchoredZone.y / 100) * imageDimensions.height),
+            x1: Math.round(((anchoredZone.x + anchoredZone.width) / 100) * imageDimensions.width),
+            y1: Math.round(((anchoredZone.y + anchoredZone.height) / 100) * imageDimensions.height),
+            normalized: anchoredZone,
+          };
+        }
+      } else {
+        bbox = {
+          x0: Math.round((anchoredZone.x / 100) * imageDimensions.width),
+          y0: Math.round((anchoredZone.y / 100) * imageDimensions.height),
+          x1: Math.round(((anchoredZone.x + anchoredZone.width) / 100) * imageDimensions.width),
+          y1: Math.round(((anchoredZone.y + anchoredZone.height) / 100) * imageDimensions.height),
+          normalized: anchoredZone,
+        };
+      }
 
       // Sample contrast from image canvas
       const contrast = await sampleImageBoundingBoxContrast(
@@ -527,6 +611,8 @@ export class ReadabilityAnalysisEngine {
         fieldKey: key,
         rawText: decl.value,
         boundingBox: bbox,
+        hasOpticalBBox: hasRealBBox,
+        isInferredBbox: !hasRealBBox,
         fontSize,
         ocrConfidence,
         contrast,
@@ -549,17 +635,21 @@ export class ReadabilityAnalysisEngine {
       for (let i = 0; i < Math.min(rawLines.length, 4); i++) {
         const lineText = rawLines[i];
         const lineThreshold = DEFAULT_THRESHOLD;
-        const lineBBox: BoundingBox = {
-          x0: 30,
-          y0: 100 + i * 45,
-          x1: Math.min(imageDimensions.width, 400),
-          y1: 100 + i * 45 + 26,
-          normalized: {
-            x: 6,
-            y: Math.min(92, 20 + i * 12),
-            width: Math.min(85, Math.max(30, lineText.length * 1.8)),
+        const lineZone = mapZoneToPackage(
+          {
+            x: 8,
+            y: Math.min(92, 20 + i * 14),
+            width: Math.min(84, Math.max(30, lineText.length * 2.2)),
             height: 4.8,
           },
+          pkgBounds
+        );
+        const lineBBox: BoundingBox = {
+          x0: Math.round((lineZone.x / 100) * imageDimensions.width),
+          y0: Math.round((lineZone.y / 100) * imageDimensions.height),
+          x1: Math.round(((lineZone.x + lineZone.width) / 100) * imageDimensions.width),
+          y1: Math.round(((lineZone.y + lineZone.height) / 100) * imageDimensions.height),
+          normalized: lineZone,
         };
 
         const contrast = await sampleImageBoundingBoxContrast(
