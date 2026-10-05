@@ -458,7 +458,11 @@ function evaluateReadabilityDefects(
  * - Net Quantity above price stamp
  * - MRP, USP, Batch, MFD, Expiry inside the right-hand statutory stamp
  */
-export const CANONICAL_PACKAGE_ZONES: Record<string, { x: number; y: number; width: number; height: number }> = {
+/**
+ * Canonical statutory packaging declaration layout zones for vertical containers
+ * (bottles, jars, sprays, cans) where aspect ratio is tall (height > width).
+ */
+export const CANONICAL_BOTTLE_ZONES: Record<string, { x: number; y: number; width: number; height: number }> = {
   productName: { x: 8, y: 5, width: 84, height: 7.5 },
   countryOfOrigin: { x: 6, y: 35, width: 88, height: 4.5 },
   importer: { x: 6, y: 40.5, width: 88, height: 4.5 },
@@ -474,6 +478,29 @@ export const CANONICAL_PACKAGE_ZONES: Record<string, { x: number; y: number; wid
   expiryDate: { x: 36, y: 92.5, width: 60, height: 4.2 },
   packingDate: { x: 36, y: 88, width: 60, height: 4.2 },
 };
+
+/**
+ * Canonical statutory packaging declaration layout zones for landscape confectionery & food pouches
+ * (biscuits, chips, namkeen, wafers, noodle packs) where aspect ratio is wide (width >= height).
+ */
+export const CANONICAL_POUCH_ZONES: Record<string, { x: number; y: number; width: number; height: number }> = {
+  productName: { x: 8, y: 22, width: 44, height: 11 },
+  countryOfOrigin: { x: 8, y: 34, width: 44, height: 6.5 },
+  importer: { x: 54, y: 72, width: 42, height: 6 },
+  manufacturer: { x: 54, y: 56, width: 42, height: 12 },
+  address: { x: 54, y: 69, width: 42, height: 13 },
+  customerCare: { x: 8, y: 82, width: 44, height: 9.5 },
+  barcode: { x: 26, y: 53, width: 22, height: 18 },
+  netQuantity: { x: 65, y: 44, width: 30, height: 5.5 },
+  mrp: { x: 55, y: 38, width: 40, height: 5.5 },
+  unitSalePrice: { x: 55, y: 44, width: 22, height: 5.5 },
+  batchNumber: { x: 54, y: 83, width: 42, height: 6 },
+  manufacturingDate: { x: 54, y: 89, width: 42, height: 5.5 },
+  expiryDate: { x: 54, y: 89, width: 42, height: 5.5 },
+  packingDate: { x: 54, y: 89, width: 42, height: 5.5 },
+};
+
+export const CANONICAL_PACKAGE_ZONES = CANONICAL_BOTTLE_ZONES;
 
 /**
  * Dynamically projects a canonical declaration zone onto physical packaging contour bounds.
@@ -520,12 +547,14 @@ export class ReadabilityAnalysisEngine {
     let regionCounter = 1;
 
     const imgAspect = imageDimensions.width / Math.max(1, imageDimensions.height);
-    const defaultPkgBounds =
-      imgAspect < 0.85
-        ? { x: 22, y: 3, width: 66, height: 93 }
-        : imgAspect > 1.25
-        ? { x: 33, y: 4, width: 34, height: 92 }
-        : { x: 18, y: 4, width: 64, height: 92 };
+    const isLandscapePouch = imgAspect >= 1.05;
+    const canonicalZones = isLandscapePouch ? CANONICAL_POUCH_ZONES : CANONICAL_BOTTLE_ZONES;
+
+    const defaultPkgBounds = isLandscapePouch
+      ? { x: 5, y: 5, width: 90, height: 90 }
+      : imgAspect < 0.85
+      ? { x: 22, y: 3, width: 66, height: 93 }
+      : { x: 18, y: 4, width: 64, height: 92 };
 
     const pkgBounds = extractedData.packageBounds || defaultPkgBounds;
 
@@ -539,10 +568,10 @@ export class ReadabilityAnalysisEngine {
       // Determine if this region is grounded by genuine optical bounding box coordinates
       const hasRealBBox = Boolean(decl.boundingBox && !decl.isInferredBbox);
 
-      const canonicalZone = CANONICAL_PACKAGE_ZONES[key] || {
-        x: 8,
+      const canonicalZone = canonicalZones[key] || {
+        x: isLandscapePouch ? 8 : 8,
         y: Math.min(92, 16 + regionCounter * 5.5),
-        width: 84,
+        width: isLandscapePouch ? 44 : 84,
         height: 4.5,
       };
 

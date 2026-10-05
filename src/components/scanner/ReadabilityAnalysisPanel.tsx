@@ -27,6 +27,7 @@ import {
   RefreshCw,
   ExternalLink,
   Coins,
+  Camera,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -125,8 +126,6 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'flagged' | 'non-compliant' | 'warning' | 'compliant'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({});
-  const [overlayMode, setOverlayMode] = useState<'all' | 'flagged' | 'declarations'>('all');
-  const [showLabelsOnImage, setShowLabelsOnImage] = useState(true);
   const [copiedReport, setCopiedReport] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCoinModalOpen, setIsCoinModalOpen] = useState(false);
@@ -228,13 +227,6 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
     return true;
   });
 
-  // Regions displayed on image overlay (grounded on the cropped packaging label)
-  const overlayRegions = regions.filter((region) => {
-    if (overlayMode === 'flagged') return region.flags.length > 0 || region.status !== 'compliant';
-    if (overlayMode === 'declarations') return region.fieldKey !== undefined;
-    return true;
-  });
-
   const toggleRowExpand = (id: string) => {
     setExpandedRowIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -266,10 +258,6 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
     setCopiedReport(true);
     setTimeout(() => setCopiedReport(false), 2000);
   };
-
-  const activeRegion = regions.find(
-    (r) => r.id === (hoveredRegionId || selectedRegionId)
-  );
 
   return (
     <Card className="border border-slate-200/90 dark:border-slate-800 shadow-subtle bg-white dark:bg-slate-900 overflow-hidden">
@@ -537,208 +525,31 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* ─── 2. Interactive Bounding Box Visual Evidence Canvas ── */}
+        {/* ─── 2. Packaging Reference Photo ────────────────────── */}
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-950/40 p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <Camera className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                Visual Bounding Box &amp; Readability Map
+                Packaging Reference Photo
               </h3>
               <Badge variant="neutral" size="sm" className="font-mono text-[10px]">
-                {overlayRegions.length} Overlay Boxes
+                Captured Sample Evidence
               </Badge>
             </div>
-
-            {/* Filter Overlay Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 shadow-2xs">
-                <button
-                  onClick={() => setOverlayMode('all')}
-                  className={cn(
-                    'px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors',
-                    overlayMode === 'all'
-                      ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  )}
-                >
-                  All ({regions.length})
-                </button>
-                <button
-                  onClick={() => setOverlayMode('flagged')}
-                  className={cn(
-                    'px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1',
-                    overlayMode === 'flagged'
-                      ? 'bg-red-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  )}
-                >
-                  <span>Problematic</span>
-                  {summary.flaggedCount > 0 && (
-                    <span className="h-4 px-1 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[9px] font-bold">
-                      {summary.flaggedCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setOverlayMode('declarations')}
-                  className={cn(
-                    'px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors',
-                    overlayMode === 'declarations'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  )}
-                >
-                  Declarations
-                </button>
-              </div>
-
-              <button
-                onClick={() => setShowLabelsOnImage(!showLabelsOnImage)}
-                className={cn(
-                  'px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-colors',
-                  showLabelsOnImage
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900/80 text-blue-700 dark:text-blue-300'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                )}
-              >
-                {showLabelsOnImage ? 'Hide Labels' : 'Show Labels'}
-              </button>
-            </div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              Raw Sample Image
+            </span>
           </div>
 
-          {/* Interactive Image Container */}
-          <div className="relative rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-950/10 dark:bg-slate-950/60 overflow-hidden flex justify-center items-center p-3 min-h-[320px]">
-            <div className="relative inline-block max-w-full">
-              <img
-                src={currentScan.imageDataUrl}
-                alt="Product Packaging Readability Evidence"
-                className="max-h-[460px] w-auto rounded-lg shadow-md object-contain select-none"
-              />
-
-              {/* Bounding Box Overlays */}
-              {overlayRegions.map((region) => {
-                const bbox = region.boundingBox?.normalized;
-                if (!bbox) return null;
-
-                const isSelected = selectedRegionId === region.id;
-                const isHovered = hoveredRegionId === region.id;
-                const isProblematic = region.status !== 'compliant' || region.flags.length > 0;
-
-                // Color configuration
-                let borderClass = 'border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/25';
-                let tagClass = 'bg-emerald-700 text-white';
-
-                if (region.status === 'non-compliant') {
-                  borderClass = isSelected || isHovered
-                    ? 'border-red-500 bg-red-500/35 ring-4 ring-red-500/40 z-30 scale-[1.01]'
-                    : 'border-red-500/90 bg-red-500/20 hover:border-red-500 hover:bg-red-500/30 animate-pulse';
-                  tagClass = 'bg-red-700 text-white';
-                } else if (region.status === 'warning') {
-                  borderClass = isSelected || isHovered
-                    ? 'border-amber-500 bg-amber-500/35 ring-4 ring-amber-500/40 z-30 scale-[1.01]'
-                    : 'border-amber-500/90 bg-amber-500/20 hover:border-amber-500 hover:bg-amber-500/30';
-                  tagClass = 'bg-amber-700 text-white';
-                } else if (isSelected || isHovered) {
-                  borderClass = 'border-blue-500 bg-blue-500/35 ring-4 ring-blue-500/40 z-30 scale-[1.01]';
-                  tagClass = 'bg-blue-700 text-white';
-                }
-
-                return (
-                  <div
-                    key={region.id}
-                    onMouseEnter={() => setHoveredRegionId(region.id)}
-                    onMouseLeave={() => setHoveredRegionId(null)}
-                    onClick={() => {
-                      setSelectedRegionId(selectedRegionId === region.id ? null : region.id);
-                      toggleRowExpand(region.id);
-                    }}
-                    className={cn(
-                      'absolute border-2 rounded transition-all duration-150 cursor-pointer flex items-start',
-                      borderClass
-                    )}
-                    style={{
-                      left: `${bbox.x}%`,
-                      top: `${bbox.y}%`,
-                      width: `${Math.max(3, bbox.width)}%`,
-                      height: `${Math.max(2.5, bbox.height)}%`,
-                    }}
-                  >
-                    {/* BBox Label Tag */}
-                    {showLabelsOnImage && (
-                      <div
-                        className={cn(
-                          'text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shadow-xs truncate max-w-[150px] -mt-5 -ml-0.5 pointer-events-none transition-all flex items-center gap-1',
-                          tagClass
-                        )}
-                      >
-                        {isProblematic && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
-                        <span>{region.fieldName}</span>
-                        <span className="opacity-80">({region.fontSize.pt}pt)</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Reference Image Container */}
+          <div className="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950/5 dark:bg-slate-950/50 overflow-hidden flex justify-center items-center p-3 min-h-[300px]">
+            <img
+              src={currentScan.imageDataUrl}
+              alt="Product Packaging Evidence"
+              className="max-h-[460px] w-auto rounded-lg shadow-md object-contain select-none"
+            />
           </div>
-
-          {/* Active Hover / Selection Preview Bar */}
-          {activeRegion && (
-            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150">
-              <div className="flex items-start gap-2.5">
-                <div
-                  className={cn(
-                    'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
-                    activeRegion.status === 'compliant'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
-                      : activeRegion.status === 'warning'
-                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
-                      : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400'
-                  )}
-                >
-                  {React.createElement(STATUS_CONFIG[activeRegion.status].icon, { className: 'h-4 w-4' })}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{activeRegion.fieldName}</span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">
-                      {activeRegion.category}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 italic mt-0.5">
-                    &ldquo;{activeRegion.rawText}&rdquo;
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs font-mono shrink-0">
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Font Size</span>
-                  <span
-                    className={cn(
-                      'font-bold',
-                      activeRegion.fontSize.isBelowThreshold ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'
-                    )}
-                  >
-                    {activeRegion.fontSize.formatted}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">OCR Conf</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{activeRegion.ocrConfidence}%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Contrast</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{activeRegion.contrast.formattedRatio}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block uppercase">Visibility</span>
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{activeRegion.visibilityScore}/100</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ─── 3. Detailed Readability Data Table ────────────────── */}

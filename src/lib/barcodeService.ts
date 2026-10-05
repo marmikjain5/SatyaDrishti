@@ -10,6 +10,7 @@
 
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType } from '@zxing/library';
+import type { BoundingBox } from '../types/scan';
 
 export interface BarcodeDetectionResult {
   text: string;
@@ -24,6 +25,8 @@ export interface BarcodeDetectionResult {
   checksumValid: boolean;
   /** Optically measured barcode pixel width across guard/data bars (for scale calibration) */
   barcodeWidthPx?: number;
+  /** Normalized and pixel bounding box of the physical barcode symbol in the image */
+  boundingBox?: BoundingBox;
 }
 
 class BarcodeService {
@@ -91,17 +94,60 @@ class BarcodeService {
     return maxDist > 10 ? Math.round(maxDist) : undefined;
   }
 
-  private buildResult(text: string, format: string, resultPoints?: any[]): BarcodeDetectionResult {
+  private buildResult(
+    text: string,
+    format: string,
+    resultPoints?: any[],
+    imgDimensions?: { width: number; height: number }
+  ): BarcodeDetectionResult {
     const checksumValid = this.validateEanChecksum(text);
     const barcodeWidthPx = this.computePointsSpan(resultPoints);
-    // Optical decode is confirmed but is NOT registry or identity verification.
-    // Confidence reflects decode quality; checksumValid reflects format integrity.
+    let boundingBox: BoundingBox | undefined;
+
+    if (resultPoints && resultPoints.length >= 2 && imgDimensions?.width && imgDimensions?.height) {
+      const xs = resultPoints
+        .map((p: any) => (typeof p.getX === 'function' ? p.getX() : p.x))
+        .filter((x: any) => typeof x === 'number');
+      const ys = resultPoints
+        .map((p: any) => (typeof p.getY === 'function' ? p.getY() : p.y))
+        .filter((y: any) => typeof y === 'number');
+
+      if (xs.length >= 2 && ys.length >= 2) {
+        const minX = Math.max(0, Math.floor(Math.min(...xs)));
+        const minY = Math.max(0, Math.floor(Math.min(...ys)));
+        const maxX = Math.min(imgDimensions.width, Math.ceil(Math.max(...xs)));
+        const maxY = Math.min(imgDimensions.height, Math.ceil(Math.max(...ys)));
+
+        const padX = Math.max(8, Math.round((maxX - minX) * 0.1));
+        const padY = Math.max(12, Math.round((maxY - minY) * 0.25));
+
+        const bx0 = Math.max(0, minX - padX);
+        const by0 = Math.max(0, minY - padY);
+        const bx1 = Math.min(imgDimensions.width, maxX + padX);
+        const by1 = Math.min(imgDimensions.height, maxY + padY);
+
+        boundingBox = {
+          x0: bx0,
+          y0: by0,
+          x1: bx1,
+          y1: by1,
+          normalized: {
+            x: Math.round((bx0 / imgDimensions.width) * 1000) / 10,
+            y: Math.round((by0 / imgDimensions.height) * 1000) / 10,
+            width: Math.max(6, Math.round(((bx1 - bx0) / imgDimensions.width) * 1000) / 10),
+            height: Math.max(4, Math.round(((by1 - by0) / imgDimensions.height) * 1000) / 10),
+          },
+        };
+      }
+    }
+
     return {
       text,
       format,
       confidence: checksumValid ? 92 : 60,
       checksumValid,
       barcodeWidthPx,
+      boundingBox,
     };
   }
 
@@ -109,14 +155,17 @@ class BarcodeService {
    * Decodes barcode from an image dataUrl or URL.
    * Tests multi-angle orientations (0°, 90°, 180°, 270°) and region crops (right edge, left edge, bottom).
    */
-  async decodeBarcode(dataUrl: string): Promise<BarcodeDetectionResult | null> {
+  async decodeBarcode(
+    dataUrl: string,
+    imgDimensions?: { width: number; height: number }
+  ): Promise<BarcodeDetectionResult | null> {
     // 1. Direct pass (0°)
     try {
       const res = await this.reader.decodeFromImageUrl(dataUrl);
       if (res && res.getText()) {
         const text = res.getText().trim();
         console.log(`✅ [ZXing Barcode] Detected directly (0°): ${text} (${res.getBarcodeFormat()})`);
-        return this.buildResult(text, res.getBarcodeFormat().toString(), res.getResultPoints?.());
+        return this.buildResult(text, res.getBarcodeFormat().toString(), res.getResultPoints?.(), imgDimensions);
       }
     } catch {
       // Continue to rotated passes

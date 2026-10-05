@@ -52,25 +52,18 @@ interface EvidenceInspectorProps {
 
 const EvidenceInspector: React.FC<EvidenceInspectorProps> = ({
   imageUrl,
-  declarations,
-  highlightedKey,
-  onHighlight,
 }) => {
-  const fields = Object.values(declarations).filter(
-    (d) => d.boundingBox && d.value && d.value.trim().length > 0
-  );
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-blue-600 shrink-0" />
           <span>
-            Hover over declaration rows or bounding boxes to cross-verify physical label evidence.
+            Packaging reference photo used for Legal Metrology compliance auditing.
           </span>
         </div>
         <Badge variant="primary" size="sm" className="shrink-0">
-          {fields.length} BBoxes Mapped
+          Reference Image
         </Badge>
       </div>
 
@@ -78,51 +71,9 @@ const EvidenceInspector: React.FC<EvidenceInspectorProps> = ({
         <div className="relative inline-block max-w-full">
           <img
             src={imageUrl}
-            alt="Product Packaging Label Evidence"
-            className="max-h-[420px] w-auto rounded-lg shadow-md object-contain"
+            alt="Product Packaging Reference Evidence"
+            className="max-h-[420px] w-auto rounded-lg shadow-md object-contain select-none"
           />
-
-          {/* Bounding Box Overlays */}
-          {fields.map((field) => {
-            const bbox = field.boundingBox?.normalized;
-            if (!bbox) return null;
-            const isHighlighted = highlightedKey === field.key;
-
-            return (
-              <div
-                key={field.key}
-                onMouseEnter={() => onHighlight(field.key)}
-                onMouseLeave={() => onHighlight(null)}
-                className={cn(
-                  'absolute border-2 rounded transition-all duration-150 cursor-pointer flex items-start',
-                  isHighlighted
-                    ? 'border-blue-500 bg-blue-500/25 ring-4 ring-blue-500/30 z-20 scale-[1.01]'
-                    : field.validationStatus === 'compliant'
-                    ? 'border-emerald-500/80 bg-emerald-500/10 hover:border-emerald-500 hover:bg-emerald-500/20'
-                    : field.validationStatus === 'warning'
-                    ? 'border-amber-500/80 bg-amber-500/10 hover:border-amber-500 hover:bg-amber-500/20'
-                    : 'border-red-500/80 bg-red-500/10 hover:border-red-500 hover:bg-red-500/20'
-                )}
-                style={{
-                  left: `${bbox.x}%`,
-                  top: `${bbox.y}%`,
-                  width: `${Math.max(3, bbox.width)}%`,
-                  height: `${Math.max(2, bbox.height)}%`,
-                }}
-              >
-                <div
-                  className={cn(
-                    'text-[9px] font-mono font-bold px-1 py-0.5 rounded shadow-xs truncate max-w-[120px] -mt-5 -ml-0.5 pointer-events-none',
-                    isHighlighted
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-900/90 text-white'
-                  )}
-                >
-                  {field.label}: {field.value}
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>
@@ -498,7 +449,7 @@ export const OCRResultsPanel: React.FC = () => {
 
   const tabs = [
     { id: 'declarations', label: 'Statutory Declarations', icon: <Sparkles className="h-3.5 w-3.5" /> },
-    { id: 'evidence', label: 'Visual Evidence & Boxes', icon: <Scan className="h-3.5 w-3.5" /> },
+    { id: 'evidence', label: 'Packaging Reference Image', icon: <Scan className="h-3.5 w-3.5" /> },
     { id: 'stages', label: 'Optical Preprocessing Stages', icon: <SlidersHorizontal className="h-3.5 w-3.5" /> },
     { id: 'rule_engine', label: 'Structured JSON Payload', icon: <Code className="h-3.5 w-3.5" /> },
     { id: 'passes', label: 'OCR Telemetry', icon: <Layers className="h-3.5 w-3.5" /> },

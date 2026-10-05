@@ -356,7 +356,7 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
       // ── Optical 1D/2D Barcode Scanner (@zxing/browser) ──────────
       onProgress?.(78, 'Pass 5/6: GS1 Optical 1D/2D Barcode Stripe Decoding');
       try {
-        const opticalBc = await barcodeService.decodeBarcode(opticalDataUrl || dataUrl);
+        const opticalBc = await barcodeService.decodeBarcode(opticalDataUrl || dataUrl, imgDimensions);
         if (opticalBc && opticalBc.text) {
           console.log(`🎯 [SatyaDrishti ZXing] Optical Barcode Decoded: ${opticalBc.text} (${opticalBc.format})`);
           declarations.barcode = {
@@ -368,6 +368,8 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
             validationStatus: 'compliant',
             validationMessage: `Statutory 1D/2D barcode (${opticalBc.format}) optically decoded with 100% precision.`,
             barcodeWidthPx: opticalBc.barcodeWidthPx,
+            boundingBox: opticalBc.boundingBox || declarations.barcode?.boundingBox,
+            isInferredBbox: !opticalBc.boundingBox && !declarations.barcode?.boundingBox,
           };
         }
       } catch (bcErr) {
@@ -415,6 +417,13 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
                     declarations[k].confidence = Math.max(declarations[k].confidence, backendConf);
                     declarations[k].validationStatus = 'compliant';
                     declarations[k].validationMessage = `Statutory declaration detected and verified under ${declarations[k].ruleCode}.`;
+
+                    // Ground LLM arbitrated field to physical OCR text line coordinates
+                    const opticalBox = findBestOCRLineBBox(llmF.value, k, passOCRData, imgDimensions);
+                    if (opticalBox) {
+                      declarations[k].boundingBox = opticalBox;
+                      declarations[k].isInferredBbox = false;
+                    }
                   }
                 }
                 break;
@@ -804,7 +813,7 @@ export class HybridVisionBackendProvider implements OCRProvider {
         // If barcode was not captured yet, run optical ZXing scan as fallback
         if (!declarations.barcode?.value || declarations.barcode.value === '(Not detected)') {
           try {
-            const bc = await barcodeService.decodeBarcode(dataUrl);
+            const bc = await barcodeService.decodeBarcode(dataUrl, imgDimensions);
             if (bc && bc.text) {
               console.log(`🎯 [SatyaDrishti ZXing] Optical Barcode Decoded in hybrid pass: ${bc.text} (${bc.format})`);
               declarations.barcode.value = bc.text;
@@ -813,6 +822,10 @@ export class HybridVisionBackendProvider implements OCRProvider {
               declarations.barcode.rawMatch = bc.text;
               declarations.barcode.validationMessage = `Statutory barcode (${bc.format}) optically decoded with 100% precision.`;
               declarations.barcode.barcodeWidthPx = bc.barcodeWidthPx;
+              if (bc.boundingBox) {
+                declarations.barcode.boundingBox = bc.boundingBox;
+                declarations.barcode.isInferredBbox = false;
+              }
               fieldConfidence.barcode = 99;
             }
           } catch (e) {

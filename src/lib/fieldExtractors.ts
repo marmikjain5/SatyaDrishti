@@ -190,6 +190,12 @@ export function findBestOCRLineBBox(
   const cleanVal = val.toLowerCase().replace(/[₹$,]/g, '').trim();
   if (cleanVal.length < 2) return null;
 
+  const stopWords = new Set(['pvt', 'ltd', 'and', 'the', 'for', 'from', 'with', 'all', 'per', 'in', 'of', 'by']);
+  const valTokens = cleanVal
+    .split(/[\s,.\-:/()|]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 3 && !stopWords.has(t));
+
   let bestMatchLine: OCRLineWithBBox | null = null;
   let bestPass: MultiPassOCRData | null = null;
   let highestScore = 0;
@@ -202,18 +208,39 @@ export function findBestOCRLineBBox(
       if (lowerLine.length < 2) continue;
       let score = 0;
 
-      // 1. Direct high-confidence substring match (e.g. exact price, exact net content, exact code)
+      // 1. Direct high-confidence substring match
       if (cleanVal.length >= 4 && lowerLine.includes(cleanVal)) {
         score = 100;
       }
 
-      // 2. Specialized field-specific discriminators
-      if (key === 'mrp') {
+      // 2. Token overlap score
+      if (valTokens.length > 0) {
+        let matchedTokens = 0;
+        for (const token of valTokens) {
+          if (lowerLine.includes(token)) matchedTokens++;
+        }
+        const tokenRatio = matchedTokens / valTokens.length;
+        if (tokenRatio >= 0.5) {
+          score = Math.max(score, Math.round(tokenRatio * 90));
+        }
+      }
+
+      // 3. Specialized field-specific discriminators
+      if (key === 'productName') {
+        for (const token of valTokens) {
+          if (lowerLine.includes(token)) score += 40;
+        }
+        if (/gluco|biscuit|cookie|wafer|snack|namkeen|chips|chocolate|lotion|shampoo|soap|oil/i.test(lowerLine)) {
+          score += 30;
+        }
+      } else if (key === 'mrp') {
         const priceMatch = cleanVal.match(/\d+(?:\.\d{1,2})?/);
         const priceStr = priceMatch ? priceMatch[0] : '';
         if (priceStr && lowerLine.includes(priceStr)) {
           score += 65;
-          if (/m\.?r\.?p|maximum|taxes|incl/i.test(lowerLine)) score += 30;
+          if (/m\.?r\.?p|maximum|taxes|incl|rs\b/i.test(lowerLine)) score += 30;
+        } else if (/m\.?r\.?p|incl\.?\s*of\s*all\s*taxes/i.test(lowerLine)) {
+          score += 55;
         }
       } else if (key === 'unitSalePrice') {
         const rateMatch = cleanVal.match(/\d+(?:\.\d{1,2})?/);
@@ -225,21 +252,42 @@ export function findBestOCRLineBBox(
       } else if (key === 'netQuantity') {
         const qtyMatch = cleanVal.match(/\d+/);
         const qtyStr = qtyMatch ? qtyMatch[0] : '';
-        if (qtyStr && lowerLine.includes(qtyStr) && /(?:ml|g|kg|l|pieces?|units?|content)/i.test(lowerLine)) {
+        if (qtyStr && lowerLine.includes(qtyStr) && /(?:ml|g|kg|l|pieces?|units?|content|weight|wt)/i.test(lowerLine)) {
           score += 75;
-          if (/net\s*(?:content|quantity|qty|weight)/i.test(lowerLine)) score += 25;
+          if (/net\s*(?:content|quantity|qty|weight|wt)/i.test(lowerLine)) score += 25;
+        } else if (/net\s*wt|net\s*weight|net\s*quantity/i.test(lowerLine)) {
+          score += 55;
         }
       } else if (key === 'customerCare') {
-        // Must match phone digits, email, or explicit customer care indicators
         const digits = cleanVal.replace(/\D/g, '');
         if (digits.length >= 6 && lowerLine.replace(/\D/g, '').includes(digits.slice(-6))) {
-          score += 80;
+          score += 85;
         }
         if (/@/.test(cleanVal) && lowerLine.includes('@')) {
-          score += 80;
+          score += 85;
         }
-        if (/feedback|query|consumer\s*care|care\s*executive|grievance/i.test(lowerLine)) {
-          score += 60;
+        if (/consumer\s*care|care\s*cell|customer\s*care|care\s*executive|grievance|feedback|query|consumer\s*cell/i.test(lowerLine)) {
+          score += 75;
+        }
+      } else if (key === 'manufacturer') {
+        if (/marketed\s*by|manufactured\s*by|mfg\s*by|mkt\s*by|manufactured\s*for|mfd\s*for/i.test(lowerLine)) {
+          score += 75;
+        }
+        for (const token of valTokens) {
+          if (lowerLine.includes(token)) score += 30;
+        }
+      } else if (key === 'address') {
+        if (/road|street|nagar|plot|industrial|estate|area|crossing|east|west|mumbai|delhi|hubballi|belagavi|pincode|\b\d{6}\b/i.test(lowerLine)) {
+          score += 65;
+        }
+        for (const token of valTokens) {
+          if (lowerLine.includes(token)) score += 25;
+        }
+      } else if (key === 'barcode') {
+        const digits = cleanVal.replace(/\D/g, '');
+        const lineDigits = lowerLine.replace(/\D/g, '');
+        if (digits.length >= 8 && lineDigits.includes(digits.slice(-8))) {
+          score = 100;
         }
       } else if (key === 'batchNumber') {
         const batchClean = cleanVal.replace(/^b\s*[:.\-]?/i, '').trim();
@@ -263,19 +311,9 @@ export function findBestOCRLineBBox(
         } else if (/use\s*before|best\s*before|exp\b|expiry/i.test(lowerLine)) {
           score += 60;
         }
-      } else if (key === 'manufacturer') {
-        if (/marketed\s*by|manufactured\s*by|mfg\s*by|mkt\s*by|beiersdorf/i.test(lowerLine)) {
-          score += 75;
-        } else if (cleanVal.includes('nivea') && /nivea\s*india/i.test(lowerLine)) {
-          score += 80;
-        }
-      } else if (key === 'address') {
-        if (/phoenix|kurla|mumbai|400070|industrial|pincode/i.test(lowerLine)) {
-          score += 80;
-        }
       }
 
-      if (score > highestScore && score >= 60) {
+      if (score > highestScore && score >= 55) {
         highestScore = score;
         bestMatchLine = line;
         bestPass = pass;
