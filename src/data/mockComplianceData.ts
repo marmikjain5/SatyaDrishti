@@ -190,12 +190,11 @@ export const MOCK_RULES: RegulatoryRule[] = [
 
 
 export const COMPLIANCE_TRENDS: ComplianceTrendPoint[] = [
-  { month: 'Sep 2024', scanned: 220000, violations: 2100, notices: 1200, resolved: 980, scannedLabel: '220K', violationsLabel: '2,100' },
-  { month: 'Oct 2024', scanned: 310000, violations: 1560, notices: 1450, resolved: 1150, scannedLabel: '310K', violationsLabel: '1,560' },
-  { month: 'Nov 2024', scanned: 405000, violations: 1810, notices: 1800, resolved: 1420, scannedLabel: '405K', violationsLabel: '1,810' },
-  { month: 'Dec 2024', scanned: 520000, violations: 1040, notices: 2100, resolved: 1780, scannedLabel: '520K', violationsLabel: '1,040' },
-  { month: 'Jan 2025', scanned: 680000, violations: 1370, notices: 2650, resolved: 2300, scannedLabel: '680K', violationsLabel: '1,370' },
-  { month: 'Feb 2025', scanned: 780000, violations: 690, notices: 2840, resolved: 2490, scannedLabel: '780K', violationsLabel: '690' },
+  { month: 'May 2026', scanned: 310000, violations: 1560, notices: 1450, resolved: 1150, scannedLabel: '310K', violationsLabel: '1,560' },
+  { month: 'Jun 2026', scanned: 405000, violations: 1810, notices: 1800, resolved: 1420, scannedLabel: '405K', violationsLabel: '1,810' },
+  { month: 'Jul 2026', scanned: 520000, violations: 1040, notices: 2100, resolved: 1780, scannedLabel: '520K', violationsLabel: '1,040' },
+  { month: 'Aug 2026', scanned: 680000, violations: 1370, notices: 2650, resolved: 2300, scannedLabel: '680K', violationsLabel: '1,370' },
+  { month: 'Sep 2026', scanned: 780000, violations: 690, notices: 2840, resolved: 2490, scannedLabel: '780K', violationsLabel: '690' },
 ];
 
 export const CATEGORY_RISK_METRICS: CategoryRiskMetric[] = [

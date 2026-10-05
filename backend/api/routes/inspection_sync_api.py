@@ -16,8 +16,8 @@ _backend_dir = Path(__file__).resolve().parents[2]
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
-from database import get_db
-from models.db_models import OfflineInspectionModel
+from backend.database import get_db
+from backend.models.db_models import OfflineInspectionModel
 
 router = APIRouter(prefix="/api/inspections", tags=["offline inspections"])
 

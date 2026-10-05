@@ -69,7 +69,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5 mt-0.5">
               <ArrowUpRight className="h-3 w-3" />
               <span>+42%</span>
-              <span className="text-slate-400 font-normal ml-0.5">vs prev 6M</span>
+              <span className="text-slate-400 font-normal ml-0.5">vs prev 5M</span>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             <div className="text-[10px] text-red-600 font-semibold flex items-center gap-0.5 mt-0.5">
               <ArrowDownRight className="h-3 w-3" />
               <span>-18%</span>
-              <span className="text-red-400 font-normal ml-0.5">vs prev 6M</span>
+              <span className="text-red-400 font-normal ml-0.5">vs prev 5M</span>
             </div>
           </div>
 
@@ -99,7 +99,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5 mt-0.5">
               <ArrowUpRight className="h-3 w-3" />
               <span>+0.3%</span>
-              <span className="text-slate-400 font-normal ml-0.5">vs prev 6M</span>
+              <span className="text-slate-400 font-normal ml-0.5">vs prev 5M</span>
             </div>
           </div>
         </div>
@@ -108,12 +108,12 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
       {/* Axis Titles Bar */}
       <div className="flex items-center justify-between text-xs text-slate-400 font-mono px-1">
         <span>Scans</span>
-        <span>Violations</span>
+        <span>Confirmed violations (raw cases)</span>
       </div>
 
-      {/* Dual Y-Axis Composed Chart Section */}
+      {/* Shared raw-count Composed Chart Section */}
       <div className="relative h-72 w-full">
-        {/* Callout Badge overlay on Feb 2025 scan bar */}
+        {/* Callout Badge overlay on the latest Sep 2026 scan bar */}
         <div className="absolute right-3 top-3 z-10 hidden sm:block">
           <div className="bg-blue-600 text-white text-[10px] font-bold font-mono px-2 py-0.5 rounded shadow-sm">
             780K scans
@@ -159,23 +159,6 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
               }}
             />
 
-            {/* Right Y-Axis: Violations (0 to 2.5K) */}
-            <YAxis
-              yAxisId="violations"
-              orientation="right"
-              domain={[0, 2500]}
-              ticks={[0, 500, 1000, 1500, 2000, 2500]}
-              stroke="#94A3B8"
-              fontSize={11}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => {
-                if (v === 0) return '0';
-                if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
-                return `${v}`;
-              }}
-            />
-
             <Tooltip
               contentStyle={{
                 backgroundColor: '#0F172A',
@@ -211,9 +194,11 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
               />
             </Bar>
 
-            {/* Gradient Fill under Violations Line */}
+            {/* Plot violations on the same raw-count scale as scans. This keeps
+                2,100 cases visually inside a 220K scan bar instead of stretching
+                the violations series across an independent 0-2,500 axis. */}
             <Area
-              yAxisId="violations"
+              yAxisId="scans"
               type="linear"
               dataKey="violations"
               stroke="none"
@@ -221,9 +206,9 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
               tooltipType="none"
             />
 
-            {/* Line for Confirmed Violations (Right Y-Axis) */}
+            {/* Line for Confirmed Violations (raw case count) */}
             <Line
-              yAxisId="violations"
+              yAxisId="scans"
               type="linear"
               dataKey="violations"
               name="violations"
@@ -267,7 +252,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             <Target className="h-4 w-4" />
           </div>
           <span>
-            <strong className="font-bold text-emerald-900">60.5%</strong> reduction in confirmed violations while scan volume increased by <strong className="font-bold text-emerald-900">254%</strong> since Sep 2024.
+            <strong className="font-bold text-emerald-900">55.8%</strong> reduction in confirmed violations while scan volume increased by <strong className="font-bold text-emerald-900">151.6%</strong> since May 2026.
           </span>
         </div>
 

@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from services.email_service import send_scn_notice_email, send_surprise_inspection_email
+from backend.services.email_service import send_scn_notice_email, send_surprise_inspection_email
 
 router = APIRouter(prefix="/api/email", tags=["Email Dispatch"])
 

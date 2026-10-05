@@ -43,11 +43,10 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 try:
-    from services.multilingual_ner_service import multilingual_ner_service
-except ImportError:
     from backend.services.multilingual_ner_service import multilingual_ner_service
-
-
+except ImportError:
+    # Keep direct `python backend/...` execution working as a fallback.
+    from services.multilingual_ner_service import multilingual_ner_service
 
 # ─── Extraction Result Data Classes ────────────────────────────────────────
 
@@ -821,12 +820,14 @@ def extract_from_image_hybrid(
     fallback_raw_text: Optional[str] = None
 ) -> ExtractionResult:
     """
-    Direct OCR + Pollinations AI Text LLM Extraction Pipeline:
-      1. Receives raw OCR text extracted from packaging label scan.
-      2. Uses Pollinations AI Text LLM API to clean typos & parse statutory fields into structured JSON.
+    OCR-only image pipeline:
+      1. Receives raw OCR text extracted locally from the packaging image.
+      2. Uses the text-only parser to clean typos and map statutory fields.
+
+    The image is deliberately not forwarded to a remote vision provider.
     """
     raw_text = fallback_raw_text or ""
-    print(f"[OCR PIPELINE] Running OCR Text Parsing + Pollinations AI LLM (Length: {len(raw_text)} chars)...")
+    print(f"[OCR PIPELINE] Running OCR-only text extraction (OCR length: {len(raw_text)} chars)...")
     return extract_from_text(raw_text, image_id=image_id)
 
 

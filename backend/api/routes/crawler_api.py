@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query, Body, HTTPException
 from pydantic import BaseModel, HttpUrl
 
-from services.ecommerce_crawler_service import crawler_service
+from backend.services.ecommerce_crawler_service import crawler_service
 
 router = APIRouter(prefix="/api/v1/crawler", tags=["E-Commerce Crawler & Inspector"])
 

@@ -21,22 +21,6 @@ for _p in (str(_backend_dir), str(_backend_dir.parent)):
         sys.path.insert(0, _p)
 
 try:
-    from services.extraction_service import (
-        extract_from_text,
-        extract_from_image_hybrid,
-        aggregate_multi_angle_extractions,
-        get_extraction_summary,
-        ExtractionResult,
-    )
-    from services.validation_service import (
-        validate_product_compliance,
-        StatutoryAuditReport,
-        ViolationSeverity,
-    )
-    from services.opencv_service import preprocess_packaging_for_ocr, detect_reference_object
-    from database import SessionLocal
-    from models.db_models import RegulatoryRuleModel
-except ImportError:
     from backend.services.extraction_service import (
         extract_from_text,
         extract_from_image_hybrid,
@@ -44,10 +28,26 @@ except ImportError:
         get_extraction_summary,
         ExtractionResult,
     )
-    from backend.services.validation_service import validate_product_compliance, StatutoryAuditReport, ViolationSeverity
+    from backend.services.validation_service import (
+        validate_product_compliance,
+        StatutoryAuditReport,
+        ViolationSeverity,
+    )
     from backend.services.opencv_service import preprocess_packaging_for_ocr, detect_reference_object
     from backend.database import SessionLocal
     from backend.models.db_models import RegulatoryRuleModel
+except ImportError:
+    from services.extraction_service import (
+        extract_from_text,
+        extract_from_image_hybrid,
+        aggregate_multi_angle_extractions,
+        get_extraction_summary,
+        ExtractionResult,
+    )
+    from services.validation_service import validate_product_compliance, StatutoryAuditReport, ViolationSeverity
+    from services.opencv_service import preprocess_packaging_for_ocr, detect_reference_object
+    from database import SessionLocal
+    from models.db_models import RegulatoryRuleModel
 
 
 
@@ -57,6 +57,8 @@ def _serialize_extraction_result(result: ExtractionResult) -> Dict[str, Any]:
     """Converts an ExtractionResult to a JSON-serializable dict."""
     return {
         "image_id": result.image_id,
+        "raw_text": result.raw_text,
+        "cleaned_text": result.cleaned_text,
         "extraction_engine": result.extraction_engine,
         "overall_confidence_pct": round(result.overall_confidence * 100, 1),
         "preprocessing_passes": result.preprocessing_passes,
@@ -414,7 +416,7 @@ class ExtractionAPIHandler:
                 # Reconstruct ExtractionResult object for aggregation
                 if angle_res.get("status") == "success":
                     ext_data = angle_res["extraction"]
-                    from services.extraction_service import ExtractedField, ExtractionResult
+                    from backend.services.extraction_service import ExtractedField, ExtractionResult
                     res_obj = ExtractionResult(
                         image_id=angle_id,
                         raw_text=angle_obj.get("raw_text", ""),

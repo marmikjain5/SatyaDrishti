@@ -12,12 +12,12 @@ _backend_dir = Path(__file__).resolve().parent
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
-from api.routes.database_api import router as database_router
-from api.routes.extraction_api import router as extraction_router
-from api.routes.email_api import router as email_router
-from api.routes.crawler_api import router as crawler_router
-from api.routes.inspection_sync_api import router as inspection_sync_router
-from services.ecommerce_crawler_service import crawler_service
+from backend.api.routes.database_api import router as database_router
+from backend.api.routes.extraction_api import router as extraction_router
+from backend.api.routes.email_api import router as email_router
+from backend.api.routes.crawler_api import router as crawler_router
+from backend.api.routes.inspection_sync_api import router as inspection_sync_router
+from backend.services.ecommerce_crawler_service import crawler_service
 import asyncio
 
 app = FastAPI(
@@ -63,8 +63,8 @@ async def _autonomous_crawler_loop():
             await asyncio.sleep(60)
 
 
-from database import Base, engine, run_migrations
-import models.db_models  # Ensure all models are registered
+from backend.database import Base, engine, run_migrations
+import backend.models.db_models  # Ensure all models are registered
 
 @app.on_event("startup")
 async def on_startup():
