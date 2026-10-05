@@ -29,10 +29,10 @@ from typing import Dict, List, Optional, Any, Tuple
 
 DEFAULT_OLLAMA_BASE_URL  = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_OLLAMA_MODEL     = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5-vl")  # Same model as vision
-GEMINI_API_KEY           = os.getenv("GEMINI_API_KEY", "")
-POLLINATIONS_API_KEY     = os.getenv("POLLINATIONS_API_KEY", "")
-POLLINATIONS_BASE_URL    = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
+POLLINATIONS_API_KEY     = os.getenv("POLLINATIONS_TEXT_API_KEY") or os.getenv("POLLINATIONS_API_KEY", "")
+POLLINATIONS_BASE_URL    = os.getenv("POLLINATIONS_TEXT_BASE_URL") or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
 POLLINATIONS_TEXT_MODEL  = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
+GEMINI_API_KEY           = os.getenv("GEMINI_API_KEY", "")
 
 # Output token cap — keep it tight so inference stays fast
 LLM_MAX_TOKENS = int(os.getenv("LLM_VALIDATION_MAX_TOKENS", os.getenv("OLLAMA_NUM_PREDICT", "450")))

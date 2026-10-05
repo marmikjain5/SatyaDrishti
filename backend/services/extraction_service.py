@@ -476,7 +476,7 @@ Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSa
 
     # 1. Primary Path: POST Request to Pollinations AI
     try:
-        base_url = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai").rstrip("/")
+        base_url = (os.getenv("POLLINATIONS_TEXT_BASE_URL") or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")).rstrip("/")
         model_name = os.getenv("POLLINATIONS_TEXT_MODEL", "openai")
         if "chat/completions" in base_url:
             post_url = base_url
@@ -492,7 +492,7 @@ Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSa
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"}
         }).encode("utf-8")
-        api_key = os.getenv("POLLINATIONS_API_KEY", "").strip()
+        api_key = (os.getenv("POLLINATIONS_TEXT_API_KEY") or os.getenv("POLLINATIONS_API_KEY", "")).strip()
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"

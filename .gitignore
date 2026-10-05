@@ -58,4 +58,9 @@ __pycache__/
 *.pyc
 __pycache__
 /__pycache__
-README.md
+
+# Large model weights & binaries
+*.pt
+*.onnx
+*.bin
+*.weights

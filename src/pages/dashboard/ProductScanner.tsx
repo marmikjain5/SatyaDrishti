@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Images,
   BarChart3,
@@ -278,13 +278,6 @@ export const ProductScanner: React.FC = () => {
         </div>
       )}
 
-      {/* Scan Options  -  calibration method */}
-      <ScanOptionsCard
-        value={scanOptions}
-        onChange={setScanOptions}
-        disabled={isProcessing}
-      />
-
       {/* Packaging Capture & Upload Zone */}
       <ScanModeSelector />
       <div className="min-w-0">
@@ -349,11 +342,6 @@ export const ProductScanner: React.FC = () => {
       {/* Historical Batch Verification & Dual MRP Detection Panel */}
       {currentScan?.status === 'completed' && <HistoricalIntelligencePanel />}
 
-      {/* Rule 7  -  Physical Letter Height Measurement (Table-I compliance) */}
-      {currentScan?.status === 'completed' && (
-        <Rule7MeasurementPanel scanOptions={scanOptions} />
-      )}
-
       {/* Mobile Progressive Disclosure for Secondary Panels */}
       <div className="block lg:hidden space-y-4">
         {currentScan?.status === 'completed' && (
@@ -377,16 +365,17 @@ export const ProductScanner: React.FC = () => {
             <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
               <button
                 onClick={() => setShowMobileDeepAnalytics(!showMobileDeepAnalytics)}
-                className="w-full flex items-center justify-between p-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="w-full flex items-center justify-between p-3.5 text-left text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-blue-600" />
-                  <span>Readability & Rule Audit ({showMobileDeepAnalytics ? 'Hide' : 'Show'})</span>
+                  <span>Rule 7 & Readability Audit ({showMobileDeepAnalytics ? 'Hide' : 'Show'})</span>
                 </span>
                 <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${showMobileDeepAnalytics ? 'rotate-180' : ''}`} />
               </button>
               {showMobileDeepAnalytics && (
                 <div className="p-3 space-y-4 border-t border-slate-200 dark:border-slate-800">
+                  <Rule7MeasurementPanel scanOptions={scanOptions} />
                   <ReadabilityAnalysisPanel />
                   <ScanCorrelationCard />
                   {currentScan?.extractedData && (

@@ -481,7 +481,7 @@ def detect_reference_object_endpoint(payload: Dict[str, Any] = Body(...)):
     """Detect a selected coin or ID-card candidate for scale calibration."""
     image_data = payload.get("image_base64") or payload.get("image_path")
     reference_type = payload.get("reference_type", "")
-    if not image_data or reference_type not in {"coin_5", "coin_10", "id_card"}:
+    if not image_data or reference_type not in {"coin_5", "coin_10", "id_card", "ean_barcode"}:
         return {"status": "error", "message": "image_base64/image_path and a supported reference_type are required."}
     return detect_reference_object(image_data, reference_type)
 

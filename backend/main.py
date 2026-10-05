@@ -7,8 +7,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 _backend_dir = Path(__file__).resolve().parent
+load_dotenv(_backend_dir.parent / ".env")
+load_dotenv(_backend_dir / ".env")
+load_dotenv()
+
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 

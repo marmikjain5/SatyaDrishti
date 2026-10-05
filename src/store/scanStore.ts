@@ -134,7 +134,7 @@ async function processSingleParallelProduct(
   scanRecord: ScanRecord;
   validationResult: ComplianceValidationResult;
   correlationResult: ScanCorrelationResult;
-  readabilityResult: ReadabilityAnalysisResult;
+  readabilityResult?: ReadabilityAnalysisResult;
   batchResult: BatchVerificationResult;
   mrpResult: MRPVerificationResult;
 }> {
@@ -145,36 +145,7 @@ async function processSingleParallelProduct(
     onProgress(Math.min(60, Math.round(5 + (progress / 100) * 55)), status);
   });
 
-  onProgress(65, 'Analyzing readability & font compliance...');
   const extracted = ocrResult.extractedData;
-  const dimensions = extracted.imageDimensions || { width: 1000, height: 800 };
-  const barcode = extracted.declarations?.barcode?.value;
-  const calibration = await productDimensionsService.resolveDimensions({
-    barcode: barcode && barcode !== '(Not detected)' ? barcode : undefined,
-    productName: extracted.declarations?.productName?.value,
-    barcodeWidthPx: extracted.declarations?.barcode?.barcodeWidthPx,
-    imageDimensions: dimensions,
-  });
-  const readabilityResult = await readabilityService.analyze(
-    scanId,
-    imageDataUrl,
-    extracted,
-    dimensions,
-    { calibration: {
-      method: calibration.source as any,
-      packageWidthMm: calibration.packageWidthMm,
-      packageHeightMm: calibration.packageHeightMm,
-      packageWidthPx: dimensions.width,
-      packageHeightPx: dimensions.height,
-      scaleMmPerPx: calibration.scaleMmPerPx,
-      minNumeralHeightMm: calibration.minNumeralHeightMm,
-      minNumeralHeightPt: calibration.minNumeralHeightPt,
-      pdpAreaCm2: calibration.pdpAreaCm2,
-      calibrationSourceLabel: calibration.sourceLabel,
-      details: calibration.details,
-    } }
-  );
-
   onProgress(75, 'Validating statutory declarations & compliance rules...');
   const validationResult = validateProduct(extracted);
   validationResult.scanId = scanId;
@@ -203,7 +174,7 @@ async function processSingleParallelProduct(
     progress: 100,
     confidence: ocrResult.confidence,
     extractedData: extracted,
-    readabilityResult,
+    readabilityResult: undefined,
     isMultiAngle: false,
     angles: [],
     activeAngleIndex: 0,
@@ -220,9 +191,9 @@ async function processSingleParallelProduct(
     extracted.productName || '',
     useComplianceStore.getState().products
   );
-  onProgress(100, `Extraction complete — Score: ${readabilityResult.summary.overallScore}/100`);
+  onProgress(100, 'Packaging declarations extracted. Ready for Rule 7 calibration.');
 
-  return { scanRecord, validationResult, correlationResult, readabilityResult, batchResult, mrpResult };
+  return { scanRecord, validationResult, correlationResult, batchResult, mrpResult };
 }
 
 export const useScanStore = create<ScanState>((set, get) => ({
@@ -390,44 +361,8 @@ export const useScanStore = create<ScanState>((set, get) => ({
           }
         );
 
-        // Readability analysis for this angle (calibrated via Open Food Facts / Barcode Ruler)
-        let angleReadability: ReadabilityAnalysisResult | undefined = undefined;
-        try {
-          const angleBarcode = ocrResult.extractedData?.declarations?.barcode?.value;
-          const angleBarcodePx = ocrResult.extractedData?.declarations?.barcode?.barcodeWidthPx;
-          const angleProd = ocrResult.extractedData?.declarations?.productName?.value;
-          const angleDims = ocrResult.extractedData?.imageDimensions || { width: 1000, height: 800 };
-          const angleCalib = await productDimensionsService.resolveDimensions({
-            barcode: angleBarcode && angleBarcode !== '(Not detected)' ? angleBarcode : undefined,
-            productName: angleProd && angleProd !== '(Not detected)' ? angleProd : undefined,
-            barcodeWidthPx: angleBarcodePx,
-            imageDimensions: angleDims,
-          });
-
-          angleReadability = await readabilityService.analyze(
-            `${scanId}-angle-${i + 1}`,
-            image.dataUrl,
-            ocrResult.extractedData,
-            angleDims,
-            {
-              calibration: {
-                method: angleCalib.source as any,
-                packageWidthMm: angleCalib.packageWidthMm,
-                packageHeightMm: angleCalib.packageHeightMm,
-                packageWidthPx: angleDims.width,
-                packageHeightPx: angleDims.height,
-                scaleMmPerPx: angleCalib.scaleMmPerPx,
-                minNumeralHeightMm: angleCalib.minNumeralHeightMm,
-                minNumeralHeightPt: angleCalib.minNumeralHeightPt,
-                pdpAreaCm2: angleCalib.pdpAreaCm2,
-                calibrationSourceLabel: angleCalib.sourceLabel,
-                details: angleCalib.details,
-              },
-            }
-          );
-        } catch {
-          // ignore readability errors for sub-angles
-        }
+        // Readability analysis for this angle is deferred until Rule 7 reference calibration
+        const angleReadability: ReadabilityAnalysisResult | undefined = undefined;
 
         const angleDisplayImage = image.dataUrl;
         const angleRecord: ScanAngle = {
@@ -490,42 +425,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
         currentStatusMessage: 'Finalizing readability analysis & compliance audit report...',
       });
 
-      // Step 5: Master Readability Analysis (calibrated via Open Food Facts API / Barcode Optical Scale)
-      const masterBarcode = masterExtractedData.declarations?.barcode?.value;
-      const masterBarcodePx = masterExtractedData.declarations?.barcode?.barcodeWidthPx;
-      const masterProd = masterExtractedData.declarations?.productName?.value;
-      const masterDims = masterExtractedData.imageDimensions || { width: 1200, height: 900 };
-
-      const masterCalib = await productDimensionsService.resolveDimensions({
-        barcode: masterBarcode && masterBarcode !== '(Not detected)' ? masterBarcode : undefined,
-        productName: masterProd && masterProd !== '(Not detected)' ? masterProd : undefined,
-        barcodeWidthPx: masterBarcodePx,
-        imageDimensions: masterDims,
-      });
-
       const displayImageDataUrl = primaryImage.dataUrl;
-
-      const masterReadability = await readabilityService.analyze(
-        scanId,
-        displayImageDataUrl,
-        masterExtractedData,
-        masterDims,
-        {
-          calibration: {
-            method: masterCalib.source as any,
-            packageWidthMm: masterCalib.packageWidthMm,
-            packageHeightMm: masterCalib.packageHeightMm,
-            packageWidthPx: masterDims.width,
-            packageHeightPx: masterDims.height,
-            scaleMmPerPx: masterCalib.scaleMmPerPx,
-            minNumeralHeightMm: masterCalib.minNumeralHeightMm,
-            minNumeralHeightPt: masterCalib.minNumeralHeightPt,
-            pdpAreaCm2: masterCalib.pdpAreaCm2,
-            calibrationSourceLabel: masterCalib.sourceLabel,
-            details: masterCalib.details,
-          },
-        }
-      );
 
       const completedScan: ScanRecord = {
         ...initialScanRecord,
@@ -534,7 +434,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
         progress: 100,
         confidence: masterConfidence,
         extractedData: masterExtractedData,
-        readabilityResult: masterReadability,
+        readabilityResult: undefined,
         isMultiAngle,
         angles,
         activeAngleIndex: 0,
@@ -577,8 +477,8 @@ export const useScanStore = create<ScanState>((set, get) => ({
         currentScan: completedScan,
         currentProgress: 100,
         currentStatusMessage: isMultiAngle
-          ? `Multi-Angle Analysis Complete (${totalImages} angles compiled)  -  Score: ${masterReadability.summary.overallScore}/100. ${correlationResult.summary.totalDiscrepancies} discrepancy(s) mapped.`
-          : `Extraction & Readability complete  -  Score: ${masterReadability.summary.overallScore}/100. ${correlationResult.summary.totalDiscrepancies} packaging discrepancy(s) mapped.`,
+          ? `Multi-Angle Analysis Complete (${totalImages} angles compiled). Ready for Rule 7 reference calibration.`
+          : 'Packaging text & declarations extracted. Ready for Rule 7 reference calibration.',
         validationResults: {
           ...state.validationResults,
           [completedScan.id]: validationResult,
@@ -587,10 +487,7 @@ export const useScanStore = create<ScanState>((set, get) => ({
           ...state.correlationResults,
           [completedScan.id]: correlationResult,
         },
-        readabilityResults: {
-          ...state.readabilityResults,
-          [completedScan.id]: masterReadability,
-        },
+        readabilityResults: state.readabilityResults,
         batchVerificationResults: {
           ...state.batchVerificationResults,
           [completedScan.id]: batchResult,
@@ -890,7 +787,9 @@ async function processOneParallelJob(jobId: string): Promise<void> {
       scans: [result.scanRecord, ...state.scans],
       validationResults: { ...state.validationResults, [result.scanRecord.id]: result.validationResult },
       correlationResults: { ...state.correlationResults, [result.scanRecord.id]: result.correlationResult },
-      readabilityResults: { ...state.readabilityResults, [result.scanRecord.id]: result.readabilityResult },
+      readabilityResults: result.readabilityResult
+        ? { ...state.readabilityResults, [result.scanRecord.id]: result.readabilityResult }
+        : state.readabilityResults,
       batchVerificationResults: { ...state.batchVerificationResults, [result.scanRecord.id]: result.batchResult },
       mrpVerificationResults: { ...state.mrpVerificationResults, [result.scanRecord.id]: result.mrpResult },
       parallelScanJobs: {

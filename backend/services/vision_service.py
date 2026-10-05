@@ -30,8 +30,8 @@ if hasattr(sys.stdout, "reconfigure"):
 DEFAULT_OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5-vl")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
-POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
+POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_VISION_API_KEY") or os.getenv("POLLINATIONS_API_KEY", "")
+POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_VISION_BASE_URL") or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
 POLLINATIONS_VISION_MODEL = os.getenv("POLLINATIONS_VISION_MODEL", "openai")
 
 

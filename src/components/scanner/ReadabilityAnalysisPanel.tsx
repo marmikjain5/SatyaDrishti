@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Type,
   Eye,
@@ -28,6 +28,7 @@ import {
   ExternalLink,
   Coins,
   Camera,
+  Ruler,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -134,73 +135,96 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
   const result: ReadabilityAnalysisResult | undefined =
     (currentScan && readabilityResults[currentScan.id]) || currentScan?.readabilityResult;
 
-  useEffect(() => {
-    if (
-      currentScan &&
-      currentScan.status === 'completed' &&
-      currentScan.extractedData &&
-      !result &&
-      !isGenerating
-    ) {
-      setIsGenerating(true);
-      const extractedData = currentScan.extractedData;
-      const scanId = currentScan.id;
-      const imageDataUrl = currentScan.imageDataUrl;
-      const barcodeVal = extractedData.declarations?.barcode?.value;
-      const barcodeWidthPx = extractedData.declarations?.barcode?.barcodeWidthPx;
-      const prodName = extractedData.declarations?.productName?.value;
-      const dims = extractedData.imageDimensions || { width: 800, height: 600 };
+  const handleRunUncalibratedEstimate = useCallback(async () => {
+    if (!currentScan || !currentScan.extractedData || isGenerating) return;
+    setIsGenerating(true);
+    const extractedData = currentScan.extractedData;
+    const scanId = currentScan.id;
+    const imageDataUrl = currentScan.imageDataUrl;
+    const barcodeVal = extractedData.declarations?.barcode?.value;
+    const barcodeWidthPx = extractedData.declarations?.barcode?.barcodeWidthPx;
+    const prodName = extractedData.declarations?.productName?.value;
+    const dims = extractedData.imageDimensions || { width: 800, height: 600 };
 
-      productDimensionsService
-        .resolveDimensions({
-          barcode: barcodeVal && barcodeVal !== '(Not detected)' ? barcodeVal : undefined,
-          productName: prodName && prodName !== '(Not detected)' ? prodName : undefined,
-          barcodeWidthPx,
-          imageDimensions: dims,
-        })
-        .then((calib) => {
-          return readabilityService.analyze(
-            scanId,
-            imageDataUrl,
-            extractedData,
-            dims,
-            {
-              calibration: {
-                method: calib.source as any,
-                packageWidthMm: calib.packageWidthMm,
-                packageHeightMm: calib.packageHeightMm,
-                packageWidthPx: dims.width,
-                packageHeightPx: dims.height,
-                scaleMmPerPx: calib.scaleMmPerPx,
-                minNumeralHeightMm: calib.minNumeralHeightMm,
-                minNumeralHeightPt: calib.minNumeralHeightPt,
-                pdpAreaCm2: calib.pdpAreaCm2,
-                calibrationSourceLabel: calib.sourceLabel,
-                details: calib.details,
-              },
-            }
-          );
-        })
-        .then((res) => {
-          setReadabilityResult(currentScan.id, res);
-          setIsGenerating(false);
-        })
-        .catch(() => setIsGenerating(false));
+    try {
+      const calib = await productDimensionsService.resolveDimensions({
+        barcode: barcodeVal && barcodeVal !== '(Not detected)' ? barcodeVal : undefined,
+        productName: prodName && prodName !== '(Not detected)' ? prodName : undefined,
+        barcodeWidthPx,
+        imageDimensions: dims,
+      });
+
+      const res = await readabilityService.analyze(
+        scanId,
+        imageDataUrl,
+        extractedData,
+        dims,
+        {
+          calibration: {
+            method: calib.source as any,
+            packageWidthMm: calib.packageWidthMm,
+            packageHeightMm: calib.packageHeightMm,
+            packageWidthPx: dims.width,
+            packageHeightPx: dims.height,
+            scaleMmPerPx: calib.scaleMmPerPx,
+            minNumeralHeightMm: calib.minNumeralHeightMm,
+            minNumeralHeightPt: calib.minNumeralHeightPt,
+            pdpAreaCm2: calib.pdpAreaCm2,
+            calibrationSourceLabel: calib.sourceLabel,
+            details: calib.details,
+          },
+        }
+      );
+      setReadabilityResult(currentScan.id, res);
+    } catch (err) {
+      console.error('Failed to run uncalibrated readability estimate:', err);
+    } finally {
+      setIsGenerating(false);
     }
-  }, [currentScan, result, isGenerating, setReadabilityResult]);
+  }, [currentScan, isGenerating, setReadabilityResult]);
 
   if (!currentScan || currentScan.status !== 'completed' || !currentScan.extractedData) {
     return null;
   }
 
+  if (isGenerating) {
+    return (
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-subtle bg-white dark:bg-slate-900 p-6 text-center">
+        <div className="flex flex-col items-center justify-center space-y-2 py-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Running Optical Font Size &amp; Readability Analysis Engine...
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   if (!result) {
     return (
-      <Card className="border border-slate-200 shadow-subtle bg-white p-6 text-center">
-        <div className="flex flex-col items-center justify-center space-y-2 py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          <p className="text-sm font-medium text-slate-700">
-            Running Optical Font Size & Readability Analysis Engine...
-          </p>
+      <Card className="border border-slate-200/90 dark:border-slate-800 shadow-subtle bg-white dark:bg-slate-900 overflow-hidden p-6">
+        <div className="flex flex-col items-center justify-center text-center space-y-3 py-6">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <Ruler className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+              Font Readability Score Awaiting Reference Calibration
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+              Millimeter-accurate font heights and statutory legibility scores are calculated after scanning the physical reference object (₹10 coin, ID card, or barcode). Click the blue <span className="font-semibold text-indigo-600 dark:text-indigo-400">"Scan &amp; Detect"</span> button in the panel above to compute your score.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleRunUncalibratedEstimate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              <HelpCircle className="h-3.5 w-3.5 text-slate-500" />
+              <span>Compute Uncalibrated Estimate (No reference object)</span>
+            </button>
+          </div>
         </div>
       </Card>
     );
@@ -282,6 +306,19 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Automated bounding box font height estimation, optical contrast ratio, and prominence verification.
             </p>
+            {result.calibration && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300">
+                  <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>{result.calibration.calibrationSourceLabel || 'Physically Calibrated'}</span>
+                  {result.calibration.scaleMmPerPx && (
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                      ({result.calibration.scaleMmPerPx.toFixed(3)} mm/px)
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -903,7 +940,7 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* ─── 4. Forensic 100% Precision Coin Calibration Banner & Trigger ─── */}
+        {/* ─── 4. Forensic 100% Precision Coin & Card Calibration Banner & Trigger ─── */}
         <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-yellow-500/10 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-yellow-950/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs mt-4">
           <div className="flex items-start gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-amber-500/20 dark:bg-amber-500/30 border border-amber-500/40 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 shadow-xs">
@@ -915,16 +952,16 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
                   Court-Admissible 100% Calibrated Precision
                 </span>
                 <Badge variant="warning" size="sm" className="font-mono text-[9px]">
-                  RBI Currency Coin Standard
+                  Coin / Card / Barcode Standard
                 </Badge>
                 {result.calibration?.method === 'reference-object' && (
                   <Badge variant="success" size="sm" className="font-mono text-[9px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-                    ✓ Coin Calibrated (±0.05mm)
+                    ✓ Calibrated (±0.05mm)
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                Need court-admissible micrometric accuracy for enforcement? Place a standard Indian <strong>₹10 or ₹5 coin</strong> alongside the packaging to achieve <strong>100% optical precision (±0.05 mm)</strong> under Legal Metrology Act Sec 36.
+                Need court-admissible micrometric accuracy for enforcement? Place a standard Indian <strong>₹10/₹5 coin, Credit/ID card, or Barcode</strong> alongside the packaging to achieve <strong>100% optical precision (±0.05 mm)</strong> under Legal Metrology Act Sec 36.
               </p>
             </div>
           </div>
@@ -935,7 +972,7 @@ export const ReadabilityAnalysisPanel: React.FC = () => {
             className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold font-mono tracking-wide shadow-xs flex items-center justify-center gap-2 transition-all hover:shadow-md cursor-pointer"
           >
             <Coins className="h-4 w-4" />
-            <span>Calibrate with Coin Scale (100% Precision)</span>
+            <span>Calibrate with Coin / Card (100% Precision)</span>
           </button>
         </div>
 

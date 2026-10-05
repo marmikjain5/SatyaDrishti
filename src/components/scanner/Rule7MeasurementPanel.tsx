@@ -1,11 +1,15 @@
-﻿/**
- * Rule7MeasurementPanel  -  Interactive Rule 7 Letter Height Measurement UI
+/**
+ * Rule7MeasurementPanel — Automated AI Reference Detection & Letter Height Calibration
  *
  * Features:
- * 1. Coin / reference object marking on the scanned image (draw a bounding box)
- * 2. Real-time calibration (px → mm conversion)
- * 3. Per-field letter height verdict table
- * 4. Table-I compliance summary card with statutory clause citation
+ * 1. Reference Selection: ₹10 Coin (27mm), ₹5 Coin (25mm), Credit / ID Card (85.6 × 54mm), EAN Barcode
+ * 2. Automated AI & YOLO Reference Scanner: One-click scan finds coin or card in the image
+ * 3. Visual Detection Overlay: Shows exact detection location and bounding reticle on the photo
+ * 4. Automatic Scale & Readability Calculation:
+ *    - Immediately calculates real-world scale (mm/px, DPI)
+ *    - Recalculates Font Readability Score & compliance status via readabilityService
+ *    - Recalculates Rule 7 Table-I minimum letter height compliance
+ * 5. Preserves all 14 statutory declaration fields and compliance checking pipeline
  *
  * Legal basis: Rule 7 & Table-I, Legal Metrology (Packaged Commodities) Rules, 2011
  */
@@ -24,10 +28,20 @@ import {
   RefreshCw,
   Scale,
   Microscope,
+  CreditCard,
+  Barcode,
+  Coins,
+  Sparkles,
+  Camera,
+  Upload,
   ScanSearch,
+  Move,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { useScanStore } from '../../store/scanStore';
+import { readabilityService } from '../../lib/readabilityService';
 import {
   calibrateFromBounds,
   measureRule7Compliance,
@@ -39,6 +53,7 @@ import {
   type Rule7Verdict,
   type ReferenceObjectType,
 } from '../../lib/rule7Measurement';
+import { getScheduleIITier } from '../../lib/productDimensionsService';
 import type { ScanOptionsValue } from './ScanOptionsCard';
 import { cn } from '../../lib/utils';
 
@@ -89,51 +104,347 @@ const VERDICT_CONFIG: Record<Rule7Verdict, {
 // ─── Props ────────────────────────────────────────────────────────
 
 interface Rule7MeasurementPanelProps {
-  scanOptions: ScanOptionsValue;
+  scanOptions?: ScanOptionsValue;
+}
+
+interface DetectedOverlayData {
+  center: { x: number; y: number };
+  radius?: number;
+  width: number;
+  height: number;
+  shape: 'circle' | 'quadrilateral';
+  label: string;
+  confidence: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────
 
 export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ scanOptions }) => {
-  const { currentScan } = useScanStore();
+  const { currentScan, setReadabilityResult } = useScanStore();
 
+  const [activeRefType, setActiveRefType] = useState<ReferenceObjectType>(
+    scanOptions?.calibrationMethod === 'reference_object' && scanOptions.referenceObjectType
+      ? scanOptions.referenceObjectType
+      : 'coin_10'
+  );
+  const [imageSource, setImageSource] = useState<'scan' | 'custom'>('scan');
+  const [customImageDataUrl, setCustomImageDataUrl] = useState<string | null>(null);
   const [calibration, setCalibration] = useState<CalibrationResult | null>(null);
-  const [isDetectingReference, setIsDetectingReference] = useState(false);
   const [result, setResult] = useState<Rule7MeasurementResult | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
-  const [drawRect, setDrawRect] = useState<CoinBounds | null>(null);
+
+  // Detected reference overlay
+  const [detectedOverlay, setDetectedOverlay] = useState<DetectedOverlayData | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+
   const [showFieldTable, setShowFieldTable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detectionNotice, setDetectionNotice] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const refType: ReferenceObjectType =
-    scanOptions.calibrationMethod === 'reference_object'
-      ? scanOptions.referenceObjectType
-      : 'none';
+  const activeImageDataUrl = (imageSource === 'custom' && customImageDataUrl)
+    ? customImageDataUrl
+    : (currentScan?.imageDataUrl || '');
 
-  const refDims = REFERENCE_OBJECT_DIMS[refType];
+  const refDims = REFERENCE_OBJECT_DIMS[activeRefType] || REFERENCE_OBJECT_DIMS['coin_10'];
 
-  // ── Image + calibration ─────────────────────────────────────────
+  // ── Sync with Readability Service & Score ───────────────────────
 
-  const getCanvasCoords = useCallback((e: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } => {
-    const canvas = canvasRef.current!;
+  const syncWithReadability = useCallback(async (cal: CalibrationResult) => {
+    if (!currentScan || !currentScan.extractedData || cal.pxPerMm <= 0) return null;
+    const extractedData = currentScan.extractedData;
+    const dims = extractedData.imageDimensions || {
+      width: canvasRef.current?.width || 1200,
+      height: canvasRef.current?.height || 900,
+    };
+    const scaleMmPerPx = 1 / cal.pxPerMm;
+    const packageWidthMm = Math.round(dims.width * scaleMmPerPx);
+    const packageHeightMm = Math.round(dims.height * scaleMmPerPx);
+    const pdpAreaCm2 = Math.round((packageWidthMm * packageHeightMm) / 100);
+    const scheduleTier = getScheduleIITier(pdpAreaCm2);
+
+    try {
+      const updatedResult = await readabilityService.analyze(
+        currentScan.id,
+        currentScan.imageDataUrl,
+        extractedData,
+        dims,
+        {
+          calibration: {
+            method: 'reference-object',
+            packageWidthMm,
+            packageHeightMm,
+            packageWidthPx: dims.width,
+            packageHeightPx: dims.height,
+            scaleMmPerPx: Math.round(scaleMmPerPx * 1000) / 1000,
+            minNumeralHeightMm: scheduleTier.minMm,
+            minNumeralHeightPt: scheduleTier.minPt,
+            uncertaintyMm: 0.05,
+            pdpAreaCm2,
+            calibrationSourceLabel: `Calibrated via ${refDims.label.split('(')[0].trim()}`,
+            details: `AI Reference calibration (${refDims.label.split('(')[0].trim()}): ${cal.refWidthPx}×${cal.refHeightPx}px = ${cal.refWidthMm}×${cal.refHeightMm}mm (Scale: ${scaleMmPerPx.toFixed(3)} mm/px, ~${Math.round(25.4 / scaleMmPerPx)} DPI)`,
+          },
+        }
+      );
+      setReadabilityResult(currentScan.id, updatedResult);
+      return updatedResult;
+    } catch (err) {
+      console.error('Failed to sync readability with calibration:', err);
+      return null;
+    }
+  }, [currentScan, refDims, setReadabilityResult]);
+
+  // ── Measurement run ─────────────────────────────────────────────
+
+  const runMeasurement = useCallback((cal: CalibrationResult | null) => {
+    if (!currentScan?.extractedData) return;
+
+    const netQtyRaw =
+      currentScan.extractedData.declarations?.netQuantity?.value ||
+      (currentScan.extractedData as any).netQuantity ||
+      '';
+
+    const declarations = currentScan.extractedData.declarations || {};
+    const rawOcrLines = (currentScan.extractedData as any).rawOcrLines || [];
+
+    const dims = currentScan.extractedData.imageDimensions || {
+      width: canvasRef.current?.width || 800,
+      height: canvasRef.current?.height || 600,
+    };
+
+    const declLines = Object.entries(declarations)
+      .filter(([_, f]) => f?.value && f.value.trim().length > 0)
+      .map(([k, f]) => {
+        const norm = f.boundingBox?.normalized;
+        const x0 = f.boundingBox?.x0 ?? (norm ? Math.round((norm.x / 100) * dims.width) : 50);
+        const y0 = f.boundingBox?.y0 ?? (norm ? Math.round((norm.y / 100) * dims.height) : 50);
+        const x1 = f.boundingBox?.x1 ?? (norm ? Math.round(((norm.x + norm.width) / 100) * dims.width) : 250);
+        const y1 = f.boundingBox?.y1 ?? (norm ? Math.round(((norm.y + norm.height) / 100) * dims.height) : 80);
+        return {
+          text: `${f.label || k}: ${f.value}`,
+          bbox: { x0, y0, x1, y1 },
+          confidence: f.confidence || 85,
+        };
+      });
+
+    const lines = declLines.length > 0 ? declLines : rawOcrLines;
+
+    const res = measureRule7Compliance(cal, netQtyRaw, lines, dims);
+    setResult(res);
+  }, [currentScan]);
+
+  // ── Overlay Placement & Live Calibration ────────────────────────
+
+  const applyOverlay = useCallback(
+    async (overlay: DetectedOverlayData) => {
+      setDetectedOverlay(overlay);
+
+      const bounds: CoinBounds =
+        overlay.shape === 'circle'
+          ? {
+              x0: overlay.center.x - (overlay.radius || 30),
+              y0: overlay.center.y - (overlay.radius || 30),
+              x1: overlay.center.x + (overlay.radius || 30),
+              y1: overlay.center.y + (overlay.radius || 30),
+            }
+          : {
+              x0: Math.round(overlay.center.x - overlay.width / 2),
+              y0: Math.round(overlay.center.y - overlay.height / 2),
+              x1: Math.round(overlay.center.x + overlay.width / 2),
+              y1: Math.round(overlay.center.y + overlay.height / 2),
+            };
+
+      const cal = calibrateFromBounds(bounds, activeRefType);
+      if (cal) {
+        setCalibration(cal);
+        runMeasurement(cal);
+        await syncWithReadability(cal);
+      }
+    },
+    [activeRefType, runMeasurement, syncWithReadability]
+  );
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const getCanvasCoords = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    // The canvas is rendered with object-fit: contain. Its CSS box can be
-    // wider/taller than the actual image, so account for the letterboxed
-    // offsets before mapping the pointer back to source-image pixels.
-    const fitScale = Math.min(rect.width / canvas.width, rect.height / canvas.height);
-    const renderedWidth = canvas.width * fitScale;
-    const renderedHeight = canvas.height * fitScale;
-    const offsetX = (rect.width - renderedWidth) / 2;
-    const offsetY = (rect.height - renderedHeight) / 2;
+    if (rect.width === 0 || rect.height === 0) return null;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     return {
-      x: Math.max(0, Math.min(canvas.width, (e.clientX - rect.left - offsetX) / fitScale)),
-      y: Math.max(0, Math.min(canvas.height, (e.clientY - rect.top - offsetY) / fitScale)),
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top) * scaleY),
     };
   }, []);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      const coords = getCanvasCoords(e);
+      if (!coords) return;
+      setIsDragging(true);
+
+      const isCircle = activeRefType === 'coin_5' || activeRefType === 'coin_10';
+      const curRadius = detectedOverlay?.radius || 32;
+      const curWidth = detectedOverlay?.width || (isCircle ? curRadius * 2 : 140);
+      const curHeight =
+        detectedOverlay?.height ||
+        (isCircle ? curRadius * 2 : Math.round(140 / (refDims.widthMm / refDims.heightMm)));
+
+      const newOverlay: DetectedOverlayData = {
+        center: coords,
+        radius: isCircle ? curRadius : undefined,
+        width: curWidth,
+        height: curHeight,
+        shape: isCircle ? 'circle' : 'quadrilateral',
+        label: refDims.label.split('(')[0].trim(),
+        confidence: 1.0,
+      };
+      applyOverlay(newOverlay);
+      setDetectionNotice(
+        `Snapped reference reticle to (${coords.x}, ${coords.y}). Drag to move, or use the slider below to fit the rim.`
+      );
+    },
+    [activeRefType, applyOverlay, detectedOverlay, getCanvasCoords, refDims]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!isDragging || !detectedOverlay) return;
+      const coords = getCanvasCoords(e);
+      if (!coords) return;
+
+      const newOverlay: DetectedOverlayData = {
+        ...detectedOverlay,
+        center: coords,
+      };
+      applyOverlay(newOverlay);
+    },
+    [applyOverlay, detectedOverlay, getCanvasCoords, isDragging]
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (isDragging) {
+        try {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        setIsDragging(false);
+      }
+    },
+    [isDragging]
+  );
+
+  const handleSizeChange = useCallback(
+    (newSize: number) => {
+      if (!detectedOverlay) return;
+      const clampedSize = Math.max(16, Math.min(600, newSize));
+      const isCircle = detectedOverlay.shape === 'circle';
+      const newRadius = isCircle ? Math.round(clampedSize / 2) : undefined;
+      const newWidth = clampedSize;
+      const newHeight = isCircle
+        ? clampedSize
+        : Math.round(clampedSize / (refDims.widthMm / refDims.heightMm));
+
+      const updated: DetectedOverlayData = {
+        ...detectedOverlay,
+        radius: newRadius,
+        width: newWidth,
+        height: newHeight,
+      };
+      applyOverlay(updated);
+    },
+    [applyOverlay, detectedOverlay, refDims]
+  );
+
+  // ── AI Reference Detector Runner ────────────────────────────────
+
+  const handleScanAndDetect = useCallback(async () => {
+    if (!activeImageDataUrl) return;
+    setIsDetecting(true);
+    setError(null);
+    setDetectionNotice(null);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(`${apiUrl}/api/v1/detect-reference-object`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: activeImageDataUrl,
+          reference_type: activeRefType,
+        }),
+        signal: controller.signal,
+      });
+      window.clearTimeout(timer);
+
+      const payload = await response.json();
+      const candidate = payload?.candidates?.[0];
+      if (!response.ok || payload?.status !== 'success' || !candidate) {
+        throw new Error('Could not detect reference object in image. Make sure the coin or card is clearly visible.');
+      }
+
+      const box = candidate.bbox_px;
+      const center = candidate.center || {
+        x: Math.round(box.x + box.width / 2),
+        y: Math.round(box.y + box.height / 2),
+      };
+
+      const overlay: DetectedOverlayData = {
+        center,
+        radius: candidate.radius || Math.round(Math.min(box.width, box.height) / 2),
+        width: box.width,
+        height: box.height,
+        shape: candidate.shape === 'circle' ? 'circle' : 'quadrilateral',
+        label: candidate.label || refDims.label.split('(')[0].trim(),
+        confidence: candidate.confidence || 0.9,
+      };
+
+      await applyOverlay(overlay);
+
+      const cal = calibrateFromBounds(
+        overlay.shape === 'circle'
+          ? {
+              x0: center.x - (overlay.radius || 30),
+              y0: center.y - (overlay.radius || 30),
+              x1: center.x + (overlay.radius || 30),
+              y1: center.y + (overlay.radius || 30),
+            }
+          : {
+              x0: box.x,
+              y0: box.y,
+              x1: box.x + box.width,
+              y1: box.y + box.height,
+            },
+        activeRefType
+      );
+
+      if (cal) {
+        setDetectionNotice(
+          `✓ AI Detected ${overlay.label}! Snapped at (${center.x}, ${center.y}). Calibrated scale: ${(1 / cal.pxPerMm).toFixed(3)} mm/px (~${Math.round(25.4 * cal.pxPerMm)} DPI). Font Readability Score & Rule 7 compliance calculated!`
+        );
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Detection request timed out. Please try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Reference detection failed.');
+      }
+    } finally {
+      setIsDetecting(false);
+    }
+  }, [activeImageDataUrl, activeRefType, applyOverlay, refDims]);
+
+  // ── Draw Overlay on Canvas (Detected Reference Overlay) ──────────
 
   const drawCanvasOverlay = useCallback(() => {
     const canvas = canvasRef.current;
@@ -146,43 +457,147 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    if (drawRect) {
-      const { x0, y0, x1, y1 } = drawRect;
-      const w = x1 - x0;
-      const h = y1 - y0;
+    if (detectedOverlay) {
+      const { center, radius, width, height, shape, label } = detectedOverlay;
+      ctx.save();
 
-      // Semi-transparent overlay on reference object
-      ctx.fillStyle = 'rgba(99, 102, 241, 0.15)';
-      ctx.fillRect(x0, y0, w, h);
+      if (shape === 'circle' && radius) {
+        // Glowing outer amber ring for coin
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#f59e0b'; // Amber 500
+        ctx.stroke();
 
-      // Dashed border
-      ctx.setLineDash([4, 3]);
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.9)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x0, y0, w, h);
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius + 4, 0, Math.PI * 2);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+        ctx.stroke();
 
-      // Label
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(99, 102, 241, 0.92)';
-      const label = refType === 'coin_10' ? '₹10 Coin' : refType === 'id_card' ? 'ID Card' : 'Barcode';
-      const textPad = 4;
-      const fontSize = Math.max(11, Math.min(16, canvas.width * 0.018));
-      ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
-      const tw = ctx.measureText(label).width;
-      const lx = Math.min(x0, canvas.width - tw - textPad * 2 - 2);
-      const ly = Math.max(y0 - fontSize - textPad * 2, 0);
-      ctx.fillRect(lx, ly, tw + textPad * 2, fontSize + textPad * 2);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(label, lx + textPad, ly + fontSize + textPad * 0.5);
+        // Crosshairs
+        ctx.beginPath();
+        ctx.moveTo(center.x - 14, center.y);
+        ctx.lineTo(center.x + 14, center.y);
+        ctx.moveTo(center.x, center.y - 14);
+        ctx.lineTo(center.x, center.y + 14);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#f59e0b';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        // Cardinal edge tick marks
+        const tickLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(center.x - radius, center.y);
+        ctx.lineTo(center.x - radius + tickLen, center.y);
+        ctx.moveTo(center.x + radius, center.y);
+        ctx.lineTo(center.x + radius - tickLen, center.y);
+        ctx.moveTo(center.x, center.y - radius);
+        ctx.lineTo(center.x, center.y - radius + tickLen);
+        ctx.moveTo(center.x, center.y + radius);
+        ctx.lineTo(center.x, center.y + radius - tickLen);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#fef08a';
+        ctx.stroke();
+
+        // Translucent coin tint
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Badge banner above coin
+        const badgeText = `✓ AI Detected: ${label} (⌀ ${radius * 2}px = ${refDims.widthMm}mm)`;
+        ctx.font = 'bold 13px monospace';
+        const textW = ctx.measureText(badgeText).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(center.x - textW / 2 - 8, center.y - radius - 32, textW + 16, 24);
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillText(badgeText, center.x - textW / 2, center.y - radius - 15);
+      } else {
+        // Rectangle: ID Card or Barcode
+        const rx = center.x - width / 2;
+        const ry = center.y - height / 2;
+        const isCard = activeRefType === 'id_card';
+        const strokeColor = isCard ? '#3b82f6' : '#10b981';
+        const bracketColor = isCard ? '#93c5fd' : '#6ee7b7';
+
+        // Outer rounded border
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(rx, ry, width, height, 6) : ctx.rect(rx, ry, width, height);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = strokeColor;
+        ctx.stroke();
+
+        // Corner viewfinder brackets
+        const bracketLen = Math.min(22, Math.round(width * 0.12));
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = bracketColor;
+
+        ctx.beginPath();
+        ctx.moveTo(rx, ry + bracketLen);
+        ctx.lineTo(rx, ry);
+        ctx.lineTo(rx + bracketLen, ry);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(rx + width - bracketLen, ry);
+        ctx.lineTo(rx + width, ry);
+        ctx.lineTo(rx + width, ry + bracketLen);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(rx, ry + height - bracketLen);
+        ctx.lineTo(rx, ry + height);
+        ctx.lineTo(rx + bracketLen, ry + height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(rx + width - bracketLen, ry + height);
+        ctx.lineTo(rx + width, ry + height);
+        ctx.lineTo(rx + width, ry + height - bracketLen);
+        ctx.stroke();
+
+        // Center crosshair
+        ctx.beginPath();
+        ctx.moveTo(center.x - 14, center.y);
+        ctx.lineTo(center.x + 14, center.y);
+        ctx.moveTo(center.x, center.y - 14);
+        ctx.lineTo(center.x, center.y + 14);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = strokeColor;
+        ctx.stroke();
+
+        // Translucent card tint
+        ctx.fillStyle = isCard ? 'rgba(59, 130, 246, 0.20)' : 'rgba(16, 185, 129, 0.20)';
+        ctx.fillRect(rx, ry, width, height);
+
+        // Badge banner above card
+        const badgeText = `✓ AI Detected: ${label} (${width}×${height}px = ${refDims.widthMm}×${refDims.heightMm}mm)`;
+        ctx.font = 'bold 13px monospace';
+        const textW = ctx.measureText(badgeText).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(center.x - textW / 2 - 8, ry - 32, textW + 16, 24);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(badgeText, center.x - textW / 2, ry - 15);
+      }
+
+      ctx.restore();
     }
-  }, [drawRect, refType]);
+  }, [detectedOverlay, activeRefType, refDims]);
 
   // Load image onto canvas when scan changes
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !currentScan?.imageDataUrl) return;
+    if (!canvas || !activeImageDataUrl) return;
 
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       imgRef.current = img;
       canvas.width = img.naturalWidth;
@@ -190,139 +605,19 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.drawImage(img, 0, 0);
     };
-    img.src = currentScan.imageDataUrl;
+    img.src = activeImageDataUrl;
 
-    // Reset state on new scan
+    // Reset detection on image change
     setCalibration(null);
     setResult(null);
-    setDrawRect(null);
+    setDetectedOverlay(null);
     setError(null);
-  }, [currentScan?.imageDataUrl]);
+    setDetectionNotice(null);
+  }, [activeImageDataUrl]);
 
   useEffect(() => {
     drawCanvasOverlay();
-  }, [drawRect, drawCanvasOverlay]);
-
-  // ── Canvas mouse events ─────────────────────────────────────────
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (scanOptions.calibrationMethod !== 'reference_object') return;
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    const pos = getCanvasCoords(e);
-    setIsDrawing(true);
-    setDrawStart(pos);
-    setDrawRect(null);
-    setCalibration(null);
-    setResult(null);
-    setError(null);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !drawStart) return;
-    const pos = getCanvasCoords(e);
-    setDrawRect({
-      x0: Math.min(drawStart.x, pos.x),
-      y0: Math.min(drawStart.y, pos.y),
-      x1: Math.max(drawStart.x, pos.x),
-      y1: Math.max(drawStart.y, pos.y),
-    });
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !drawStart) return;
-    setIsDrawing(false);
-    const pos = getCanvasCoords(e);
-    const bounds: CoinBounds = {
-      x0: Math.min(drawStart.x, pos.x),
-      y0: Math.min(drawStart.y, pos.y),
-      x1: Math.max(drawStart.x, pos.x),
-      y1: Math.max(drawStart.y, pos.y),
-    };
-    setDrawRect(bounds);
-
-    const cal = calibrateFromBounds(bounds, refType);
-    if (!cal) {
-      setError('The marked area is too small. Draw a larger box around the reference object.');
-      return;
-    }
-    setCalibration(cal);
-    runMeasurement(cal);
-  };
-
-  // ── Measurement run ─────────────────────────────────────────────
-
-  const runMeasurement = useCallback((cal: CalibrationResult | null) => {
-    if (!currentScan?.extractedData) return;
-
-    const netQtyRaw = currentScan.extractedData.netQuantity || '';
-    const ocrLines = (currentScan.extractedData as any).rawOcrLines || [];
-
-    // Fallback: use extracted fields as mock OCR lines with synthetic bboxes
-    const lines = ocrLines.length > 0
-      ? ocrLines
-      : Object.values(currentScan.extractedData)
-          .filter((f: any) => f?.value && f?.boundingBox)
-          .map((f: any) => ({
-            text: f.value,
-            confidence: f.confidence || 70,
-            bbox: {
-              x0: f.boundingBox.x0,
-              y0: f.boundingBox.y0,
-              x1: f.boundingBox.x1,
-              y1: f.boundingBox.y1,
-            },
-          }));
-
-    const imgDims = currentScan.extractedData.imageDimensions || { width: 800, height: 600 };
-
-    const res = measureRule7Compliance(cal, netQtyRaw, lines, imgDims);
-    setResult(res);
-  }, [currentScan]);
-
-  const autoDetectReference = useCallback(async () => {
-    if (!currentScan?.imageDataUrl || scanOptions.calibrationMethod !== 'reference_object') return;
-    setIsDetectingReference(true);
-    setError(null);
-    try {
-      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 15000);
-      const response = await fetch(`${apiUrl}/api/v1/detect-reference-object`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_base64: currentScan.imageDataUrl, reference_type: refType }),
-        signal: controller.signal,
-      });
-      window.clearTimeout(timer);
-      const payload = await response.json();
-      const candidate = payload?.candidates?.[0];
-      if (!response.ok || payload?.status !== 'success' || !candidate?.bbox_px) {
-        throw new Error('No reliable reference-object candidate was found. Mark it manually.');
-      }
-      const box = candidate.bbox_px;
-      const bounds: CoinBounds = { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height };
-      const cal = calibrateFromBounds(bounds, refType);
-      if (!cal) throw new Error('The detected reference object is too small for calibration.');
-      setDrawRect(bounds);
-      setCalibration(cal);
-      runMeasurement(cal);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('Reference detection timed out after 15 seconds. Mark the object manually or try again.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Reference detection failed. Mark the object manually.');
-      }
-    } finally {
-      setIsDetectingReference(false);
-    }
-  }, [currentScan, refType, runMeasurement, scanOptions.calibrationMethod]);
-
-  // Auto-run without calibration when no reference object selected
-  useEffect(() => {
-    if (currentScan?.status === 'completed' && scanOptions.calibrationMethod !== 'reference_object') {
-      runMeasurement(null);
-    }
-  }, [currentScan, scanOptions.calibrationMethod, runMeasurement]);
+  }, [detectedOverlay, drawCanvasOverlay]);
 
   // ── Guard ───────────────────────────────────────────────────────
 
@@ -330,12 +625,11 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     return null;
   }
 
-  const needsCoinMarking = scanOptions.calibrationMethod === 'reference_object' && !calibration;
   const overallCfg = result ? VERDICT_CONFIG[result.overallVerdict] : null;
   const OverallIcon = overallCfg?.icon;
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
       <CardContent className="p-4 sm:p-5 space-y-4">
 
         {/* Header */}
@@ -345,26 +639,297 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
               <Ruler className="h-4 w-4 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                Rule 7  -  Letter Height Measurement
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Rule 7  -  Physical Letter Height & Readability Calibration
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Legal Metrology (PC) Rules, 2011 · Table-I minimum font height compliance
+                Choose your reference object (Coin or Card) and click Scan to auto-detect and calculate font scores
               </p>
             </div>
           </div>
 
-          {result && (
+          {calibration && (
             <button
-              onClick={() => { setCalibration(null); setResult(null); setDrawRect(null); setError(null); runMeasurement(null); }}
-              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-              title="Re-run measurement"
+              onClick={() => {
+                setCalibration(null);
+                setResult(null);
+                setDetectedOverlay(null);
+                setDetectionNotice(null);
+                setError(null);
+                if (currentScan?.id) {
+                  setReadabilityResult(currentScan.id, undefined as any);
+                }
+              }}
+              className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
+              title="Reset calibration"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              <span>Re-run</span>
+              <span>Reset</span>
             </button>
           )}
         </div>
+
+        {/* Reference Object Selection & AI Scanner Bar */}
+        <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 p-3.5 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <CircleDot className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wide">
+                1. Select Reference in Photo:
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { type: 'coin_10', label: '₹10 Coin (27mm)', icon: Coins },
+                { type: 'coin_5', label: '₹5 Coin (25mm)', icon: CircleDot },
+                { type: 'id_card', label: 'Credit / ID Card', icon: CreditCard },
+                { type: 'ean_barcode', label: 'EAN Barcode', icon: Barcode },
+              ].map((btn) => {
+                const isSelected = activeRefType === btn.type;
+                const Icon = btn.icon;
+                return (
+                  <button
+                    key={btn.type}
+                    type="button"
+                    onClick={() => {
+                      setActiveRefType(btn.type as ReferenceObjectType);
+                      setDetectedOverlay(null);
+                      setCalibration(null);
+                    }}
+                    className={cn(
+                      'px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer',
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-1 ring-indigo-500'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300'
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{btn.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-indigo-200/60 dark:border-indigo-900/60">
+            <div>
+              <p className="text-xs font-bold text-indigo-900 dark:text-indigo-100">
+                {calibration
+                  ? `✓ Calibrated: ${refDims.label}`
+                  : `Scan and auto-detect ${refDims.label.split('(')[0].trim()}`}
+              </p>
+              {calibration ? (
+                <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5 font-mono">
+                  Scale: <strong>{calibration.pxPerMm.toFixed(2)} px/mm</strong> ({(1 / calibration.pxPerMm).toFixed(3)} mm/px) · Reference: {calibration.refWidthPx}×{calibration.refHeightPx}px = {calibration.refWidthMm}×{calibration.refHeightMm}mm
+                </p>
+              ) : (
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
+                  Click the button to automatically find the {refDims.label.split('(')[0].trim()} and compute your font readability score.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleScanAndDetect}
+                disabled={isDetecting}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 px-4 py-2 text-xs font-bold text-white cursor-pointer shadow-xs transition-all disabled:opacity-60"
+              >
+                <ScanSearch className={cn('h-4 w-4', isDetecting && 'animate-spin')} />
+                <span>{isDetecting ? 'Scanning for Reference...' : `Scan & Detect ${refDims.label.split('(')[0].trim()}`}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Success / Error Banners */}
+        {detectionNotice && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-800 dark:text-emerald-200 font-medium">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span>{detectionNotice}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-[11px] text-red-700 dark:text-red-300">
+            <XCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Calibration Evidence Photo Toggle & Upload */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-bold">
+            <Camera className="h-3.5 w-3.5 text-slate-500" />
+            <span>Calibration Photo:</span>
+            {imageSource === 'custom' && (
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal">
+                (Separate Reference Picture in Use)
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                setImageSource('scan');
+                setCalibration(null);
+                setDetectedOverlay(null);
+              }}
+              className={cn(
+                'px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer',
+                imageSource === 'scan'
+                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+              )}
+            >
+              <span>Main Scanned Product</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (customImageDataUrl) {
+                  setImageSource('custom');
+                } else {
+                  fileInputRef.current?.click();
+                }
+              }}
+              className={cn(
+                'px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer',
+                imageSource === 'custom' && customImageDataUrl
+                  ? 'bg-amber-600 text-white border-amber-600'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+              )}
+            >
+              <Upload className="h-3 w-3" />
+              <span>{customImageDataUrl ? 'Separate Reference Photo' : 'Upload Separate Coin/Card Photo'}</span>
+            </button>
+
+            {customImageDataUrl && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+              >
+                Change Photo
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const dataUrl = event.target?.result as string;
+                  setCustomImageDataUrl(dataUrl);
+                  setImageSource('custom');
+                  setCalibration(null);
+                  setDetectedOverlay(null);
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Visual Canvas Viewport showing detected object */}
+        {activeImageDataUrl && (
+          <div className="space-y-2.5">
+            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative bg-slate-950 flex flex-col items-center justify-center select-none shadow-xs">
+              <canvas
+                ref={canvasRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className="w-full block cursor-crosshair touch-none"
+                style={{ height: '370px', maxHeight: '370px', objectFit: 'contain' }}
+              />
+              {!detectedOverlay ? (
+                <div className="absolute inset-0 bg-black/30 flex items-end justify-center pb-3 pointer-events-none">
+                  <div className="bg-black/85 backdrop-blur-xs text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg border border-white/20 flex items-center gap-2">
+                    <Move className="h-3.5 w-3.5 text-amber-400" />
+                    <span>Click anywhere on the coin/card to position reticle, or click "Scan & Detect"</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute top-2.5 right-2.5 bg-black/75 backdrop-blur-xs text-amber-300 text-[11px] font-medium px-2.5 py-1 rounded-md border border-amber-400/30 flex items-center gap-1.5 pointer-events-none">
+                  <Move className="h-3 w-3" />
+                  <span>Click or drag directly to reposition</span>
+                </div>
+              )}
+            </div>
+
+            {/* Interactive Dimension Slider & Fine-Tuning Control */}
+            {detectedOverlay && (
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                    {detectedOverlay.shape === 'circle' ? <Coins className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>{detectedOverlay.shape === 'circle' ? 'Coin Diameter Adjustment' : 'Card Width Adjustment'}</span>
+                      <span className="font-mono text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                        ({detectedOverlay.shape === 'circle' ? (detectedOverlay.radius || 30) * 2 : detectedOverlay.width} px)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Drag slider or click + / - to fit the reference object rim snugly
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = detectedOverlay.shape === 'circle' ? (detectedOverlay.radius || 30) * 2 : detectedOverlay.width;
+                      handleSizeChange(cur - 2);
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    title="Nudge smaller (-2px)"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+
+                  <input
+                    type="range"
+                    min={detectedOverlay.shape === 'circle' ? 16 : 40}
+                    max={detectedOverlay.shape === 'circle' ? 240 : 450}
+                    step={1}
+                    value={detectedOverlay.shape === 'circle' ? (detectedOverlay.radius || 30) * 2 : detectedOverlay.width}
+                    onChange={(e) => handleSizeChange(Number(e.target.value))}
+                    className="w-32 sm:w-44 accent-amber-500 cursor-pointer"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = detectedOverlay.shape === 'circle' ? (detectedOverlay.radius || 30) * 2 : detectedOverlay.width;
+                      handleSizeChange(cur + 2);
+                    }}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    title="Nudge larger (+2px)"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+
+                  <div className="text-[11px] font-mono font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 min-w-[54px] text-center border border-slate-200 dark:border-slate-700">
+                    {detectedOverlay.shape === 'circle' ? `${(detectedOverlay.radius || 30) * 2}px` : `${detectedOverlay.width}px`}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Table-I quick reference */}
         <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -400,72 +965,20 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
           </div>
         </div>
 
-        {/* Calibration method notice */}
-        {scanOptions.calibrationMethod === 'reference_object' && (
-          <div className="rounded-lg border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 px-3.5 py-3 space-y-2">
-            <div className="flex items-start gap-2">
-              <CircleDot className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-indigo-800 dark:text-indigo-200">
-                  {calibration
-                    ? `Calibrated  -  ${refDims.label}`
-                    : `Draw a box around your ${refDims.label}`}
-                </p>
-                {calibration ? (
-                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
-                    Scale: <strong>{calibration.pxPerMm.toFixed(2)} px/mm</strong> ·
-                    Reference: {calibration.refWidthPx}×{calibration.refHeightPx} px = {calibration.refWidthMm}×{calibration.refHeightMm} mm
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
-                      Detect the {refType === 'coin_10' ? '₹10 coin' : refType === 'id_card' ? 'ID card' : 'barcode'} automatically, or mark it manually below.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={autoDetectReference}
-                      disabled={isDetectingReference}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
-                    >
-                      <ScanSearch className="h-3.5 w-3.5" />
-                      {isDetectingReference ? 'Detecting with OpenCV…' : 'Auto-detect reference'}
-                    </button>
-                  </div>
-                )}
-              </div>
+        {/* Awaiting calibration guidance when result is null */}
+        {!result && (
+          <div className="rounded-xl border border-dashed border-indigo-300 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 p-5 text-center space-y-2.5">
+            <div className="mx-auto w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <ScanSearch className="h-5 w-5" />
             </div>
-          </div>
-        )}
-
-        {/* Interactive canvas */}
-        {scanOptions.calibrationMethod === 'reference_object' && currentScan.imageDataUrl && (
-          <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative">
-            <canvas
-              ref={canvasRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className={cn(
-                'w-full block',
-                needsCoinMarking ? 'cursor-crosshair' : 'cursor-default'
-              )}
-              style={{ height: '320px', maxHeight: '320px', objectFit: 'contain', touchAction: 'none' }}
-            />
-            {needsCoinMarking && (
-              <div className="absolute inset-0 flex items-end justify-center pb-3 pointer-events-none">
-                <div className="bg-black/60 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full">
-                  ✚ Draw box around {refType === 'coin_10' ? '₹10 coin' : 'reference object'}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-[11px] text-red-700 dark:text-red-300">
-            <XCircle className="h-3.5 w-3.5 shrink-0" />
-            {error}
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                Rule 7 Measurement Awaiting Reference Calibration
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-0.5">
+                Click the blue <span className="font-semibold text-indigo-600 dark:text-indigo-400">"Scan &amp; Detect {refDims.label.split('(')[0].trim()}"</span> button above (or position the canvas reticle) to automatically detect the reference object and measure compliance with statutory Table-I letter heights.
+              </p>
+            </div>
           </div>
         )}
 
@@ -517,8 +1030,8 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
           <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px]">
             <Microscope className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
             <div className="text-slate-600 dark:text-slate-400 space-y-0.5">
-              <p><span className="font-semibold">Scale:</span> {calibration.pxPerMm.toFixed(3)} px / mm</p>
-              <p><span className="font-semibold">Reference:</span> {REFERENCE_OBJECT_DIMS[calibration.referenceType].label}</p>
+              <p><span className="font-semibold">Scale:</span> {calibration.pxPerMm.toFixed(3)} px / mm ({(1 / calibration.pxPerMm).toFixed(3)} mm / px)</p>
+              <p><span className="font-semibold">Reference:</span> {REFERENCE_OBJECT_DIMS[calibration.referenceType]?.label || calibration.referenceType}</p>
               <p><span className="font-semibold">Measured in frame:</span> {calibration.refWidthPx}×{calibration.refHeightPx} px → {calibration.refWidthMm}×{calibration.refHeightMm} mm</p>
             </div>
           </div>
@@ -529,7 +1042,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
           <div>
             <button
               onClick={() => setShowFieldTable((p) => !p)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <span className="flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 text-slate-400" />
@@ -577,18 +1090,6 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
                 </table>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Uncalibrated notice */}
-        {result && !calibration && scanOptions.calibrationMethod === 'none' && (
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px]">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-amber-700 dark:text-amber-300">
-              <strong>Uncalibrated mode:</strong> Measurements are pixel-relative estimates.
-              For a confirmed Rule 7 verdict, select "Reference object in frame" in Scan Options
-              and place a ₹10 coin alongside the product before scanning.
-            </p>
           </div>
         )}
 
