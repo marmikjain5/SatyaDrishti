@@ -92,7 +92,7 @@ export const ScanOptionsCard: React.FC<ScanOptionsCardProps> = ({ value, onChang
   const SelectedMethodIcon = selectedMethod.icon;
 
   return (
-    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+    <Card className="relative z-40 !overflow-visible border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
       <CardContent className="p-4 sm:p-5 space-y-5">
 
         {/* Header */}

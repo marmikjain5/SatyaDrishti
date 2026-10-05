@@ -299,6 +299,36 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
     });
   }
 
+  // 2b. Product identity zoom. Product names are often printed in the upper
+  // middle label while the full-frame pass spends most of its pixels on the
+  // bottle/background. Keep a generous horizontal margin so this also works
+  // for boxes and pouches where the label is not perfectly centred.
+  {
+    const cropX = Math.floor(width * 0.12);
+    const cropY = Math.floor(height * 0.30);
+    const cropW = Math.floor(width * 0.82);
+    const cropH = Math.floor(height * 0.38);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(cropW * 2.4);
+    canvas.height = Math.floor(cropH * 2.4);
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = enhanceContrast(pixels, 1.7);
+    pixels = sharpen(pixels, canvas.width);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'product_identity_zoom',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Product identity and brand panel zoom',
+      scale: 2.4,
+      cropX,
+      cropY,
+    });
+  }
+
   // 3. Dot-Matrix & Faint Stamp Normalization (lower 28% focused on white stamp box with min-max contrast stretch)
   {
     const cropY = Math.floor(height * 0.72);

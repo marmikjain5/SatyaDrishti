@@ -64,3 +64,6 @@ __pycache__
 *.onnx
 *.bin
 *.weights
+
+# Project README
+README.md

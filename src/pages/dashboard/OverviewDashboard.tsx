@@ -294,7 +294,7 @@ export const OverviewDashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* National Compliance Trajectory Dual-Axis Chart */}
+            {/* National Compliance Trajectory Chart */}
             <div className="lg:col-span-12">
               <NationalComplianceTrajectoryChart data={filteredTrends} />
             </div>

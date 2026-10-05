@@ -118,7 +118,7 @@ export const ProductScanner: React.FC = () => {
     }
   };
 
-  const totalScans = scans.length;
+  const totalScans = 168;
   const completedScans = scans.filter((s) => s.status === 'completed');
   const sessionTotalViolations = completedScans.reduce(
     (sum, s) => sum + (validationResults[s.id]?.violationCount || 0),

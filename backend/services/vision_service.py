@@ -424,8 +424,13 @@ class GeminiVisionProvider:
 class HybridVisionService:
     """
     Main Statutory Extraction Pipeline:
-      1. Attempt Direct Cloud Pollinations AI Vision
-      2. Hand over to OCR Text Extraction + Pollinations AI Text LLM Parser
+      1. Keep image preprocessing and OCR local to the application.
+      2. Hand the resulting OCR transcript to the text-only LLM parser.
+
+    Privacy boundary: this service must not forward packaging images to a
+    remote vision provider. The image-capable provider classes remain
+    available for explicit future use, but are not part of the product scan
+    path.
     """
 
     def __init__(self):
@@ -433,26 +438,17 @@ class HybridVisionService:
 
     def extract_from_image(self, image_input: Any) -> Dict[str, Any]:
         """
-        Extracts statutory fields from an image using Pollinations AI.
-        """
-        try:
-            base64_img = encode_image_to_base64(image_input)
-        except Exception as e:
-            print(f"[ERROR] [HYBRID VISION] Base64 encoding error: {e}")
-            return {
-                "status": "error",
-                "provider": "none",
-                "error": str(e),
-                "fields": {}
-            }
+        Preserve the image-only entry point without forwarding the image.
 
-        # Route directly to OCR + Pollinations AI Text LLM Parser (No AI interference during scanning)
-        print("[INFO] [OCR SCANNING ENGINE] Image received. Routing directly to multi-pass OCR + Pollinations AI Text LLM Parser...")
+        The caller supplies the local OCR transcript separately to
+        ``extract_from_text``. Returning an explicit OCR-only response here
+        prevents accidental base64 encoding or remote image upload.
+        """
         return {
-            "status": "fallback_to_ocr",
+            "status": "ocr_only",
             "provider": "none",
-            "message": "Proceeding directly with OCR text extraction + Pollinations AI Text LLM Parser.",
-            "fields": {}
+            "message": "Image remains local; only the OCR transcript may be sent to the text parser.",
+            "fields": {},
         }
 
 

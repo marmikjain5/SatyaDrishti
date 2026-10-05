@@ -743,6 +743,16 @@ def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, 
     h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     candidates = []
+    package_bounds = detect_package_contour_bounds(image)
+
+    def is_inside_package(cx: int, cy: int) -> bool:
+        if not package_bounds.get("detected"):
+            return False
+        px = package_bounds["x"] / 100 * w
+        py = package_bounds["y"] / 100 * h
+        pw = package_bounds["width"] / 100 * w
+        ph = package_bounds["height"] / 100 * h
+        return px <= cx <= px + pw and py <= cy <= py + ph
 
     # Priority 1: Cloud Vision AI Detection (Instant, Zero-Download, Fully Context-Aware)
     if reference_type in {"coin_5", "coin_10", "id_card", "card"}:
@@ -1009,11 +1019,17 @@ def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, 
                 "label": "EAN Barcode (AI Estimated)",
             })
 
-    candidates = sorted(candidates, key=lambda item: item["confidence"], reverse=True)[:5]
+
+    candidates = sorted(
+        candidates,
+        key=lambda item: (item.get("outside_package", False), item["confidence"]),
+        reverse=True,
+    )[:5]
     return {
         "status": "success",
         "reference_type": reference_type,
         "image_dimensions": {"width": w, "height": h},
+        "package_bounds": package_bounds,
         "candidates": candidates,
         "requires_visual_confirmation": True,
         "disclaimer": "Candidate detection only. Scale is calculated from the detected reference geometry.",
