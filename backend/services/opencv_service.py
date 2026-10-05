@@ -662,7 +662,8 @@ def detect_reference_via_vision_api(image: np.ndarray, reference_type: str) -> O
                         "Authorization": f"Bearer {api_key}"
                     }
                 )
-                with urllib.request.urlopen(req, timeout=12) as resp:
+                vision_timeout = int(os.getenv("POLLINATIONS_VISION_TIMEOUT", "25"))
+                with urllib.request.urlopen(req, timeout=vision_timeout) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     content = data["choices"][0]["message"]["content"].strip()
                     if "```json" in content:
