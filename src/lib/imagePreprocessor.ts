@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Image Preprocessor
  *
  * Canvas-based preprocessing pipeline that generates multiple optimized
  * image variants before OCR. Each variant targets a different text-readability
  * challenge common in product packaging photography.
  *
- * No external dependencies — uses HTMLCanvasElement + ImageData pixel manipulation.
+ * No external dependencies  -  uses HTMLCanvasElement + ImageData pixel manipulation.
  */
 
 export interface PreprocessedVariant {

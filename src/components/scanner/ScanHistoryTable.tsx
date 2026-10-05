@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { History, Search, Eye, Trash2, Clock, FileCheck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -155,7 +155,7 @@ export const ScanHistoryTable: React.FC = () => {
 
                 <td className="px-3 py-3">
                   <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[160px] block">
-                    {scan.extractedData?.productName || '—'}
+                    {scan.extractedData?.productName || ' - '}
                   </span>
                 </td>
 
@@ -173,7 +173,7 @@ export const ScanHistoryTable: React.FC = () => {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-slate-400">—</span>
+                    <span className="text-slate-400"> - </span>
                   )}
                 </td>
 

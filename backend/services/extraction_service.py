@@ -457,7 +457,7 @@ RULES FOR PARSING & MAPPING:
 10. barcode: EAN-13 or GS1 barcode number (e.g., '8904256000109', '8901719255144'). Strip spaces.
 
 RAW OCR TEXT FROM PACKAGING:
-{raw_text[:4000]}
+{raw_text}
 
 Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSalePrice, netQuantity, manufacturer, address, manufacturingDate, expiryDate, batchNumber, customerCare, countryOfOrigin, barcode) to string values (or null if not found).
 """
@@ -551,8 +551,11 @@ Return ONLY a valid JSON object mapping the field keys (productName, mrp, unitSa
     # 2. Secondary Path: Fast GET Request to Pollinations AI
     import urllib.parse
     try:
-        short_prompt = prompt[:2000]
-        encoded_p = urllib.parse.quote(short_prompt)
+        # Keep the complete OCR prompt in the fallback request as well. The
+        # primary POST path already carries the full text, and silently
+        # truncating here could drop declarations printed near the end of a
+        # long package label.
+        encoded_p = urllib.parse.quote(prompt)
         get_url = f"https://text.pollinations.ai/{encoded_p}?json=true"
         get_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         

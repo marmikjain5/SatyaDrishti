@@ -1,11 +1,11 @@
-/**
+﻿/**
  * HistoricalIntelligencePanel.tsx
  *
  * Premium Historical Batch Verification & Dual MRP Detection panel.
  * Renders scan-history stats, batch fraud detection results, and MRP mismatch
  * findings for the currently active scan.
  *
- * Only visible when `currentScan.status === 'completed'` — guarded by the
+ * Only visible when `currentScan.status === 'completed'`  -  guarded by the
  * parent ProductScanner page.
  */
 
@@ -136,8 +136,8 @@ const FraudAlertBlock: React.FC<FraudAlertBlockProps> = ({ title, message, evide
       <div className="px-4 pb-3">
         <p className="text-[10px] text-red-600 font-mono">
           {type === 'batch'
-            ? 'Ref: Legal Metrology (Packaged Commodities) Rules, 2011 — Counterfeit / Duplicate Expiry Label'
-            : 'Ref: Legal Metrology Act, 2009 — Section 36 / Dual MRP Prohibition'}
+            ? 'Ref: Legal Metrology (Packaged Commodities) Rules, 2011  -  Counterfeit / Duplicate Expiry Label'
+            : 'Ref: Legal Metrology Act, 2009  -  Section 36 / Dual MRP Prohibition'}
         </p>
       </div>
     </div>
@@ -342,7 +342,7 @@ export const HistoricalIntelligencePanel: React.FC = () => {
                 'text-sm font-bold font-mono leading-snug mt-0.5',
                 lastMatchingScan ? 'text-slate-800' : 'text-slate-400'
               )}>
-                {lastMatchingScan ? lastMatchingScan.timestamp : '—'}
+                {lastMatchingScan ? lastMatchingScan.timestamp : ' - '}
               </span>
               <span className="text-[11px] text-slate-500">
                 {lastMatchingScan ? 'Most recent matching scan' : 'No prior records'}
@@ -397,12 +397,12 @@ export const HistoricalIntelligencePanel: React.FC = () => {
                   />
                   <EvidenceRow
                     label="Current Expiry"
-                    value={batchResult.currentExpiryDate || '—'}
+                    value={batchResult.currentExpiryDate || ' - '}
                     highlight="green"
                   />
                   <EvidenceRow
                     label="Previous Expiry"
-                    value={batchResult.previousExpiryDate || '—'}
+                    value={batchResult.previousExpiryDate || ' - '}
                     highlight="green"
                   />
                 </div>
@@ -469,22 +469,22 @@ export const HistoricalIntelligencePanel: React.FC = () => {
                 <div className="mt-2 rounded border border-emerald-200 bg-white/60 px-3 py-1.5">
                   <EvidenceRow
                     label="Matched Product"
-                    value={mrpResult.matchedProductTitle || '—'}
+                    value={mrpResult.matchedProductTitle || ' - '}
                     highlight="neutral"
                   />
                   <EvidenceRow
                     label="Directory MRP"
-                    value={mrpResult.directoryMRP != null ? `₹${mrpResult.directoryMRP}` : '—'}
+                    value={mrpResult.directoryMRP != null ? `₹${mrpResult.directoryMRP}` : ' - '}
                     highlight="green"
                   />
                   <EvidenceRow
                     label="Scanned MRP"
-                    value={mrpResult.scannedMRP > 0 ? `₹${mrpResult.scannedMRP}` : '—'}
+                    value={mrpResult.scannedMRP > 0 ? `₹${mrpResult.scannedMRP}` : ' - '}
                     highlight="green"
                   />
                   <EvidenceRow
                     label="Difference"
-                    value={mrpResult.difference != null ? `₹${mrpResult.difference.toFixed(2)}` : '—'}
+                    value={mrpResult.difference != null ? `₹${mrpResult.difference.toFixed(2)}` : ' - '}
                     highlight="neutral"
                   />
                 </div>
@@ -500,17 +500,17 @@ export const HistoricalIntelligencePanel: React.FC = () => {
               evidence={[
                 {
                   label: 'Matched Product',
-                  value: mrpResult.matchedProductTitle || '—',
+                  value: mrpResult.matchedProductTitle || ' - ',
                   highlight: 'neutral',
                 },
                 {
                   label: 'Product Directory MRP',
-                  value: mrpResult.directoryMRP != null ? `₹${mrpResult.directoryMRP}` : '—',
+                  value: mrpResult.directoryMRP != null ? `₹${mrpResult.directoryMRP}` : ' - ',
                   highlight: 'green',
                 },
                 {
                   label: 'Scanned MRP',
-                  value: mrpResult.scannedMRP > 0 ? `₹${mrpResult.scannedMRP}` : '—',
+                  value: mrpResult.scannedMRP > 0 ? `₹${mrpResult.scannedMRP}` : ' - ',
                   highlight: 'red',
                 },
                 {
@@ -518,7 +518,7 @@ export const HistoricalIntelligencePanel: React.FC = () => {
                   value:
                     mrpResult.difference != null
                       ? `₹${mrpResult.difference.toFixed(2)}`
-                      : '—',
+                      : ' - ',
                   highlight: 'red',
                 },
               ]}

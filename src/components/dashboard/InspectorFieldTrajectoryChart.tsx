@@ -184,7 +184,7 @@ export const InspectorFieldTrajectoryChart: React.FC = () => {
 
               <Area
                 yAxisId="right"
-                type="monotone"
+                type="linear"
                 dataKey="violationsFound"
                 stroke="#DC2626"
                 strokeWidth={2}
@@ -203,7 +203,7 @@ export const InspectorFieldTrajectoryChart: React.FC = () => {
 
               <Line
                 yAxisId="right"
-                type="monotone"
+                type="linear"
                 dataKey="violationsFound"
                 stroke="#DC2626"
                 strokeWidth={2.5}

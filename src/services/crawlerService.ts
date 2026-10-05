@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SatyaSetu Autonomous E-Commerce Crawler & Statutory Inspector Service
  * 
  * Manages daily automated batches (5 products/day) across Amazon India, Flipkart,
@@ -63,7 +63,7 @@ export interface ProductAuditResult {
   passed_rules_count: number;
   violations: RuleViolationFinding[];
   warnings: RuleViolationFinding[];
-  /** Informational notes — not enforceable violations on e-commerce listings */
+  /** Informational notes  -  not enforceable violations on e-commerce listings */
   info_checks: RuleViolationFinding[];
   passed_rules: string[];
   estimated_penalty_inr: number;
@@ -177,17 +177,17 @@ class CrawlerService {
    *   - Rule 6(1)(g): Consumer Care (email + phone)         → HIGH if absent
    *
    * Explicitly EXEMPT from e-commerce display (Rule 6(10)):
-   *   - Rule 6(1)(e): Mfg/Packing Date — NOT required on digital listing
+   *   - Rule 6(1)(e): Mfg/Packing Date  -  NOT required on digital listing
    *   - Rule 5 USP:   Unit Sale Price is a physical label obligation only
    */
   public auditProduct(product: CrawlerProductData): ProductAuditResult {
     const violations: RuleViolationFinding[] = [];
     const warnings: RuleViolationFinding[] = [];
-    const info_checks: RuleViolationFinding[] = []; // Informational only — not enforceable on e-commerce
+    const info_checks: RuleViolationFinding[] = []; // Informational only  -  not enforceable on e-commerce
     const passed_rules: string[] = [];
     let compounding_fine_inr = 0.0;
 
-    // ── Check 1: Rule 6(1)(a) — Manufacturer / Packer Identity & Address ──────
+    // ── Check 1: Rule 6(1)(a)  -  Manufacturer / Packer Identity & Address ──────
     // Name + address is mandatory; however exact PIN-code-level address is a
     // physical label obligation. E-commerce requires at minimum name + city/state.
     const mfg = (product.manufacturer || '').trim();
@@ -204,7 +204,7 @@ class CrawlerService {
       });
       compounding_fine_inr += 25000.0;
     } else if (mfg.length < 10) {
-      // Name present but very short — likely a truncation
+      // Name present but very short  -  likely a truncation
       warnings.push({
         rule_code: 'RULE-6-1-A-NAME',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
@@ -217,7 +217,7 @@ class CrawlerService {
       });
       compounding_fine_inr += 10000.0;
     } else if (!/\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6}|pvt|ltd|limited|india|mumbai|delhi|bengaluru|chennai|hyderabad|pune|kolkata)\b/i.test(mfg)) {
-      // Name present but no address context at all — LOW informational note only
+      // Name present but no address context at all  -  LOW informational note only
       // (Full PIN-level address is a physical label obligation, not strictly enforceable on digital listings)
       info_checks.push({
         rule_code: 'RULE-6-1-A-ADDR',
@@ -233,7 +233,7 @@ class CrawlerService {
       passed_rules.push('Rule 6(1)(a): Manufacturer name & address present');
     }
 
-    // ── Check 2: Rule 6(1)(b) & Rule 6(10) — Country of Origin ───────────────
+    // ── Check 2: Rule 6(1)(b) & Rule 6(10)  -  Country of Origin ───────────────
     const origin = (product.country_of_origin || '').trim();
     if (!origin) {
       violations.push({
@@ -251,7 +251,7 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(b): Country of Origin declared (${origin})`);
     }
 
-    // ── Check 3: Rule 6(1)(d) & Rule 11/12 — Net Quantity in Metric Units ─────
+    // ── Check 3: Rule 6(1)(d) & Rule 11/12  -  Net Quantity in Metric Units ─────
     const net_qty = (product.net_weight || '').trim();
     if (!net_qty) {
       violations.push({
@@ -281,7 +281,7 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(d): Net quantity verified (${net_qty})`);
     }
 
-    // ── Check 4: Rule 6(1)(e) — Mfg / Packing Date ────────────────────────────
+    // ── Check 4: Rule 6(1)(e)  -  Mfg / Packing Date ────────────────────────────
     // IMPORTANT: Rule 6(10) EXPLICITLY EXEMPTS the month & year of manufacture/packing
     // from mandatory online display requirements. It is required only on the physical label.
     // Flagging its absence as a violation on e-commerce listings is legally INCORRECT.
@@ -290,7 +290,7 @@ class CrawlerService {
       info_checks.push({
         rule_code: 'RULE-6-1-E-DATE',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(e) [Physical Label Only — Exempt Under Rule 6(10)]',
+        section: 'Rule 6(1)(e) [Physical Label Only  -  Exempt Under Rule 6(10)]',
         title: 'Mfg/Packing Date Not Shown on Listing (Exempt from E-Commerce Display)',
         severity: 'LOW',
         evidence: '(Not present on e-commerce listing)',
@@ -298,10 +298,10 @@ class CrawlerService {
         fine_inr: 0.0,
       });
     } else {
-      passed_rules.push(`Rule 6(1)(e): Mfg/packing date visible on listing (${mfg_date}) — Exceeds e-commerce minimum requirement`);
+      passed_rules.push(`Rule 6(1)(e): Mfg/packing date visible on listing (${mfg_date})  -  Exceeds e-commerce minimum requirement`);
     }
 
-    // ── Check 5: Rule 6(1)(f) — MRP Declaration ───────────────────────────────
+    // ── Check 5: Rule 6(1)(f)  -  MRP Declaration ───────────────────────────────
     const mrp = product.mrp || 0.0;
     if (mrp <= 0) {
       violations.push({
@@ -319,7 +319,7 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(f): Valid MRP declared (₹${mrp})`);
     }
 
-    // ── Check 6: Rule 5 — Unit Sale Price (USP) ───────────────────────────────
+    // ── Check 6: Rule 5  -  Unit Sale Price (USP) ───────────────────────────────
     // IMPORTANT: USP is a PHYSICAL LABEL obligation under Rule 5.
     // It is NOT a mandatory e-commerce listing requirement under Rule 6(10).
     // Treating its absence on an online listing as a violation is legally INCORRECT.
@@ -328,7 +328,7 @@ class CrawlerService {
       info_checks.push({
         rule_code: 'RULE-5-USP',
         act: 'Legal Metrology (Packaged Commodities) Amendment Rules, 2021 [G.S.R. 779(E)]',
-        section: 'Rule 5 [Physical Label — Best Practice for Online]',
+        section: 'Rule 5 [Physical Label  -  Best Practice for Online]',
         title: 'Unit Sale Price (USP) Not Displayed on Listing',
         severity: 'LOW',
         evidence: '(Unit sale price per g/kg/ml not visible on e-commerce listing)',
@@ -336,10 +336,10 @@ class CrawlerService {
         fine_inr: 0.0,
       });
     } else {
-      passed_rules.push(`Rule 5: Unit Sale Price displayed on listing (${usp}) — Above minimum e-commerce requirement`);
+      passed_rules.push(`Rule 5: Unit Sale Price displayed on listing (${usp})  -  Above minimum e-commerce requirement`);
     }
 
-    // ── Check 7: Rule 6(1)(g) — Consumer Care Details ─────────────────────────
+    // ── Check 7: Rule 6(1)(g)  -  Consumer Care Details ─────────────────────────
     const care = (product.customer_care || '').trim();
     if (!care) {
       violations.push({
@@ -370,7 +370,7 @@ class CrawlerService {
     }
 
     // ── Determine status & score ───────────────────────────────────────────────
-    // info_checks (mfg date, USP) do NOT affect score — they are legally exempt.
+    // info_checks (mfg date, USP) do NOT affect score  -  they are legally exempt.
     const failed_count = violations.length;
     const warning_count = warnings.length;
     let status: 'compliant' | 'non-compliant' | 'under-review';
@@ -387,7 +387,7 @@ class CrawlerService {
       score = Math.max(15, 100 - failed_count * 25 - warning_count * 8);
     }
 
-    // Draft statutory notice — only for genuine e-commerce violations
+    // Draft statutory notice  -  only for genuine e-commerce violations
     let draft_notice: DraftStatutoryNotice | null = null;
     if (status === 'non-compliant') {
       const case_no = `LM-S36-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
@@ -620,7 +620,7 @@ class CrawlerService {
         this.addLog('INFO', `[Provenance] Live fields parsed from Jina content for [${item.sku}]`);
       } else {
         method = 'fallback_catalog';
-        this.addLog('INFO', `[Provenance] Audit will use catalog benchmark for [${item.sku}] — live scrape unavailable`);
+        this.addLog('INFO', `[Provenance] Audit will use catalog benchmark for [${item.sku}]  -  live scrape unavailable`);
       }
 
       const audit = this.auditProduct(productForAudit);

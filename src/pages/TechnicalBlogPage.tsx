@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
@@ -156,7 +156,7 @@ export const TechnicalBlogPage: React.FC = () => {
       <div className="gdoc-topbar">
         <div className="gdoc-file-icon"><FileText size={25} strokeWidth={1.7} /></div>
         <div className="gdoc-title-wrap">
-          <input aria-label="Document title" defaultValue="SatyaDrishti — Blog" />
+          <input aria-label="Document title" defaultValue="SatyaDrishti  -  Blog" />
           <div className="gdoc-file-meta"><span>Technical documentation</span><span>Updated October 2026</span></div>
         </div>
         <div className="gdoc-top-actions">
@@ -209,11 +209,11 @@ export const TechnicalBlogPage: React.FC = () => {
         <div className="blog-hero-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="blog-hero-copy max-w-4xl space-y-5">
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-              SatyaDrishti — <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">The Beginning</span>
+              SatyaDrishti  -  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-400">The Beginning</span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              An inside look into how our team engineered an autonomous compliance checking system for packaged commodities under the <strong>Legal Metrology Act, 2009</strong> and the <strong>Legal Metrology (Packaged Commodities) Rules, 2011</strong> — combining Computer Vision (CV), multi-pass OCR, Multimodal Vision-Language Models (VLMs), Named Entity Recognition (NER), font size &amp; readability analysis (Rule 7 &amp; 9), zero-hallucination deterministic rule engines, digital PDF inspection reports, and scalable GIS enforcement intelligence.
+              An inside look into how our team engineered an autonomous compliance checking system for packaged commodities under the <strong>Legal Metrology Act, 2009</strong> and the <strong>Legal Metrology (Packaged Commodities) Rules, 2011</strong>  -  combining Computer Vision (CV), multi-pass OCR, Multimodal Vision-Language Models (VLMs), Named Entity Recognition (NER), font size &amp; readability analysis (Rule 7 &amp; 9), zero-hallucination deterministic rule engines, digital PDF inspection reports, and scalable GIS enforcement intelligence.
             </p>
 
           </div>
@@ -268,7 +268,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   01
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Inspiration — The Hidden Compliance Challenge
+                  Inspiration  -  The Hidden Compliance Challenge
                 </h2>
               </div>
 
@@ -345,7 +345,7 @@ export const TechnicalBlogPage: React.FC = () => {
                 </div>
 
                 <p className="text-lg font-medium text-slate-900 dark:text-white italic">
-                  Developing an automated software system capable of scanning packaged commodity labels, product images, and product listings to detect, extract, and validate mandatory declarations—and instantly flag violations—became our defining problem statement.
+                  Developing an automated software system capable of scanning packaged commodity labels, product images, and product listings to detect, extract, and validate mandatory declarations - and instantly flag violations - became our defining problem statement.
                 </p>
               </div>
 
@@ -439,7 +439,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   03
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Our First Mistake — Relying Solely on End-to-End Vision Models
+                  Our First Mistake  -  Relying Solely on End-to-End Vision Models
                 </h2>
               </div>
 
@@ -472,7 +472,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   04
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  The Decision That Changed Everything — Deterministic Rules vs AI
+                  The Decision That Changed Everything  -  Deterministic Rules vs AI
                 </h2>
               </div>
 
@@ -546,7 +546,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   05
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  The Question That Forced Us To Think Differently — The Statutory RAG Knowledge Layer
+                  The Question That Forced Us To Think Differently  -  The Statutory RAG Knowledge Layer
                 </h2>
               </div>
 
@@ -604,7 +604,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   06
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Font Size &amp; Readability Analysis — Rule 7 &amp; Rule 9 Geometric Normalization
+                  Font Size &amp; Readability Analysis  -  Rule 7 &amp; Rule 9 Geometric Normalization
                 </h2>
               </div>
 
@@ -617,7 +617,7 @@ export const TechnicalBlogPage: React.FC = () => {
                 </div>
 
                 <p>
-                  Raw pixel height is meaningless without physical scale reference. Two different photos of the same package—one captured close-up and one from two meters away—yield wildly different pixel dimensions.
+                  Raw pixel height is meaningless without physical scale reference. Two different photos of the same package - one captured close-up and one from two meters away - yield wildly different pixel dimensions.
                 </p>
 
                 <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
@@ -692,7 +692,7 @@ export const TechnicalBlogPage: React.FC = () => {
                   08
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Attachment of Photographs &amp; Supporting Evidence — Citizen to Officer Synergy
+                  Attachment of Photographs &amp; Supporting Evidence  -  Citizen to Officer Synergy
                 </h2>
               </div>
 

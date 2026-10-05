@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -66,7 +66,7 @@ export const DashboardLayout: React.FC = () => {
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* Main Content Area — Responsive Left Inset (0 on mobile, 64/18 on lg+) */}
+      {/* Main Content Area  -  Responsive Left Inset (0 on mobile, 64/18 on lg+) */}
       <div
         className={`transition-all duration-300 flex flex-col min-h-screen relative z-10 pl-0 ${
           isSidebarCollapsed ? 'lg:pl-18' : 'lg:pl-64'

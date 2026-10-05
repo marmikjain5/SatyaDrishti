@@ -1,22 +1,22 @@
-/**
+﻿/**
  * Gazette-Verified Statutory Rule Definitions
  *
  * Replaces previous mock data with real statutory rules sourced from:
  *
  *  ┌─────────────────────────────────────────────────────────────────────────────────┐
- *  │  BLOCK A — Legal Metrology (Packaged Commodities) Rules, 2011                   │
+ *  │  BLOCK A  -  Legal Metrology (Packaged Commodities) Rules, 2011                   │
  *  │            Gazette: G.S.R. 882(E), Ministry of Consumer Affairs, 24 Feb 2011    │
  *  │            Amended by: G.S.R. 779(E) dated 28 Oct 2022 (Unit Sale Price)       │
  *  │            Amended by: G.S.R. 1537(E) dated 13 Dec 2017 (Country of Origin)    │
  *  ├─────────────────────────────────────────────────────────────────────────────────┤
- *  │  BLOCK B — Legal Metrology E-Commerce Declarations & BIS Standards              │
+ *  │  BLOCK B  -  Legal Metrology E-Commerce Declarations & BIS Standards              │
  *  │            Gazette: G.S.R. 629(E), Ministry of Consumer Affairs                 │
  *  └─────────────────────────────────────────────────────────────────────────────────┘
  *
  *  Architecture note:
  *  This file feeds the FRONTEND rule engine (ruleEngineService.ts).
  *  The BACKEND PostgreSQL regulatory_rules table is the separate production store.
- *  The ragKnowledgeService.ts is the live-demo ingestion layer — all three coexist.
+ *  The ragKnowledgeService.ts is the live-demo ingestion layer  -  all three coexist.
  *
  *  Entry point: validateProduct(productData) in ruleEngineService.ts
  */
@@ -34,13 +34,13 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1A',
     ruleCode: 'PCR-2011-R6(1)(a)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(a) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(a)  -  G.S.R. 882(E)',
     fieldKey: 'productName',
     title: 'Mandatory Generic/Common Name of Commodity',
     description:
       'Every package shall bear the generic or common name of the commodity contained therein. ' +
       'The name must be prominently displayed on the Principal Display Panel (PDP) in legible characters. ' +
-      'Brand name alone is insufficient — the generic/common commodity name (e.g., "Whole Wheat Flour", ' +
+      'Brand name alone is insufficient  -  the generic/common commodity name (e.g., "Whole Wheat Flour", ' +
       '"Whey Protein Concentrate") must be declared.',
     severity: 'critical',
     isMandatory: true,
@@ -60,9 +60,9 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1B',
     ruleCode: 'PCR-2011-R6(1)(b)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(b) & Rule 11 — G.S.R. 882(E)',
+    section: 'Rule 6(1)(b) & Rule 11  -  G.S.R. 882(E)',
     fieldKey: 'netQuantity',
-    title: 'Net Quantity in Standard Metric Units — Maximum Permissible Error (MPE)',
+    title: 'Net Quantity in Standard Metric Units  -  Maximum Permissible Error (MPE)',
     description:
       'The net quantity of commodity must be declared in standard metric units: weight (g or kg), ' +
       'volume (ml or l), or numerical count. Non-metric units (oz, lbs, fluid oz, pounds) are ' +
@@ -77,7 +77,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     penaltyRange: { minFine: 25000, maxFine: 100000, imprisonmentMonths: 6 },
     recommendations: [
       'Declare net quantity in standard metric units only: g, kg, ml, l, or count.',
-      'Imperial units (oz, lbs, fl oz) are illegal — remove them entirely.',
+      'Imperial units (oz, lbs, fl oz) are illegal  -  remove them entirely.',
       'Ensure actual packed quantity does not deviate beyond the Schedule I MPE tolerance.',
     ],
   },
@@ -87,14 +87,14 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1C',
     ruleCode: 'PCR-2011-R6(1)(c)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(c) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(c)  -  G.S.R. 882(E)',
     fieldKey: 'mrp',
-    title: 'Maximum Retail Price (MRP) — Inclusive of All Taxes',
+    title: 'Maximum Retail Price (MRP)  -  Inclusive of All Taxes',
     description:
       'The retail sale price must be declared as "Maximum Retail Price" or "MRP" inclusive of all ' +
       'taxes (including local taxes) in Indian Rupees. Required format: ' +
       '"MRP ₹ xx.xx (inclusive of all taxes)" or "Max. Retail Price Rs. xx.xx (incl. of all taxes)". ' +
-      'Rule 18(2) prohibits selling above the declared MRP — a cognizable offence.',
+      'Rule 18(2) prohibits selling above the declared MRP  -  a cognizable offence.',
     severity: 'critical',
     isMandatory: true,
     isConditional: false,
@@ -108,12 +108,12 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     ],
   },
 
-  // ─── 4. Unit Sale Price (USP) — G.S.R. 779(E) 2022 ─────────────────────
+  // ─── 4. Unit Sale Price (USP)  -  G.S.R. 779(E) 2022 ─────────────────────
   {
     id: 'PCR-R6-1AA',
     ruleCode: 'PCR-2022-R6(1)(aa)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011 (as amended by G.S.R. 779(E), 2022)',
-    section: 'Rule 6(1)(aa) — Inserted by G.S.R. 779(E) dated 28 Oct 2022, effective 1 Jan 2023',
+    section: 'Rule 6(1)(aa)  -  Inserted by G.S.R. 779(E) dated 28 Oct 2022, effective 1 Jan 2023',
     fieldKey: 'unitSalePrice',
     title: 'Mandatory Unit Sale Price (USP) Per g or Per ml',
     description:
@@ -142,13 +142,13 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1D',
     ruleCode: 'PCR-2011-R6(1)(d)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(d) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(d)  -  G.S.R. 882(E)',
     fieldKey: 'address',
     title: 'Manufacturer / Packer / Importer Full Address',
     description:
       'Full name and complete address of the manufacturer or packer (or importer for imported goods) ' +
       'must be declared. Address must include: street/plot number, city or town, State, ' +
-      'and 6-digit PIN Code. Registered office address alone is insufficient — ' +
+      'and 6-digit PIN Code. Registered office address alone is insufficient  -  ' +
       'the manufacturing premises address is required. For importers: Indian address of importer is mandatory additionally.',
     severity: 'high',
     isMandatory: true,
@@ -158,7 +158,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     penaltyRange: { minFine: 25000, maxFine: 50000 },
     recommendations: [
       'Print full manufacturing/packing premises address including 6-digit PIN code.',
-      'Registered office address is insufficient — use the actual manufacturing address.',
+      'Registered office address is insufficient  -  use the actual manufacturing address.',
       'For imported goods, include both the importer\'s Indian address and the manufacturer\'s foreign address.',
     ],
   },
@@ -168,7 +168,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1E',
     ruleCode: 'PCR-2011-R6(1)(e)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(e) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(e)  -  G.S.R. 882(E)',
     fieldKey: 'manufacturingDate',
     title: 'Date of Manufacture / Packing / Import',
     description:
@@ -194,7 +194,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1F',
     ruleCode: 'PCR-2011-R6(1)(f)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(f) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(f)  -  G.S.R. 882(E)',
     fieldKey: 'customerCare',
     title: 'Consumer Care / Grievance Redressal Contact Details',
     description:
@@ -219,7 +219,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1N',
     ruleCode: 'PCR-2017-R6(1)(n)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011 (as amended 2017)',
-    section: 'Rule 6(1)(n) — Inserted by G.S.R. 1537(E) dated 13 Dec 2017, effective 1 Jan 2018',
+    section: 'Rule 6(1)(n)  -  Inserted by G.S.R. 1537(E) dated 13 Dec 2017, effective 1 Jan 2018',
     fieldKey: 'countryOfOrigin',
     title: 'Country of Origin / Manufacture Declaration',
     description:
@@ -237,17 +237,17 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     penaltyRange: { minFine: 50000, maxFine: 200000, imprisonmentMonths: 12 },
     recommendations: [
       'Print "Country of Origin: INDIA" or "Made in India" prominently on the PDP.',
-      'For imported goods: must match the actual country of manufacture — obfuscation is a criminal offence.',
+      'For imported goods: must match the actual country of manufacture  -  obfuscation is a criminal offence.',
       'For multi-country manufacturing, list all countries involved.',
     ],
   },
 
-  // ─── 9. PDP Font Height — Rule 7 Table I & II ─────────────────────────
+  // ─── 9. PDP Font Height  -  Rule 7 Table I & II ─────────────────────────
   {
     id: 'PCR-R7-FONT',
     ruleCode: 'PCR-2011-R7-TableI-II',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 7 — Table I (weight/volume) & Table II (length/area/count) — G.S.R. 882(E)',
+    section: 'Rule 7  -  Table I (weight/volume) & Table II (length/area/count)  -  G.S.R. 882(E)',
     fieldKey: 'netQuantity',
     title: 'Minimum Numeral/Letter Height on Principal Display Panel',
     description:
@@ -269,12 +269,12 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     ],
   },
 
-  // ─── 10. Dual MRP Prohibition — Rule 18 ────────────────────────────────
+  // ─── 10. Dual MRP Prohibition  -  Rule 18 ────────────────────────────────
   {
     id: 'PCR-R18-DUALMRP',
     ruleCode: 'PCR-2011-R18(1)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 18(1) & 18(2) — G.S.R. 882(E) | Penalty: Section 36(1), LM Act 2009',
+    section: 'Rule 18(1) & 18(2)  -  G.S.R. 882(E) | Penalty: Section 36(1), LM Act 2009',
     fieldKey: 'mrp',
     title: 'Prohibition of Dual MRP & Overcharging Above Declared MRP',
     description:
@@ -289,7 +289,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     validatorKey: 'validateDualMRP',
     penaltyRange: { minFine: 2000, maxFine: 50000 },
     recommendations: [
-      'Declare only one MRP on any package — no stickers over old prices permitted.',
+      'Declare only one MRP on any package  -  no stickers over old prices permitted.',
       'Do not sell at a price exceeding the printed MRP.',
       'For season-end discounts, issue separately labelled batch with updated MRP.',
     ],
@@ -300,7 +300,7 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     id: 'PCR-R6-1G',
     ruleCode: 'PCR-2011-R6(1)(g)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(g) — G.S.R. 882(E)',
+    section: 'Rule 6(1)(g)  -  G.S.R. 882(E)',
     fieldKey: 'batchNumber',
     title: 'Batch / Lot Number for Traceability',
     description:
@@ -320,12 +320,12 @@ export const LEGAL_METROLOGY_RULES: LegalMetrologyRule[] = [
     ],
   },
 
-  // ─── 13. Importer Details (Conditional — Imported Goods Only) ───────────
+  // ─── 13. Importer Details (Conditional  -  Imported Goods Only) ───────────
   {
     id: 'PCR-R6-1D-IMP',
     ruleCode: 'PCR-2011-R6(1)(d)-IMP',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(d) — Imported Packages — G.S.R. 882(E)',
+    section: 'Rule 6(1)(d)  -  Imported Packages  -  G.S.R. 882(E)',
     fieldKey: 'importer',
     title: 'Importer Name & Indian Address (Conditional)',
     description:

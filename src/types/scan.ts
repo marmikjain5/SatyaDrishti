@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Legal Metrology Extraction Engine Types (PS 26034)
  *
  * Comprehensive data schema for Statutory Packaged Commodity Declarations under:
@@ -201,9 +201,9 @@ export type OCRProgressCallback = (progress: number, status: string) => void;
 /**
  * Result of comparing the current scan's batch number against all prior session scans.
  *
- * - `verified`          — Same batch number found in history with matching expiry date.
- * - `fraud_alert`       — Same batch number found with a DIFFERENT expiry date → High Risk.
- * - `no_previous_record`— First time this batch number has been scanned in this session.
+ * - `verified`           -  Same batch number found in history with matching expiry date.
+ * - `fraud_alert`        -  Same batch number found with a DIFFERENT expiry date → High Risk.
+ * - `no_previous_record` -  First time this batch number has been scanned in this session.
  */
 export interface BatchVerificationResult {
   batchNumber: string;
@@ -221,9 +221,9 @@ export interface BatchVerificationResult {
 /**
  * Result of comparing the scanned MRP against the central Product Directory entry.
  *
- * - `verified`  — Scanned MRP matches (within ±2 tolerance) the Product Directory MRP.
- * - `mismatch`  — MRP values differ → Possible Dual MRP fraud.
- * - `not_found` — No matching product found in the directory; comparison not possible.
+ * - `verified`   -  Scanned MRP matches (within ±2 tolerance) the Product Directory MRP.
+ * - `mismatch`   -  MRP values differ → Possible Dual MRP fraud.
+ * - `not_found`  -  No matching product found in the directory; comparison not possible.
  */
 export interface MRPVerificationResult {
   status: 'verified' | 'mismatch' | 'not_found';

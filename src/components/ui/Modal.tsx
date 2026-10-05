@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -22,7 +22,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = '2xl',
   className,
-  // theme prop is kept for API compatibility but no longer drives styling —
+  // theme prop is kept for API compatibility but no longer drives styling  - 
   // the Modal now follows the system dark class on <html> via Tailwind `dark:` variants.
   theme: _theme,
 }) => {

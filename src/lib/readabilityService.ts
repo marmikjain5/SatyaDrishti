@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SatyaDrishti Readability & Font Size Analysis Engine (Feature 4)
  *
  * Production-ready service for:
@@ -154,7 +154,7 @@ const STATUTORY_THRESHOLDS: Record<DeclarationFieldKey, StatutoryThreshold> = {
   unitSalePrice: {
     minPt: 4.5,
     minMm: 1.5,
-    statutoryRule: 'Legal Metrology Rule 6(1)(aa) [G.S.R. 779(E)] — USP font height must be ≥50% of MRP font height',
+    statutoryRule: 'Legal Metrology Rule 6(1)(aa) [G.S.R. 779(E)]  -  USP font height must be ≥50% of MRP font height',
     category: 'statutory_declaration',
   },
 };
@@ -348,7 +348,7 @@ function estimateFontSizeMetrics(
     calibrationMethod: calibration?.calibrationSourceLabel || calibration?.sourceLabel || calibration?.method,
     formatted: measurementStatus === 'measured'
       ? `${estimatedPt.toFixed(1)} pt (${estimatedMm.toFixed(1)} mm)`
-      : 'Unavailable — calibrated scale required',
+      : 'Unavailable  -  calibrated scale required',
   };
 }
 

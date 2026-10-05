@@ -1,5 +1,5 @@
 ﻿/**
- * ShopSearchInput — Google Maps Places Autocomplete (Mock)
+ * ShopSearchInput  -  Google Maps Places Autocomplete (Mock)
  *
  * This component simulates the Google Maps Places Autocomplete API using
  * a curated set of Indian retail stores for demo purposes.
@@ -216,7 +216,7 @@ export const ShopSearchInput: React.FC<ShopSearchInputProps> = ({ value, onChang
           <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
             <Search className="h-3 w-3 text-slate-400" />
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              {suggestions.length} shop{suggestions.length !== 1 ? "s" : ""} found — powered by Google Maps Places
+              {suggestions.length} shop{suggestions.length !== 1 ? "s" : ""} found  -  powered by Google Maps Places
             </span>
           </div>
           {suggestions.map((shop, idx) => (
@@ -247,7 +247,7 @@ export const ShopSearchInput: React.FC<ShopSearchInputProps> = ({ value, onChang
           ))}
           <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800">
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-              Demo mode — showing sample data. Google Maps Places API active in production.
+              Demo mode  -  showing sample data. Google Maps Places API active in production.
             </p>
           </div>
         </div>

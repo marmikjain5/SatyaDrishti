@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import loopVideo from '../ui/loop.mp4';
 
@@ -106,7 +106,7 @@ export const HeroSection: React.FC = () => {
                   Compliance Checking System for Legal Metrology (Packaged Commodities) Rules, 2011.
                 </p>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  Automated detection, extraction, and validation of mandatory declarations via Computer Vision &amp; OCR — with font size and readability analysis for enforcement officials across India.
+                  Automated detection, extraction, and validation of mandatory declarations via Computer Vision &amp; OCR  -  with font size and readability analysis for enforcement officials across India.
                 </p>
               </div>
             </motion.div>

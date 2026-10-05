@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Historical Batch Verification & Dual MRP Detection Service
  *
  * Two pure, side-effect-free verification functions consumed by scanStore
@@ -6,8 +6,8 @@
  * all comparisons are performed against already-available in-memory state.
  *
  * Functions:
- *   verifyBatch  — Checks batch number consistency across scan history.
- *   verifyMRP    — Checks scanned MRP against the Product Directory.
+ *   verifyBatch   -  Checks batch number consistency across scan history.
+ *   verifyMRP     -  Checks scanned MRP against the Product Directory.
  */
 
 import type { ScanRecord, BatchVerificationResult, MRPVerificationResult } from '../types/scan';
@@ -41,7 +41,7 @@ function normaliseDate(raw: string): string {
  * @param batchNumber     Batch number extracted from the current scan.
  * @param expiryDate      Expiry date extracted from the current scan.
  * @param allScans        Full scans array from scanStore (includes the current scan).
- * @returns               A `BatchVerificationResult` — never throws.
+ * @returns               A `BatchVerificationResult`  -  never throws.
  */
 export function verifyBatch(
   currentScanId: string,
@@ -57,7 +57,7 @@ export function verifyBatch(
     return {
       batchNumber: cleanBatch || '(not detected)',
       status: 'no_previous_record',
-      message: 'Batch number was not detected in the scan — no historical comparison possible.',
+      message: 'Batch number was not detected in the scan  -  no historical comparison possible.',
     };
   }
 
@@ -94,7 +94,7 @@ export function verifyBatch(
       previousScanId: match.id,
       previousExpiryDate: prevExpiry,
       currentExpiryDate: cleanExpiry,
-      message: `Batch number "${cleanBatch}" is consistent — expiry date matches the previously scanned record.`,
+      message: `Batch number "${cleanBatch}" is consistent  -  expiry date matches the previously scanned record.`,
     };
   }
 
@@ -105,7 +105,7 @@ export function verifyBatch(
     previousScanId: match.id,
     previousExpiryDate: prevExpiry || '(not recorded)',
     currentExpiryDate: cleanExpiry || '(not detected)',
-    message: `Possible Dual Expiry Fraud Detected — Same batch number "${cleanBatch}" found with different expiry dates. This may indicate label tampering or counterfeit packaging.`,
+    message: `Possible Dual Expiry Fraud Detected  -  Same batch number "${cleanBatch}" found with different expiry dates. This may indicate label tampering or counterfeit packaging.`,
   };
 }
 
@@ -162,7 +162,7 @@ const MRP_TOLERANCE = 2;
  * @param scannedMRPRaw    Raw MRP string from OCR (e.g. "₹ 240").
  * @param scannedProductName  Product name string from OCR.
  * @param products         Full products array from complianceStore.
- * @returns                An `MRPVerificationResult` — never throws.
+ * @returns                An `MRPVerificationResult`  -  never throws.
  */
 export function verifyMRP(
   scannedMRPRaw: string,
@@ -175,7 +175,7 @@ export function verifyMRP(
     return {
       status: 'not_found',
       scannedMRP: 0,
-      message: 'MRP could not be extracted from the scan — Product Directory comparison skipped.',
+      message: 'MRP could not be extracted from the scan  -  Product Directory comparison skipped.',
     };
   }
 
@@ -183,7 +183,7 @@ export function verifyMRP(
     return {
       status: 'not_found',
       scannedMRP,
-      message: 'Product name not detected — unable to match against Product Directory.',
+      message: 'Product name not detected  -  unable to match against Product Directory.',
     };
   }
 
@@ -220,7 +220,7 @@ export function verifyMRP(
       directoryMRP,
       difference,
       matchedProductTitle: bestProduct.title,
-      message: `MRP verified — scanned ₹${scannedMRP} matches Product Directory MRP ₹${directoryMRP} for "${bestProduct.title}".`,
+      message: `MRP verified  -  scanned ₹${scannedMRP} matches Product Directory MRP ₹${directoryMRP} for "${bestProduct.title}".`,
     };
   }
 
@@ -230,6 +230,6 @@ export function verifyMRP(
     directoryMRP,
     difference,
     matchedProductTitle: bestProduct.title,
-    message: `Possible Dual MRP Detected — Scanned MRP ₹${scannedMRP} differs from Product Directory MRP ₹${directoryMRP} (difference: ₹${difference.toFixed(2)}) for "${bestProduct.title}".`,
+    message: `Possible Dual MRP Detected  -  Scanned MRP ₹${scannedMRP} differs from Product Directory MRP ₹${directoryMRP} (difference: ₹${difference.toFixed(2)}) for "${bestProduct.title}".`,
   };
 }

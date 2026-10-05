@@ -1,5 +1,5 @@
-/**
- * Rule7MeasurementPanel — Interactive Rule 7 Letter Height Measurement UI
+﻿/**
+ * Rule7MeasurementPanel  -  Interactive Rule 7 Letter Height Measurement UI
  *
  * Features:
  * 1. Coin / reference object marking on the scanned image (draw a bounding box)
@@ -118,14 +118,20 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
 
   // ── Image + calibration ─────────────────────────────────────────
 
-  const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } => {
+  const getCanvasCoords = useCallback((e: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    // The canvas is rendered with object-fit: contain. Its CSS box can be
+    // wider/taller than the actual image, so account for the letterboxed
+    // offsets before mapping the pointer back to source-image pixels.
+    const fitScale = Math.min(rect.width / canvas.width, rect.height / canvas.height);
+    const renderedWidth = canvas.width * fitScale;
+    const renderedHeight = canvas.height * fitScale;
+    const offsetX = (rect.width - renderedWidth) / 2;
+    const offsetY = (rect.height - renderedHeight) / 2;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: Math.max(0, Math.min(canvas.width, (e.clientX - rect.left - offsetX) / fitScale)),
+      y: Math.max(0, Math.min(canvas.height, (e.clientY - rect.top - offsetY) / fitScale)),
     };
   }, []);
 
@@ -199,8 +205,9 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
 
   // ── Canvas mouse events ─────────────────────────────────────────
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (scanOptions.calibrationMethod !== 'reference_object') return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     const pos = getCanvasCoords(e);
     setIsDrawing(true);
     setDrawStart(pos);
@@ -210,7 +217,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     setError(null);
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !drawStart) return;
     const pos = getCanvasCoords(e);
     setDrawRect({
@@ -221,7 +228,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     });
   };
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !drawStart) return;
     setIsDrawing(false);
     const pos = getCanvasCoords(e);
@@ -277,9 +284,9 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     setIsDetectingReference(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 2500);
+      const timer = window.setTimeout(() => controller.abort(), 15000);
       const response = await fetch(`${apiUrl}/api/v1/detect-reference-object`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,7 +307,11 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
       setCalibration(cal);
       runMeasurement(cal);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reference detection timed out. Mark the object manually.');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Reference detection timed out after 15 seconds. Mark the object manually or try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Reference detection failed. Mark the object manually.');
+      }
     } finally {
       setIsDetectingReference(false);
     }
@@ -335,7 +346,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                Rule 7 — Letter Height Measurement
+                Rule 7  -  Letter Height Measurement
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Legal Metrology (PC) Rules, 2011 · Table-I minimum font height compliance
@@ -360,7 +371,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
           <div className="bg-slate-50 dark:bg-slate-800/60 px-3 py-2 flex items-center gap-1.5">
             <Scale className="h-3.5 w-3.5 text-slate-500" />
             <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
-              Table-I — Minimum Letter Heights
+              Table-I  -  Minimum Letter Heights
             </span>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -397,7 +408,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
               <div>
                 <p className="text-xs font-bold text-indigo-800 dark:text-indigo-200">
                   {calibration
-                    ? `Calibrated — ${refDims.label}`
+                    ? `Calibrated  -  ${refDims.label}`
                     : `Draw a box around your ${refDims.label}`}
                 </p>
                 {calibration ? (
@@ -431,14 +442,15 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative">
             <canvas
               ref={canvasRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
               className={cn(
                 'w-full block',
                 needsCoinMarking ? 'cursor-crosshair' : 'cursor-default'
               )}
-              style={{ maxHeight: '320px', objectFit: 'contain' }}
+              style={{ height: '320px', maxHeight: '320px', objectFit: 'contain', touchAction: 'none' }}
             />
             {needsCoinMarking && (
               <div className="absolute inset-0 flex items-end justify-center pb-3 pointer-events-none">
@@ -463,7 +475,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
             <div className="flex items-center gap-2">
               <OverallIcon className={cn('h-4.5 w-4.5', overallCfg.text)} />
               <span className={cn('text-sm font-black tracking-wide', overallCfg.text)}>
-                Rule 7 — {overallCfg.label}
+                Rule 7  -  {overallCfg.label}
               </span>
               {result.tableBand && (
                 <span className="ml-auto text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">
@@ -486,7 +498,7 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
             <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 px-3 py-2">
               <div className="text-slate-400 uppercase font-bold tracking-wide text-[10px]">Net Quantity (extracted)</div>
               <div className="font-mono font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                {result.netQuantityRaw || '—'}
+                {result.netQuantityRaw || ' - '}
               </div>
               {result.netQuantityGrams && (
                 <div className="text-slate-400 text-[10px] mt-0.5">{result.netQuantityGrams.toLocaleString()} g / ml equivalent</div>

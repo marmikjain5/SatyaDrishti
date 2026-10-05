@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Users,
   Shield,
@@ -121,7 +121,7 @@ const NODE_DETAILS: Record<string, NodeInfo> = {
       { label: 'Notice Period', value: '14 Statutory Days' },
       { label: 'Dispatch Speed', value: '< 2.5s' }
     ],
-    statutoryRef: 'Legal Metrology Act, 2009 — Section 36 & 48'
+    statutoryRef: 'Legal Metrology Act, 2009  -  Section 36 & 48'
   },
   'leaflet-gis': {
     id: 'leaflet-gis',

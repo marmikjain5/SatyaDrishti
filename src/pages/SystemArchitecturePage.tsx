@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Layers,
@@ -109,7 +109,7 @@ export const SystemArchitecturePage: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              Technical documentation describing the software architecture and deployment framework for the <strong>Legal Metrology (Packaged Commodities) Rules, 2011 compliance checking system</strong> — covering the <strong>High-Level Architecture (HLA)</strong> with live dataflow animation, the <strong>Low-Level Architecture (LLA)</strong> with Computer Vision, OCR, and deterministic rule engine execution graphs, and the <strong>Database Schemas &amp; Data Layer</strong>.
+              Technical documentation describing the software architecture and deployment framework for the <strong>Legal Metrology (Packaged Commodities) Rules, 2011 compliance checking system</strong>  -  covering the <strong>High-Level Architecture (HLA)</strong> with live dataflow animation, the <strong>Low-Level Architecture (LLA)</strong> with Computer Vision, OCR, and deterministic rule engine execution graphs, and the <strong>Database Schemas &amp; Data Layer</strong>.
             </p>
           </div>
         </div>

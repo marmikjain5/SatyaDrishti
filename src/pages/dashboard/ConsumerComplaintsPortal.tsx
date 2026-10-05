@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   MessageSquareWarning,
   Search,
@@ -443,7 +443,7 @@ export const ConsumerComplaintsPortal: React.FC = () => {
             </span>
             <Database className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="font-semibold">Live Database Connected</span>
-            <span className="text-[11px] opacity-75 hidden sm:inline">— Supabase PostgreSQL &amp; Persistent Evidence Storage Synced</span>
+            <span className="text-[11px] opacity-75 hidden sm:inline"> -  Supabase PostgreSQL &amp; Persistent Evidence Storage Synced</span>
           </div>
           <button
             type="button"

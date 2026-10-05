@@ -1,12 +1,12 @@
-/**
- * ScanOptionsCard — Pre-scan configuration panel
+﻿/**
+ * ScanOptionsCard  -  Pre-scan configuration panel
  *
  * Lets the officer set the calibration method used for Rule 7 physical measurement.
  *
  * Matches the UI shown in the ClauseCam (26034) demo screenshots.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Ruler,
   Info,
@@ -16,6 +16,8 @@ import {
   XCircle,
   Cpu,
   ScanLine,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import type { ReferenceObjectType } from '../../lib/rule7Measurement';
@@ -36,7 +38,7 @@ const CALIBRATION_OPTIONS: CalibrationOption[] = [
   {
     value: 'none',
     label: 'None (no reference object in frame)',
-    description: 'Rule 7 letter height will be estimated — verdict will be REVIEW_REQUIRED.',
+    description: 'Rule 7 letter height will be estimated  -  verdict will be REVIEW_REQUIRED.',
     icon: XCircle,
   },
   {
@@ -83,8 +85,11 @@ interface ScanOptionsCardProps {
 
 export const ScanOptionsCard: React.FC<ScanOptionsCardProps> = ({ value, onChange, disabled }) => {
   const lidar = getLidarCompatibility();
+  const [isMethodMenuOpen, setIsMethodMenuOpen] = useState(false);
   const set = <K extends keyof ScanOptionsValue>(key: K, val: ScanOptionsValue[K]) =>
     onChange({ ...value, [key]: val });
+  const selectedMethod = CALIBRATION_OPTIONS.find((option) => option.value === value.calibrationMethod) ?? CALIBRATION_OPTIONS[0];
+  const SelectedMethodIcon = selectedMethod.icon;
 
   return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
@@ -108,17 +113,65 @@ export const ScanOptionsCard: React.FC<ScanOptionsCardProps> = ({ value, onChang
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mb-2">
             Defines the real-world scale reference for Rule 7 letter height evaluation.
           </p>
-          <select
-            id="scan-options-calibration-method"
-            disabled={disabled}
-            value={value.calibrationMethod}
-            onChange={(e) => set('calibrationMethod', e.target.value as CalibrationMethod)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 px-3 py-2.5 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {CALIBRATION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <button
+              id="scan-options-calibration-method"
+              type="button"
+              disabled={disabled}
+              aria-haspopup="listbox"
+              aria-expanded={isMethodMenuOpen}
+              onClick={() => setIsMethodMenuOpen((open) => !open)}
+              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-left shadow-xs transition-all hover:border-indigo-300 hover:bg-indigo-50/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/30 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-300">
+                <SelectedMethodIcon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{selectedMethod.label}</span>
+                <span className="mt-0.5 block text-[10px] text-slate-500 dark:text-slate-400">Select the scale reference for measurement</span>
+              </span>
+              <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isMethodMenuOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+            </button>
+
+            {isMethodMenuOpen && !disabled && (
+              <div
+                role="listbox"
+                aria-labelledby="scan-options-calibration-method"
+                className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30"
+              >
+                {CALIBRATION_OPTIONS.map((option) => {
+                  const OptionIcon = option.icon;
+                  const isSelected = option.value === value.calibrationMethod;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        set('calibrationMethod', option.value);
+                        setIsMethodMenuOpen(false);
+                      }}
+                      className={`flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left transition-colors ${
+                        isSelected
+                          ? 'bg-indigo-50 text-indigo-900 dark:bg-indigo-950/70 dark:text-indigo-100'
+                          : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                        <OptionIcon className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[11px] font-semibold leading-snug">{option.label}</span>
+                        <span className="mt-0.5 block text-[10px] leading-snug text-slate-500 dark:text-slate-400">{option.description}</span>
+                      </span>
+                      {isSelected && <Check className="mt-1 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Description hint */}
           {value.calibrationMethod !== 'none' && (

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Legal Metrology Field-Specific Smart Extractors & Statutory Validation Engine
  *
  * Implements dedicated extraction, normalization, and statutory compliance checks
@@ -240,6 +240,31 @@ const MRP_REGEXES: RegExp[] = [
   /\bINR\s*([\d]+(?:[.,]\d{1,2})?)/gi,
 ];
 
+/**
+ * Dot-matrix price panels commonly OCR as a compact pair such as
+ * `550 1.38/ml`, while the MRP/USP labels may be on the preceding line.
+ * Keep the pair parser separate so the total MRP and unit rate do not get
+ * confused with one another.
+ */
+function extractPairedPriceLine(text: string): { mrp: string; usp: string; unit: string } | null {
+  const match = text.match(
+    /(?:^|[^\d])(?:[₹Rs.*#F]+\s*)?(\d{2,6}(?:[.,]\d{1,2})?)\s+(?:[₹Rs.*#F]+\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:per|\/)\s*(g|ml|kg|l|m[l1I|])\b/i
+  );
+  if (!match) return null;
+
+  const mrp = parseFloat(match[1].replace(',', '.'));
+  const usp = parseFloat(match[2].replace(',', '.'));
+  if (!Number.isFinite(mrp) || !Number.isFinite(usp) || mrp < 1 || usp <= 0) return null;
+
+  let unit = match[3].toLowerCase();
+  if (/^m/i.test(unit)) unit = 'ml';
+  return {
+    mrp: mrp % 1 === 0 ? `₹${mrp}.00` : `₹${mrp.toFixed(2)}`,
+    usp: `₹${usp.toFixed(2)} per ${unit}`,
+    unit,
+  };
+}
+
 function extractMRPCandidates(pass: MultiPassOCRData): CandidateResult[] {
   const results: CandidateResult[] = [];
   const lowerFull = pass.text.toLowerCase();
@@ -250,6 +275,23 @@ function extractMRPCandidates(pass: MultiPassOCRData): CandidateResult[] {
     const lineText = line.text;
     const hasLineMRP = /m\.?\s*r\.?\s*p|maximum\s*retail/i.test(lineText);
 
+    // Handle a two-column/dot-matrix stamp where MRP and USP are printed as
+    // `550 1.38/ml` on one line or split across two adjacent OCR lines.
+    const pairedContext = `${lineText} ${pass.lines[idx + 1]?.text || ''} ${pass.lines[idx + 2]?.text || ''}`;
+    const hasAdjacentMRP = /m\.?\s*r\.?\s*p|maximum\s*retail/i.test(
+      `${pass.lines[idx - 1]?.text || ''} ${pass.lines[idx + 1]?.text || ''} ${pass.lines[idx + 2]?.text || ''}`
+    );
+    const pairedPrice = extractPairedPriceLine(pairedContext);
+    if (pairedPrice && (hasLineMRP || hasAdjacentMRP)) {
+      results.push({
+        value: pairedPrice.mrp,
+        rawValue: pairedPrice.mrp,
+        rawMatch: lineText.trim(),
+        score: 0.99,
+        bbox: line.bbox,
+      });
+    }
+
     // Look for prices in line, skipping parts that are clearly unit prices (e.g., /ml, /g, per ml)
     for (const pattern of MRP_REGEXES) {
       pattern.lastIndex = 0;
@@ -258,7 +300,7 @@ function extractMRPCandidates(pass: MultiPassOCRData): CandidateResult[] {
         // Check if this match is immediately followed by /ml, /g, /kg, /l, or per
         const followingText = lineText.substring(match.index + match[0].length, match.index + match[0].length + 15);
         if (/^\s*(?:\/|per)\s*(?:g|ml|kg|l)\b/i.test(followingText)) {
-          // This is a Unit Sale Price (USP), not the total MRP — skip for MRP
+          // This is a Unit Sale Price (USP), not the total MRP  -  skip for MRP
           continue;
         }
 
@@ -351,8 +393,19 @@ const USP_REGEXES: RegExp[] = [
 function extractUSPCandidates(pass: MultiPassOCRData): CandidateResult[] {
   const results: CandidateResult[] = [];
 
-  for (const line of pass.lines) {
+  for (let idx = 0; idx < pass.lines.length; idx++) {
+    const line = pass.lines[idx];
     const lineText = line.text;
+    const pairedPrice = extractPairedPriceLine(`${lineText} ${pass.lines[idx + 1]?.text || ''} ${pass.lines[idx + 2]?.text || ''}`);
+    if (pairedPrice) {
+      results.push({
+        value: pairedPrice.usp,
+        rawValue: pairedPrice.usp,
+        rawMatch: lineText.trim(),
+        score: 0.99,
+        bbox: line.bbox,
+      });
+    }
     const hasUSPKeyword = /usp|unit\s*(?:sale\s*)?price/i.test(lineText);
 
     for (const pattern of USP_REGEXES) {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Legal Metrology OCR Extraction Service Layer
  *
  * Multi-pass pipeline with statutory declaration extraction, bounding box mapping,
@@ -29,7 +29,7 @@ import {
 import { barcodeService } from './barcodeService';
 
 async function checkIsMuesli(imageSource: string | File, dataUrl: string): Promise<boolean> {
-  // Disabled hardcoded demo override — always run real OCR & Vision LLM pipeline
+  // Disabled hardcoded demo override  -  always run real OCR & Vision LLM pipeline
   return false;
 }
 
@@ -363,7 +363,7 @@ class TesseractLegalMetrologyProvider implements OCRProvider {
                 console.log('✅ [SatyaDrishti OCR] Received LLM parsed statutory fields:', Object.keys(llmFields));
                 for (const k of Object.keys(declarations) as DeclarationFieldKey[]) {
                   if (k === 'barcode' && declarations.barcode?.confidence >= 95) {
-                    // Optical barcode verified directly from stripes — do not overwrite with LLM OCR guess
+                    // Optical barcode verified directly from stripes  -  do not overwrite with LLM OCR guess
                     continue;
                   }
                   const llmF = llmFields[k] || (k === 'address' ? llmFields['manufacturerAddress'] : undefined);
@@ -735,7 +735,7 @@ export class HybridVisionBackendProvider implements OCRProvider {
 
           fieldConfidence[key] = conf;
           // Prefer real OCR bounding box; only use a placeholder if none exists.
-          // Mark inferred bounding boxes explicitly — never display as image-grounded evidence.
+          // Mark inferred bounding boxes explicitly  -  never display as image-grounded evidence.
           const realBbox = localDecl?.boundingBox ?? null;
           const isInferredBbox = !realBbox;
           declarations[key] = {

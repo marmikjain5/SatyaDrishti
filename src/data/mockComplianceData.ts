@@ -1,4 +1,4 @@
-import { RegulatoryRule } from '../types/compliance';
+﻿import { RegulatoryRule } from '../types/compliance';
 import {
   ComplianceTrendPoint,
   CategoryRiskMetric,
@@ -78,7 +78,7 @@ export const MOCK_RULES: RegulatoryRule[] = [
     code: 'PCR-2011-R6(1)(a)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
     title: 'Mandatory Generic/Common Name of Commodity',
-    description: 'Every package must bear the generic or common name of the commodity on the PDP. Brand name alone is insufficient — the specific commodity name (e.g., "Whey Protein Concentrate", "Refined Sunflower Oil") is mandatory. [G.S.R. 882(E)]',
+    description: 'Every package must bear the generic or common name of the commodity on the PDP. Brand name alone is insufficient  -  the specific commodity name (e.g., "Whey Protein Concentrate", "Refined Sunflower Oil") is mandatory. [G.S.R. 882(E)]',
     category: 'Packaged Commodities',
     severity: 'critical',
     isActive: true,
@@ -91,7 +91,7 @@ export const MOCK_RULES: RegulatoryRule[] = [
     id: 'RULE-PCR-002',
     code: 'PCR-2011-R6(1)(b)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    title: 'Net Quantity in Metric Units Only — Schedule I Maximum Permissible Error',
+    title: 'Net Quantity in Metric Units Only  -  Schedule I Maximum Permissible Error',
     description: 'Net quantity must be declared in metric units (g, kg, ml, l). Non-metric units (oz, lbs, fl oz) are prohibited. Actual packed weight must not deviate beyond Schedule I Maximum Permissible Error (MPE). [G.S.R. 882(E)]',
     category: 'Packaged Commodities',
     severity: 'critical',
@@ -105,7 +105,7 @@ export const MOCK_RULES: RegulatoryRule[] = [
     id: 'RULE-PCR-003',
     code: 'PCR-2011-R6(1)(c)',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    title: 'MRP Declaration — Inclusive of All Taxes',
+    title: 'MRP Declaration  -  Inclusive of All Taxes',
     description: 'MRP must be declared as "Maximum Retail Price ₹ xx.xx (inclusive of all taxes)". Selling above declared MRP is a cognizable offence under Rule 18(2). [G.S.R. 882(E)]',
     category: 'Packaged Commodities',
     severity: 'critical',
@@ -118,8 +118,8 @@ export const MOCK_RULES: RegulatoryRule[] = [
   {
     id: 'RULE-PCR-004',
     code: 'PCR-2022-R6(1)(aa)',
-    act: 'Legal Metrology (Packaged Commodities) Rules, 2011 — as amended G.S.R. 779(E), effective 1 Jan 2023',
-    title: 'Unit Sale Price (USP) Per g/ml — Mandatory Declaration',
+    act: 'Legal Metrology (Packaged Commodities) Rules, 2011  -  as amended G.S.R. 779(E), effective 1 Jan 2023',
+    title: 'Unit Sale Price (USP) Per g/ml  -  Mandatory Declaration',
     description: 'USP (= MRP ÷ Net Qty, rounded 2 decimal places) must be declared adjacent to MRP in format "₹ X.XX per g" or "₹ X.XX per ml". USP font height must be ≥50% of MRP font height. Exemption: not required if USP equals MRP.',
     category: 'Packaged Commodities',
     severity: 'high',
@@ -132,8 +132,8 @@ export const MOCK_RULES: RegulatoryRule[] = [
   {
     id: 'RULE-PCR-005',
     code: 'PCR-2017-R6(1)(n)',
-    act: 'Legal Metrology (Packaged Commodities) Rules, 2011 — as amended G.S.R. 1537(E), effective 1 Jan 2018',
-    title: 'Country of Origin — Mandatory Prominent Declaration',
+    act: 'Legal Metrology (Packaged Commodities) Rules, 2011  -  as amended G.S.R. 1537(E), effective 1 Jan 2018',
+    title: 'Country of Origin  -  Mandatory Prominent Declaration',
     description: 'Name of the country of origin or manufacture must be declared prominently. Acceptable: "Made in India", "Country of Origin: INDIA". Mislabelling (e.g., labelling Chinese-origin goods as Indian) is a cognizable offence. [G.S.R. 1537(E)]',
     category: 'Origin Authenticity',
     severity: 'critical',
@@ -147,7 +147,7 @@ export const MOCK_RULES: RegulatoryRule[] = [
     id: 'RULE-PCR-006',
     code: 'PCR-2011-R7-TableI-II',
     act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    title: 'Minimum PDP Numeral Height — Rule 7 Table I & II',
+    title: 'Minimum PDP Numeral Height  -  Rule 7 Table I & II',
     description: 'Minimum numeral height on PDP: ≤50cm² → 1.0mm; 50–100cm² → 1.5mm; 100–500cm² → 2.5mm; >500cm² → 4.0mm. Blown/embossed declarations minimum 2.0mm. Width of numerals must be ≥1/3 of height. [G.S.R. 882(E)]',
     category: 'Labelling Standards',
     severity: 'medium',

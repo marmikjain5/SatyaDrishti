@@ -1,4 +1,4 @@
-import { Product } from '../types/compliance';
+﻿import { Product } from '../types/compliance';
 
 export const MOCK_PRODUCTS: Product[] = [
   // 1. Cadbury Bournvita
@@ -65,7 +65,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 2. Mysore Sandal Soap (Standard 125g) — KSDL MRP ₹63
+  // 2. Mysore Sandal Soap (Standard 125g)  -  KSDL MRP ₹63
   {
     id: 'PRD-IN-88902',
     sku: 'SKU-BLR-KSDL-125',
@@ -111,7 +111,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 3. Nescafé Classic 100g Glass Jar — MRP ₹390
+  // 3. Nescafé Classic 100g Glass Jar  -  MRP ₹390
   {
     id: 'PRD-IN-88903',
     sku: 'SKU-AMZ-NESC-100',
@@ -164,7 +164,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 4. Nivea Nourishing Body Milk 400ml — MRP ₹499, Manufacturer: Beiersdorf India Pvt Ltd
+  // 4. Nivea Nourishing Body Milk 400ml  -  MRP ₹499, Manufacturer: Beiersdorf India Pvt Ltd
   {
     id: 'PRD-IN-88904',
     sku: 'SKU-FLP-NIV-400',
@@ -211,7 +211,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 5. Nivea Soft 100ml — MRP ₹167
+  // 5. Nivea Soft 100ml  -  MRP ₹167
   {
     id: 'PRD-IN-88905',
     sku: 'SKU-AMZ-NIVS-100',
@@ -259,7 +259,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 6. Parachute Coconut Oil 500ml — MRP ₹128
+  // 6. Parachute Coconut Oil 500ml  -  MRP ₹128
   {
     id: 'PRD-IN-88906',
     sku: 'SKU-AMZ-PAR-500',
@@ -313,7 +313,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 7. Fortune Sunlite Refined Sunflower Oil 1L — MRP ₹160, Manufacturer: AWL Agri Business Ltd
+  // 7. Fortune Sunlite Refined Sunflower Oil 1L  -  MRP ₹160, Manufacturer: AWL Agri Business Ltd
   {
     id: 'PRD-IN-88907',
     sku: 'SKU-AMZ-FORT-1000',
@@ -357,7 +357,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 8. Society Tea 500g Jar — MRP ₹255
+  // 8. Society Tea 500g Jar  -  MRP ₹255
   {
     id: 'PRD-IN-88908',
     sku: 'SKU-MUM-SOC-500',
@@ -408,7 +408,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 9. TRESemmé Conditioner 190ml — MRP ₹275, Manufactured by HUL
+  // 9. TRESemmé Conditioner 190ml  -  MRP ₹275, Manufactured by HUL
   {
     id: 'PRD-IN-88909',
     sku: 'SKU-FLP-TREC-190',
@@ -456,7 +456,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 10. TRESemmé Shampoo 580ml — MRP ₹620
+  // 10. TRESemmé Shampoo 580ml  -  MRP ₹620
   {
     id: 'PRD-IN-88910',
     sku: 'SKU-FLP-TRES-580',
@@ -502,7 +502,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // 11. SAFA Chocolate Muesli 1Kg — Non-Compliant (Missing MRP, Batch, Dates)
+  // 11. SAFA Chocolate Muesli 1Kg  -  Non-Compliant (Missing MRP, Batch, Dates)
   {
     id: 'PRD-IN-88911',
     sku: 'SKU-SAFA-MUESLI-1KG',

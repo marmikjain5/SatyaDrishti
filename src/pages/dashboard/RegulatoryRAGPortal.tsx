@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Search,
   BookOpen,
@@ -749,7 +749,7 @@ export const RegulatoryRAGPortal: React.FC = () => {
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-600">—</span>
+                            <span className="text-slate-600"> - </span>
                           )}
                         </div>
                       </div>

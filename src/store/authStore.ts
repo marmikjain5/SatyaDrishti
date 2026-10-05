@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { AuthState, User, UserRole } from '../types/auth';
 
 export interface PortalConfig {
@@ -38,11 +38,11 @@ export const DEMO_PORTAL_CONFIGS: Record<string, PortalConfig> = {
   },
   inspector: {
     id: 'inspector',
-    name: 'Legal Metrology Inspector Portal — Bengaluru City',
+    name: 'Legal Metrology Inspector Portal  -  Bengaluru City',
     portalTitle: 'Legal Metrology Enforcement Gateway · BBMP / Karnataka',
     badgeLabel: 'Bengaluru City Inspector',
     badgeVariant: 'warning',
-    tagline: 'Field packaging verification, OCR scanner & enforcement ledgers — Bengaluru Metropolitan Region (BBMP)',
+    tagline: 'Field packaging verification, OCR scanner & enforcement ledgers  -  Bengaluru Metropolitan Region (BBMP)',
     description: 'Enforcement dashboard for designated Legal Metrology Inspectors (Bengaluru City Circle) to conduct on-site package audits, scan packaging declarations, adjudicate grievances, and file inspection reports under the Legal Metrology Act, 2009.',
     demoEmail: 'inspector@demo.gov.in',
     demoPassword: 'inspect123',
@@ -92,7 +92,7 @@ export const DEMO_USERS: Record<string, User> = {
     name: 'Arjun Nair',
     email: 'inspector@demo.gov.in',
     role: 'inspector',
-    department: 'Dept. of Legal Metrology, Govt. of Karnataka — Bengaluru City Circle',
+    department: 'Dept. of Legal Metrology, Govt. of Karnataka  -  Bengaluru City Circle',
     designation: 'Senior Legal Metrology Inspector (Bengaluru City – Zone 1 / BBMP)',
     badgeNumber: 'LM-BLR-4001',
     lastLogin: 'Today, 11:15 AM',

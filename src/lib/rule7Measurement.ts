@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Rule 7 Measurement Engine
  *
- * Implements Legal Metrology (Packaged Commodities) Rules, 2011 — Rule 7 & Table-I:
+ * Implements Legal Metrology (Packaged Commodities) Rules, 2011  -  Rule 7 & Table-I:
  * Minimum height of letters and numerals on declarations.
  *
  * Physical calibration is done using a reference object (₹10 coin = 27.0 mm diameter,
@@ -251,7 +251,7 @@ export function measureRule7Compliance(
       tableBand: null,
       fieldMeasurements: [],
       overallVerdict: 'INSUFFICIENT_EVIDENCE',
-      overallVerdictReason: 'Net quantity could not be parsed — Table-I band is unknown. Cannot determine minimum letter height.',
+      overallVerdictReason: 'Net quantity could not be parsed  -  Table-I band is unknown. Cannot determine minimum letter height.',
       clauseReference: 'Rule 7, Legal Metrology (Packaged Commodities) Rules, 2011',
     };
   }
@@ -279,10 +279,10 @@ export function measureRule7Compliance(
     let verdictReason: string;
 
     if (!isCalibrated) {
-      // No reference object — can only give an estimate
+      // No reference object  -  can only give an estimate
       if (heightMm < minRequiredMm * 0.5) {
         verdict = 'FAIL';
-        verdictReason = `Estimated height ~${heightMm.toFixed(1)} mm — well below minimum ${minRequiredMm} mm. Place a ₹10 coin in frame for exact measurement.`;
+        verdictReason = `Estimated height ~${heightMm.toFixed(1)} mm  -  well below minimum ${minRequiredMm} mm. Place a ₹10 coin in frame for exact measurement.`;
       } else {
         verdict = 'REVIEW_REQUIRED';
         verdictReason = `Estimated ~${heightMm.toFixed(1)} mm (uncalibrated). Minimum required: ${minRequiredMm} mm. Place a ₹10 coin in frame for a confirmed measurement.`;
@@ -322,7 +322,7 @@ export function measureRule7Compliance(
     overallVerdictReason = `${failCount} text region(s) fall below the minimum letter height of ${tableBand.minHeightMm} mm required for ${tableBand.label}. This is a potential violation of ${tableBand.clause}.`;
   } else if (hasInsufficient) {
     overallVerdict = 'INSUFFICIENT_EVIDENCE';
-    overallVerdictReason = 'Net quantity unknown — Table-I minimum cannot be determined.';
+    overallVerdictReason = 'Net quantity unknown  -  Table-I minimum cannot be determined.';
   } else if (hasReview || !isCalibrated) {
     overallVerdict = 'REVIEW_REQUIRED';
     overallVerdictReason = isCalibrated
@@ -341,6 +341,6 @@ export function measureRule7Compliance(
     fieldMeasurements,
     overallVerdict,
     overallVerdictReason,
-    clauseReference: `${tableBand.clause} — Legal Metrology (Packaged Commodities) Rules, 2011`,
+    clauseReference: `${tableBand.clause}  -  Legal Metrology (Packaged Commodities) Rules, 2011`,
   };
 }

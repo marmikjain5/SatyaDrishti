@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
@@ -167,7 +167,7 @@ export const PlatformPreviewSection: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">
-                              Cadbury Bournvita 500g — High Sugar "Health Drink" Claim Advisory
+                              Cadbury Bournvita 500g  -  High Sugar "Health Drink" Claim Advisory
                             </div>
                             <div className="text-slate-500 text-[11px]">
                               Mondelez India Foods Pvt Ltd • Amazon India • Case #CCPA/ENF/2025/NZ-0891
@@ -188,7 +188,7 @@ export const PlatformPreviewSection: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">
-                              Fortune Sunlite Oil 1L — Missing Unit Sale Price & Font Shortfall
+                              Fortune Sunlite Oil 1L  -  Missing Unit Sale Price & Font Shortfall
                             </div>
                             <div className="text-slate-500 text-[11px]">
                               Adani Wilmar Ltd • Pan-India Retail • Case #LM/ENF/2025/HQ-0112

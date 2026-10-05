@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SatyaDrishti Supabase Storage Service
  * Uploads evidence images to Supabase Storage REST API.
  * Returns a persistent public URL that survives page refresh.
@@ -10,7 +10,7 @@ const SUPABASE_STORAGE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/storag
 // Service role / anon key from .env (VITE_ prefix exposes to Vite frontend)
 const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SECRET_ACCESS_KEY || '';
 
-// Public bucket — create in Supabase dashboard → Storage → New bucket → "evidence-images" (public)
+// Public bucket  -  create in Supabase dashboard → Storage → New bucket → "evidence-images" (public)
 export const EVIDENCE_BUCKET = 'evidence-images';
 
 /** Converts a base64 data URL to a Blob */
@@ -33,7 +33,7 @@ export async function uploadEvidenceImage(
   fileName: string
 ): Promise<string> {
   if (!SERVICE_KEY) {
-    console.warn('[SupabaseStorage] No service key configured — skipping upload.');
+    console.warn('[SupabaseStorage] No service key configured  -  skipping upload.');
     return typeof imageInput === 'string' ? imageInput : URL.createObjectURL(imageInput);
   }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Product Packaging Dimensions & Scale Calibration Service
  *
  * Implements automated physical scale calibration under Legal Metrology Rules, 2011:
@@ -33,7 +33,7 @@ export interface ResolveDimensionsParams {
 }
 
 // ─── Schedule II Statutory Numeral Height Tier Mapping ───────────
-// Legal Metrology (Packaged Commodities) Rules, 2011 — Schedule II:
+// Legal Metrology (Packaged Commodities) Rules, 2011  -  Schedule II:
 // 1. Up to 50 cm²:           1.0 mm (2.83 pt)
 // 2. 50 cm² to 100 cm²:      1.5 mm (4.25 pt)
 // 3. 100 cm² to 500 cm²:     2.5 mm (7.09 pt)

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Forensic Coin Calibration Modal (Court-Admissible 100% Letter Height Precision)
  *
  * Implements physical micrometric calibration under Legal Metrology Act, 2009 (Sec 36)
@@ -294,7 +294,7 @@ export const ForensicCoinCalibrationModal: React.FC<ForensicCoinCalibrationModal
           </div>
           <div>
             <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider font-mono">
-              Legal Metrology Act, 2009 — Section 36 Admissibility Standard
+              Legal Metrology Act, 2009  -  Section 36 Admissibility Standard
             </h4>
             <p className="text-xs text-amber-800/90 dark:text-amber-300/90 mt-1 leading-relaxed">
               For court-admissible forensic verification or disputed packaging inspections, placing an official Indian currency coin flat against the product allows optical pixel-to-millimeter calibration down to <strong>±0.05 mm precision</strong>.

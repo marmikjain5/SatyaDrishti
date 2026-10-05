@@ -1,4 +1,4 @@
-import { Violation } from '../types/compliance';
+﻿import { Violation } from '../types/compliance';
 
 /**
  * Real statutory violations sourced from public court orders, Legal Metrology enforcement
@@ -9,7 +9,7 @@ import { Violation } from '../types/compliance';
  */
 export const MOCK_VIOLATIONS: Violation[] = [
 
-  // 1. Britannia — Net Weight Shortfall (Thrissur DCDRC, May 2024)
+  // 1. Britannia  -  Net Weight Shortfall (Thrissur DCDRC, May 2024)
   {
     id: 'VIO-REAL-001',
     caseNumber: 'CC/316/2022 – Thrissur DCDRC',
@@ -21,7 +21,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'Retail Trade (Kerala)',
     ruleCode: 'LM-PCR-2011-R6',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(a) — Mandatory Declaration of Net Quantity',
+    section: 'Rule 6(1)(a)  -  Mandatory Declaration of Net Quantity',
     description:
       'Packets declared 300g weighed 268g and 249g on verification. Commission termed it a "drastic shortage" and directed the Controller of Legal Metrology to conduct state-wide inspections for the product line.',
     severity: 'high',
@@ -37,7 +37,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'LM-KA-BLR-2024-0091',
   },
 
-  // 2. ITC — "100% Pure" Misleading Claim (Delhi HC, Aug 2026)
+  // 2. ITC  -  "100% Pure" Misleading Claim (Delhi HC, Aug 2026)
   {
     id: 'VIO-REAL-002',
     caseNumber: 'W.P.(C) 11421/2026 – Delhi High Court',
@@ -49,7 +49,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'Pan-India Retail & E-Commerce',
     ruleCode: 'CCPA-2022-GUIDELINES-SEC6',
     actName: 'Consumer Protection Act, 2019 & CCPA Guidelines for Misleading Advertisements, 2022',
-    section: 'Guideline 6 — Prohibition of Misleading Quality & Purity Claims',
+    section: 'Guideline 6  -  Prohibition of Misleading Quality & Purity Claims',
     description:
       'Show-Cause Notice issued directing removal of unsubstantiated "100% Pure" and "0% Impurities" marketing claims without certified laboratory provenance backing. Challenged in Delhi HC; matter sub-judice.',
     severity: 'medium',
@@ -57,7 +57,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     detectedAt: '2026-08-10 IST',
     evidence: {
       type: 'Label Claim Review',
-      extractedValue: '"100% Pure", "0% Impurities" — undefined superiority terms on packaging',
+      extractedValue: '"100% Pure", "0% Impurities"  -  undefined superiority terms on packaging',
       expectedStandard: 'CCPA Guideline 6: Absolute purity claims must have verifiable third-party scientific substantiation',
     },
     penaltyEstimate: 25000,
@@ -65,7 +65,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'CCPA-SCN-2026-11421',
   },
 
-  // 3. Orkla/MTR — Date Format + Net Qty (Karnataka FDA, Feb 2025)
+  // 3. Orkla/MTR  -  Date Format + Net Qty (Karnataka FDA, Feb 2025)
   {
     id: 'VIO-REAL-003',
     caseNumber: 'KFDA/ENF/BLR-SOUTH/2025/BMS-0041',
@@ -77,7 +77,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'Retail (Karnataka)',
     ruleCode: 'LM-PCR-2011-R9',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 9 — Date of Manufacture & Best Before Format',
+    section: 'Rule 9  -  Date of Manufacture & Best Before Format',
     description:
       'Routine factory inspection at Bommasandra: BBD printed as "14.11.24" (non-standard). 3 of 9 sampled packs weighed 481g vs 500g declared (3.8% shortfall, exceeding 1.5% tolerance). Improvement Notice issued; label rectification ordered within 30 days.',
     severity: 'medium',
@@ -93,7 +93,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'KFDA-IMP-2025-0041',
   },
 
-  // 4. QuickMart — Package Date & Price Over-stickering (Karnataka HC, Aug 2026)
+  // 4. QuickMart  -  Package Date & Price Over-stickering (Karnataka HC, Aug 2026)
   {
     id: 'VIO-REAL-004',
     caseNumber: 'WP 19822/2026 – Karnataka High Court (Criminal)',
@@ -105,7 +105,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'E-Commerce Dark Store (Bengaluru)',
     ruleCode: 'LM-PCR-2011-R18',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 18(1) — Prohibition on Alteration of Price & Date Labels',
+    section: 'Rule 18(1)  -  Prohibition on Alteration of Price & Date Labels',
     description:
       'Entity relabelled stock with overprinted fresh date stickers and altered MRP tags across warehouse inventory. ~3.7 MT seized under Legal Metrology Act Sec 36.',
     severity: 'critical',
@@ -121,7 +121,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'LM-BLR-SEIZ-2026-0185',
   },
 
-  // 5. Saukhya Naturals — Font Height & PIN Code (Karnataka Enforcement, Oct 2025)
+  // 5. Saukhya Naturals  -  Font Height & PIN Code (Karnataka Enforcement, Oct 2025)
   {
     id: 'VIO-REAL-005',
     caseNumber: 'KFDA/ENF/BLR-NORTH/2025/PEE-0178',
@@ -133,7 +133,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'Amazon / BigBasket / Offline Retail',
     ruleCode: 'LM-PCR-2011-R7-SCH-II',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 7 & Schedule II — Font Height & Address Completeness',
+    section: 'Rule 7 & Schedule II  -  Font Height & Address Completeness',
     description:
       'Mandatory declarations on 400g package printed at 0.8mm font height, below 1.5mm statutory threshold. Incomplete manufacturer postal PIN code on principal display panel. Improvement Notice issued.',
     severity: 'high',
@@ -149,19 +149,19 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'LM-IMP-2025-PEE-0178',
   },
 
-  // 6. VitaEdge — False Country of Origin Declaration (CCPA, Mar 2025)
+  // 6. VitaEdge  -  False Country of Origin Declaration (CCPA, Mar 2025)
   {
     id: 'VIO-REAL-006',
     caseNumber: 'CCPA/KA/BLR/2025/NUT-0214',
     productId: 'PRD-VTE-006',
-    productName: 'ProStack Whey Isolate 2kg — Chocolate Fudge',
+    productName: 'ProStack Whey Isolate 2kg  -  Chocolate Fudge',
     brand: 'ProStack Performance',
     marketedBy: 'VitaEdge Nutraceuticals Import & Trade LLP',
     manufacturer: 'VitaEdge Nutraceuticals Import & Trade LLP',
     platform: 'Amazon India / Own Website',
     ruleCode: 'LM-PCR-2017-R6-1B',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011 r/w CCPA Guidelines, 2022',
-    section: 'Rule 6(1)(b) & CCPA Guideline 6(2) — False Country of Origin Declaration',
+    section: 'Rule 6(1)(b) & CCPA Guideline 6(2)  -  False Country of Origin Declaration',
     description:
       'Declared Country of Origin as "India" on packaging artwork, but import and customs ledger confirms imported bulk stock from overseas with no domestic manufacturing transformation. Three SKUs suspended.',
     severity: 'critical',
@@ -177,7 +177,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     noticeId: 'CCPA-BLR-2025-NUT-0214',
   },
 
-  // 7. Himalaya — Packaging Font Height & Unit Sale Price Non-Compliance
+  // 7. Himalaya  -  Packaging Font Height & Unit Sale Price Non-Compliance
   {
     id: 'VIO-REAL-007',
     caseNumber: 'LM/ENF/KA/BLR/2025/1109',
@@ -189,7 +189,7 @@ export const MOCK_VIOLATIONS: Violation[] = [
     platform: 'Pan-India Retail & Supermarkets',
     ruleCode: 'LM-PCR-2011-R6-1-E',
     actName: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-    section: 'Rule 6(1)(e) — Font Height & Unit Sale Price Declaration',
+    section: 'Rule 6(1)(e)  -  Font Height & Unit Sale Price Declaration',
     description:
       'Value combo pack omitted mandatory Unit Sale Price (USP) per 100ml on the primary display panel, and net volume numeral font height measured 2.2mm, below the statutory 4.0mm requirement for packages exceeding 100ml under Rule 9 Schedule II.',
     severity: 'medium',

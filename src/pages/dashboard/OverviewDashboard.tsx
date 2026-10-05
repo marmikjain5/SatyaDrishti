@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Package,
@@ -125,7 +125,7 @@ export const OverviewDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Primary Action Button — Mobile single primary CTA first */}
+        {/* Primary Action Button  -  Mobile single primary CTA first */}
         <div className="flex items-center gap-2.5 flex-col sm:flex-row w-full md:w-auto">
           <Link to="/dashboard/scanner" className="w-full sm:w-auto">
             <Button
@@ -286,7 +286,7 @@ export const OverviewDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Charts & Live Ticker Section — Visible always on desktop (lg:grid), collapsible on mobile */}
+      {/* Main Charts & Live Ticker Section  -  Visible always on desktop (lg:grid), collapsible on mobile */}
       <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${showAnalyticsMobile ? 'block' : 'hidden lg:grid'}`}>
         {user?.role === 'inspector' ? (
           <div className="lg:col-span-12">

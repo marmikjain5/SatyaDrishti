@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Images,
   BarChart3,
@@ -172,7 +172,7 @@ export const ProductScanner: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-center shadow-xs">
           <div className="text-[10px] uppercase font-bold text-slate-400">Accuracy</div>
-          <div className="text-base font-extrabold text-emerald-600">{avgConfidence > 0 ? `${avgConfidence}%` : '—'}</div>
+          <div className="text-base font-extrabold text-emerald-600">{avgConfidence > 0 ? `${avgConfidence}%` : ' - '}</div>
         </div>
         <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-center shadow-xs">
           <div className="text-[10px] uppercase font-bold text-slate-400">Queued</div>
@@ -190,7 +190,7 @@ export const ProductScanner: React.FC = () => {
         />
         <StatCard
           title="Avg Confidence"
-          value={avgConfidence > 0 ? `${avgConfidence}%` : '—'}
+          value={avgConfidence > 0 ? `${avgConfidence}%` : ' - '}
           icon={Activity}
           variant={avgConfidence >= 90 ? 'success' : avgConfidence >= 70 ? 'warning' : 'default'}
           description="Across completed scans"
@@ -204,7 +204,7 @@ export const ProductScanner: React.FC = () => {
         />
         <StatCard
           title="Last Verification"
-          value={lastScanTime === 'Never' ? '—' : lastScanTime.split(',')[0] || '—'}
+          value={lastScanTime === 'Never' ? ' - ' : lastScanTime.split(',')[0] || ' - '}
           icon={Clock}
           variant="default"
           description={lastScanTime === 'Never' ? 'No verifications yet' : lastScanTime}
@@ -257,7 +257,7 @@ export const ProductScanner: React.FC = () => {
         </div>
       )}
 
-      {/* Scan Options — calibration method */}
+      {/* Scan Options  -  calibration method */}
       <ScanOptionsCard
         value={scanOptions}
         onChange={setScanOptions}
@@ -320,7 +320,7 @@ export const ProductScanner: React.FC = () => {
       {/* Historical Batch Verification & Dual MRP Detection Panel */}
       {currentScan?.status === 'completed' && <HistoricalIntelligencePanel />}
 
-      {/* Rule 7 — Physical Letter Height Measurement (Table-I compliance) */}
+      {/* Rule 7  -  Physical Letter Height Measurement (Table-I compliance) */}
       {currentScan?.status === 'completed' && (
         <Rule7MeasurementPanel scanOptions={scanOptions} />
       )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   FileText,
   Download,
@@ -908,7 +908,7 @@ export const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                             </span>
                           </td>
                           <td className="p-2 font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                            {entry.status === 'fail' ? `₹${(entry.penaltyRange?.maxFine || 25000).toLocaleString('en-IN')}` : '—'}
+                            {entry.status === 'fail' ? `₹${(entry.penaltyRange?.maxFine || 25000).toLocaleString('en-IN')}` : ' - '}
                           </td>
                         </tr>
                       ))}
@@ -1123,7 +1123,7 @@ export const ComplianceReportModal: React.FC<ComplianceReportModalProps> = ({
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1.5">
                     <div className="font-bold text-xs text-slate-900 dark:text-white">{productInfo.productName || 'Audited Product'}</div>
                     <div className="text-[11px] text-slate-500">
-                      Manufacturer: {productInfo.manufacturer || '—'} | Net: {productInfo.netQuantity || '—'} | MRP: {productInfo.mrp || '—'}
+                      Manufacturer: {productInfo.manufacturer || ' - '} | Net: {productInfo.netQuantity || ' - '} | MRP: {productInfo.mrp || ' - '}
                     </div>
                   </div>
                 )}

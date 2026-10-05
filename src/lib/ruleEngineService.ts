@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Legal Metrology Rule Engine Validation Service
  *
  * Core compliance validation engine that consumes OCR-extracted product data
@@ -393,7 +393,7 @@ function validateImporter(
   if (!isImported) {
     return {
       status: 'pass',
-      evidence: value || '(Domestic product — not applicable)',
+      evidence: value || '(Domestic product  -  not applicable)',
       expectedStandard: 'Importer details required only for imported goods.',
       recommendation: '',
     };
@@ -419,7 +419,7 @@ function validateImporter(
 
 /**
  * Validates Unit Sale Price (USP) per g or per ml.
- * Rule: PCR-2022-R6(1)(aa) — G.S.R. 779(E), effective 1 Jan 2023
+ * Rule: PCR-2022-R6(1)(aa)  -  G.S.R. 779(E), effective 1 Jan 2023
  * USP = MRP ÷ Net Quantity (in base unit), rounded to 2 decimal places.
  * Format must be: "₹ X.XX per g" or "₹ X.XX per ml".
  * Font height must be ≥50% of MRP font height.
@@ -610,7 +610,7 @@ export function validateProduct(
     const validator = VALIDATOR_MAP[rule.validatorKey];
 
     if (!validator) {
-      // Unknown validator — skip rule with not-applicable
+      // Unknown validator  -  skip rule with not-applicable
       audit.push({
         ruleId: rule.id,
         ruleName: rule.title,
@@ -641,7 +641,7 @@ export function validateProduct(
           fieldKey: rule.fieldKey,
           status: 'not-applicable',
           severity: rule.severity,
-          evidence: '(Domestic product — rule not applicable)',
+          evidence: '(Domestic product  -  rule not applicable)',
           expectedStandard: rule.conditionDescription,
           recommendation: '',
           penaltyRange: rule.penaltyRange,
@@ -663,7 +663,7 @@ export function validateProduct(
         fieldKey: rule.fieldKey,
         status: 'unknown',
         severity: rule.severity,
-        evidence: '(Not detected — insufficient evidence)',
+        evidence: '(Not detected  -  insufficient evidence)',
         expectedStandard: rule.description,
         recommendation: 'Capture a clearer view of the applicable declaration panel or verify it manually before assigning a legal finding.',
         penaltyRange: rule.penaltyRange,

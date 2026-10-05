@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect } from 'react';
 import {
   Play,
@@ -808,7 +808,7 @@ export const EcommerceCrawler: React.FC = () => {
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-indigo-400" />
                 <h3 className="text-base font-bold">
-                  Statutory Notice — Section 36(1) Legal Metrology Act, 2009
+                  Statutory Notice  -  Section 36(1) Legal Metrology Act, 2009
                 </h3>
               </div>
               <button

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Loader2, CheckCircle2, AlertCircle, Cpu, Layers, ShieldCheck } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -168,7 +168,7 @@ export const OCRProcessingCard: React.FC = () => {
               </span>
             </div>
 
-            {/* Right: Key metric badges — derived from actual extraction results */}
+            {/* Right: Key metric badges  -  derived from actual extraction results */}
             <div className="flex items-center gap-2 flex-wrap">
               {extractedData?.declarations && (() => {
                 const declValues = Object.values(extractedData.declarations);
@@ -242,7 +242,7 @@ export const OCRProcessingCard: React.FC = () => {
                             Pass {index + 1}
                           </span>
                           <span className={cn('text-xs font-bold font-mono', passTextColor)}>
-                            {passConf > 0 ? `${passConf}%` : '—'}
+                            {passConf > 0 ? `${passConf}%` : ' - '}
                           </span>
                         </div>
 

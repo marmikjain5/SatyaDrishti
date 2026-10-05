@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import {
   Product,
   Violation,
@@ -80,7 +80,7 @@ export const useComplianceStore = create<ComplianceState>((set, get) => ({
     try {
       const dbComplaints = await complaintService.getComplaints();
       if (dbComplaints && dbComplaints.length > 0) {
-        // DB is the source of truth — show DB complaints first, append any local mock
+        // DB is the source of truth  -  show DB complaints first, append any local mock
         // complaints whose ticketId doesn't exist in DB (demo scaffolding only)
         const dbIds = new Set(dbComplaints.map((c) => c.ticketId));
         const localOnlyMocks = MOCK_COMPLAINTS.filter((c) => !dbIds.has(c.ticketId));
@@ -90,11 +90,11 @@ export const useComplianceStore = create<ComplianceState>((set, get) => ({
           backendOnline: true,
         });
       } else {
-        // Backend reachable but empty DB — keep mocks
+        // Backend reachable but empty DB  -  keep mocks
         set({ isLoadingComplaints: false, backendOnline: true });
       }
     } catch (err) {
-      console.warn('[Store] Backend unreachable — using local mock complaints:', err);
+      console.warn('[Store] Backend unreachable  -  using local mock complaints:', err);
       set({ isLoadingComplaints: false, backendOnline: false });
     }
   },

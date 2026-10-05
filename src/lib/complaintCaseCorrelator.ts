@@ -1,4 +1,4 @@
-/**
+﻿/**
  * End-to-End Evidence-Backed Complaint Case Correlator for SatyaDrishti
  *
  * Combines:
@@ -37,7 +37,7 @@ export interface ComplaintSubmissionInput {
   consumerName: string;
   consumerEmail: string;
   consumerPhone?: string;
-  productName?: string;  // optional — derived from shop context when not set
+  productName?: string;  // optional  -  derived from shop context when not set
   brand?: string;
   platform?: PlatformType;
   productUrl?: string;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SatyaDrishti Compliance Report Generator Engine (Feature 5)
  *
  * Synthesizes data across:
@@ -314,14 +314,14 @@ export class ReportGenerationEngine {
     };
 
     // ── 10. Final Verdict & Penalty Exposure ────────────────────
-    let verdictTitle = 'COMPLIANT — STATUTORY CLEARANCE GRANTED';
+    let verdictTitle = 'COMPLIANT  -  STATUTORY CLEARANCE GRANTED';
     let summaryRemarks = customRemarks || 'The scanned package exhibits full statutory compliance with Legal Metrology (Packaged Commodities) Rules, 2011.';
 
     if (overallStatus === 'non-compliant') {
-      verdictTitle = 'NON-COMPLIANT — STATUTORY VIOLATION DETECTED';
+      verdictTitle = 'NON-COMPLIANT  -  STATUTORY VIOLATION DETECTED';
       summaryRemarks = customRemarks || `The packaging exhibits ${violationCount} statutory violation(s) and fails mandatory Legal Metrology declarations. Regulatory notice recommended under Section 36 of Legal Metrology Act, 2009.`;
     } else if (overallStatus === 'warning') {
-      verdictTitle = 'CONDITIONAL CLEARANCE — WARNING ISSUED';
+      verdictTitle = 'CONDITIONAL CLEARANCE  -  WARNING ISSUED';
       summaryRemarks = customRemarks || `The packaging is mostly compliant but contains ${warningCount} advisory discrepancies or optical readability warnings that require manufacturer rectification.`;
     }
 
@@ -692,14 +692,14 @@ export class ReportGenerationEngine {
     };
 
     // ── 10. Final Verdict ────────────────────────────────────────
-    let verdictTitle = 'SESSION CLEARANCE — ALL AUDITED PRODUCTS COMPLIANT';
+    let verdictTitle = 'SESSION CLEARANCE  -  ALL AUDITED PRODUCTS COMPLIANT';
     let summaryRemarks = customRemarks || `All ${targetScans.length} packaged commodities audited in this inspection session exhibit full statutory compliance with Legal Metrology (Packaged Commodities) Rules, 2011.`;
 
     if (sessionVerdictStatus === 'non-compliant') {
-      verdictTitle = `STATUTORY VIOLATION NOTICE — ${nonCompliantCount} OF ${targetScans.length} PRODUCTS NON-COMPLIANT`;
+      verdictTitle = `STATUTORY VIOLATION NOTICE  -  ${nonCompliantCount} OF ${targetScans.length} PRODUCTS NON-COMPLIANT`;
       summaryRemarks = customRemarks || `The inspection sweep identified ${totalViolations} statutory violation(s) across ${nonCompliantCount} non-compliant product(s). Formal compounding notice requisitions under Section 36 & 48 of Legal Metrology Act, 2009 are initiated.`;
     } else if (sessionVerdictStatus === 'warning') {
-      verdictTitle = `CONDITIONAL CLEARANCE — ${warningCount} ADVISORY DEFICIENCIES DETECTED`;
+      verdictTitle = `CONDITIONAL CLEARANCE  -  ${warningCount} ADVISORY DEFICIENCIES DETECTED`;
       summaryRemarks = customRemarks || `The inspection sweep verified ${targetScans.length} products with ${warningCount} advisory font height or contrast warnings requiring manufacturer remediation.`;
     }
 

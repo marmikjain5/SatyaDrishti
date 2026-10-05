@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   ClipboardCheck,
   CheckCircle2,
@@ -262,7 +262,7 @@ export const RuleAuditView: React.FC = () => {
             <span>Rule Audit Trail</span>
           </CardTitle>
           <p className="text-xs text-slate-500 mt-0.5">
-            Detailed per-rule evaluation — {result.audit.length} statutory rules assessed against
+            Detailed per-rule evaluation  -  {result.audit.length} statutory rules assessed against
             OCR evidence.
           </p>
         </div>
