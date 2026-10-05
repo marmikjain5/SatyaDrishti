@@ -8,9 +8,11 @@ const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'i
 const ACCEPTED_EXTENSIONS = '.png,.jpg,.jpeg,.webp,.heic,.heif,image/*';
 
 export const ImageUploader: React.FC = () => {
-  const { addImages, isProcessing } = useScanStore();
+  const { addImages, isProcessing, isParallelProcessing, scanMode } = useScanStore();
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isParallelMode = scanMode === 'parallel-products';
+  const isDisabled = isProcessing || isParallelProcessing;
 
   const validateAndAdd = useCallback(
     (files: FileList | File[]) => {
@@ -36,22 +38,22 @@ export const ImageUploader: React.FC = () => {
       e.stopPropagation();
       setIsDragActive(false);
 
-      if (isProcessing) return;
+      if (isDisabled) return;
 
       if (e.dataTransfer.files?.length) {
         validateAndAdd(e.dataTransfer.files);
       }
     },
-    [isProcessing, validateAndAdd]
+    [isDisabled, validateAndAdd]
   );
 
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!isProcessing) setIsDragActive(true);
+      if (!isDisabled) setIsDragActive(true);
     },
-    [isProcessing]
+    [isDisabled]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -76,7 +78,7 @@ export const ImageUploader: React.FC = () => {
           type="file"
           accept="image/*"
           capture="environment"
-          disabled={isProcessing}
+          disabled={isDisabled}
           className="hidden"
           onChange={handleInputChange}
         />
@@ -86,7 +88,7 @@ export const ImageUploader: React.FC = () => {
           type="file"
           accept={ACCEPTED_EXTENSIONS}
           multiple
-          disabled={isProcessing}
+          disabled={isDisabled}
           className="hidden"
           onChange={handleInputChange}
         />
@@ -100,7 +102,7 @@ export const ImageUploader: React.FC = () => {
             isDragActive
               ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/20'
               : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/20 dark:hover:bg-blue-950/10',
-            isProcessing && 'opacity-50 pointer-events-none cursor-not-allowed'
+            isDisabled && 'opacity-50 pointer-events-none cursor-not-allowed'
           )}
         >
           <div
@@ -120,13 +122,19 @@ export const ImageUploader: React.FC = () => {
 
           <div className="text-center max-w-md px-2">
             <p className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
-              {isDragActive ? 'Drop packaging images here' : 'Capture or Upload Packaging'}
+              {isDragActive ? 'Drop product packaging images here' : 'Upload Product Packaging Images'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Snap product declarations using your <span className="font-semibold text-blue-600 dark:text-blue-400">Back Camera</span> or select files from your device
+              {isParallelMode ? (
+                <>Select images of <span className="font-semibold text-blue-600 dark:text-blue-400">different products</span> to scan them in parallel</>
+              ) : (
+                <>Select multiple photos of the <span className="font-semibold text-blue-600 dark:text-blue-400">same product</span> from different angles (Front, Back, Side, Nutritional Panel)</>
+              )}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              JPG, PNG, WebP • Multi-angle images are consolidated into a single statutory audit
+              PNG, JPG, JPEG, WebP, HEIC, HEIF • {isParallelMode
+                ? 'Each image will be processed as a separate product'
+                : 'Multi-angle images will be consolidated into a single compliance audit'}
             </p>
           </div>
 
@@ -136,7 +144,8 @@ export const ImageUploader: React.FC = () => {
               htmlFor="scanner-camera-capture"
               className={cn(
                 'w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-md cursor-pointer transition-all active:scale-95 select-none min-h-[42px]',
-                'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700',
+                isDisabled && 'opacity-50 pointer-events-none cursor-not-allowed'
               )}
             >
               <Camera className="h-4 w-4 shrink-0" />
@@ -146,7 +155,8 @@ export const ImageUploader: React.FC = () => {
             <label
               htmlFor="scanner-file-browse"
               className={cn(
-                'w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-xs cursor-pointer transition-all active:scale-95 select-none min-h-[42px]'
+                'w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-xs cursor-pointer transition-all active:scale-95 select-none min-h-[42px]',
+                isDisabled && 'opacity-50 pointer-events-none cursor-not-allowed'
               )}
             >
               <Upload className="h-4 w-4 shrink-0 text-slate-500" />

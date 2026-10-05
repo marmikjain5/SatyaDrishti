@@ -244,3 +244,26 @@ export interface MRPVerificationResult {
   /** Human-readable message summarising the result */
   message: string;
 }
+
+// Scanning modes for the product scanner.
+// In parallel mode, every uploaded image represents an independent product.
+export type ScanMode = 'single-product' | 'parallel-products';
+
+export type ParallelJobStatus = 'queued' | 'scanning' | 'validating' | 'completed' | 'failed';
+
+export interface ParallelScanJob {
+  id: string;
+  status: ParallelJobStatus;
+  progress: number;
+  statusMessage: string;
+  imageDataUrl: string;
+  imageName: string;
+  file: File;
+  confidence: number;
+  extractedData: ExtractedProductData | null;
+  errorMessage?: string;
+  completedScanId?: string;
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+}
