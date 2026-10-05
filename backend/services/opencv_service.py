@@ -366,27 +366,58 @@ def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, 
     h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     candidates = []
+    package_bounds = detect_package_contour_bounds(image)
+
+    def is_inside_package(cx: int, cy: int) -> bool:
+        if not package_bounds.get("detected"):
+            return False
+        px = package_bounds["x"] / 100 * w
+        py = package_bounds["y"] / 100 * h
+        pw = package_bounds["width"] / 100 * w
+        ph = package_bounds["height"] / 100 * h
+        return px <= cx <= px + pw and py <= cy <= py + ph
 
     if reference_type in {"coin_5", "coin_10"}:
-        blurred = cv2.medianBlur(gray, 5)
+        # The previous settings allowed large circular bottle contours to win
+        # before the small coin. Limit the radius and rank circles outside the
+        # detected package first, since calibration references are placed beside
+        # the package in the scan workflow.
+        blurred = cv2.medianBlur(gray, 7)
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         circles = cv2.HoughCircles(
             blurred,
             cv2.HOUGH_GRADIENT,
-            dp=1.2,
-            minDist=max(20, min(h, w) // 8),
-            param1=100,
-            param2=28,
-            minRadius=max(8, min(h, w) // 80),
-            maxRadius=max(12, min(h, w) // 3),
+            dp=1.0,
+            minDist=max(28, min(h, w) // 14),
+            param1=80,
+            param2=26,
+            minRadius=max(8, min(h, w) // 140),
+            maxRadius=max(16, min(h, w) // 5),
         )
         if circles is not None:
-            for cx, cy, radius in np.round(circles[0]).astype(int)[:5]:
+            for cx, cy, radius in np.round(circles[0]).astype(int):
                 if cx - radius < 0 or cy - radius < 0 or cx + radius >= w or cy + radius >= h:
                     continue
+                outside_package = not is_inside_package(int(cx), int(cy))
+                yy, xx = np.ogrid[:h, :w]
+                circle_mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= max(1, radius - 2) ** 2
+                mean_saturation = float(np.mean(hsv[:, :, 1][circle_mask]))
+                # A silver coin is comparatively neutral; saturated blue
+                # bottle parts should rank lower even when Hough detects them.
+                neutral_metal_score = 1.0 - min(mean_saturation / 180.0, 1.0)
+                confidence = (0.55 if outside_package else 0.35) + 0.35 * neutral_metal_score
                 candidates.append({
                     "bbox_px": {"x": int(cx - radius), "y": int(cy - radius), "width": int(radius * 2), "height": int(radius * 2)},
+                    "normalized": {
+                        "x": round((cx - radius) / w * 100, 2),
+                        "y": round((cy - radius) / h * 100, 2),
+                        "width": round((radius * 2) / w * 100, 2),
+                        "height": round((radius * 2) / h * 100, 2),
+                    },
                     "shape": "circle",
-                    "confidence": 0.7,
+                    "outside_package": outside_package,
+                    "mean_saturation": round(mean_saturation, 1),
+                    "confidence": round(confidence, 2),
                 })
     elif reference_type == "id_card":
         edges = cv2.Canny(gray, 60, 160)
@@ -410,11 +441,16 @@ def detect_reference_object(image_input: Any, reference_type: str) -> Dict[str, 
                     "confidence": round(min(0.95, max(0.45, fill_ratio)), 2),
                 })
 
-    candidates = sorted(candidates, key=lambda item: item["confidence"], reverse=True)[:5]
+    candidates = sorted(
+        candidates,
+        key=lambda item: (item.get("outside_package", False), item["confidence"]),
+        reverse=True,
+    )[:5]
     return {
         "status": "success",
         "reference_type": reference_type,
         "image_dimensions": {"width": w, "height": h},
+        "package_bounds": package_bounds,
         "candidates": candidates,
         "requires_visual_confirmation": True,
         "disclaimer": "Candidate detection only. Confirm the object and same-plane placement before using it for measurement.",

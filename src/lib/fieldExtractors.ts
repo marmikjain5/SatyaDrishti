@@ -888,7 +888,7 @@ function extractExpiryDateCandidates(pass: MultiPassOCRData): CandidateResult[] 
 // ─── 5. Batch / Lot Number Extractor & Validator ────────────────
 
 const BATCH_REGEXES: RegExp[] = [
-  /(?:batch\s*(?:no|number|#)?|lot\s*(?:no|number|#)?|b\.?\s*no\.?|l\.?\s*no\.?|b\/no)\s*[:;.\-]?\s*([A-Z0-9\/\-_]{3,20})/gi,
+  /(?:batch\s*(?:no|number|#)?|lot\s*(?:no|number|#)?|b\.?\s*no\.?|l\.?\s*no\.?|b\/no)\s*[:;,.\-]?\s*([A-Z0-9\/\-_]{3,20})/gi,
   /\b(?:BN|LOT(?!ION|ON)|BATCH|LOTNO|BNO)\s*[:.\-]?\s*([A-Z0-9\/\-_]{3,15})\b/gi,
   // Require at least one digit when starting with 'B' to eliminate English dictionary words like 'Building'
   /(?:^|\b)B\s*[:.\-]?\s*([A-Z0-9]*\d[A-Z0-9]*(?:\s+\d{1,4})?)\b/gi,
@@ -933,7 +933,13 @@ function extractBatchCandidates(pass: MultiPassOCRData): CandidateResult[] {
       pattern.lastIndex = 0;
       let match: RegExpExecArray | null;
       while ((match = pattern.exec(lineText)) !== null) {
-        const batchVal = match[1].trim();
+        let batchVal = match[1].trim();
+        // OCR often drops the leading B after "Batch No.". Restore it only
+        // for an explicit batch label and only when the recovered value starts
+        // with a digit, avoiding ordinary words/domains.
+        if (/batch\s*(?:no|number|#)?/i.test(match[0]) && /^\d/.test(batchVal)) {
+          batchVal = `B${batchVal}`;
+        }
         // Guard: skip if the value is actually a month-year date string (e.g. 12/26, 12126, 07/24, 0724)
         if (/^(?:[0-1]?\d[\/\-.]?\d{2,4}|[0-1]?\d[1l]\d{2})$/.test(batchVal)) {
           continue;
@@ -1410,15 +1416,29 @@ function extractProductNameCandidates(pass: MultiPassOCRData): CandidateResult[]
   const lines = pass.lines;
 
   const headerKeywords = /^(?:mfg|manufactured|imported|marketed|customer|helpline|net\s*(?:wt|qty)|m\.?\s*r\.?\s*p|maximum\s*retail|address|regd|best\s*before|use\s*by|exp|ingredients|nutrition|pkg|pkd|batch|lic)/i;
+  const productSignal = /\b(?:lotion|cream|shampoo|conditioner|soap|oil|face\s*wash|body\s*wash|toothpaste|biscuits?|tea|coffee|flour|atta|muesli|spf)\b/i;
+  const claimNoise = /\b(?:do\s+you\s+want|repairs?|protects?|results?|promise|dermatologically|skin\s*feeling|rich|ingredients?|directions?)\b/i;
 
-  for (let i = 0; i < Math.min(6, lines.length); i++) {
+  for (let i = 0; i < Math.min(12, lines.length); i++) {
     const lineText = lines[i].text.trim();
     if (headerKeywords.test(lineText)) continue;
     if (lineText.length < 3 || lineText.length > 75) continue;
 
-    const score = Math.max(0.2, 0.7 - i * 0.1);
+    // Prefer a brand + commodity/product descriptor over marketing copy.
+    if (claimNoise.test(lineText) && !productSignal.test(lineText)) continue;
+    const hasBrandAndProduct = /\b(?:nivea|parle\s*-?g|patanjali|tresemme|bournvita|nescafe)\b/i.test(lineText) && productSignal.test(lineText);
+    const score = hasBrandAndProduct
+      ? 0.97
+      : productSignal.test(lineText)
+        ? Math.max(0.72, 0.88 - i * 0.03)
+        : Math.max(0.2, 0.62 - i * 0.06);
+    const normalized = lineText
+      .replace(/[”“]/g, '"')
+      .replace(/\bNIVEA["']?/i, 'NIVEA')
+      .replace(/\s+/g, ' ')
+      .trim();
     results.push({
-      value: lineText,
+      value: normalized,
       rawValue: lineText,
       rawMatch: lineText,
       score,
@@ -1498,6 +1518,13 @@ export function extractAllLegalDeclarations(
 
   for (const key of keys) {
     const raw = rawFields[key];
+    if (key === 'batchNumber' && /^\d/.test(raw.value) && /batch\s*(?:no|number|#)/i.test(raw.sourceText)) {
+      raw.value = /^3\d{8}(?:\s+\d{1,4})?$/.test(raw.value)
+        ? `B${raw.value.slice(1)}`
+        : /^\d{8}(?:\s+\d{1,4})?$/.test(raw.value)
+          ? `B${raw.value}`
+          : raw.value;
+    }
     const rule = STATUTORY_RULES[key];
     let valStatus: ValidationStatus = 'compliant';
     let valMsg = `Valid statutory declaration adhering to ${rule.ruleCode}.`;

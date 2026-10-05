@@ -88,6 +88,7 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
     # PCR-2011-R6(1)(a) — Product Name
     "productName": [
         r"(?:product\s*name|name\s*of\s*commodity|commodity)[:\-\s]+([A-Za-z0-9\s\-\/&'(),.]+?)(?:\n|MRP|Net\s*Qty|Mfg|$)",
+        r"\b((?:NIVEA|Parle\-?G|Patanjali|TRESemme|Bournvita|Nescafe)\s+[A-Za-z0-9\s\-\/&'(),.]{3,60}(?:Lotion|Cream|Shampoo|Conditioner|Soap|Oil|Face\s*Wash|Body\s*Wash|Biscuits?|Tea|Coffee|Muesli))\b",
         r"\b(Parle-G(?:\s+Gluco\s*Biscuits|\s*Biscuits)?)\b",
         r"\b(NIVEA\s+(?:Cocoa\s+Nourish\s+)?(?:body\s+)?lotion)\b",
         r"(?:^|\n)\s*([A-Z][A-Za-z0-9\s\-\/&'(),.]{3,45}(?:Biscuits|Lotion|Cream|Soap|Shampoo|Oil|Flour|Atta|Tea|Coffee|Muesli))\b",
@@ -95,10 +96,17 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
 
     # PCR-2011-R6(1)(c) — MRP (Maximum Retail Price)
     "mrp": [
-        r"(?:MRP|Maximum\s*Retail\s*Price|Max\.?\s*Retail\s*Price)[:\-\s]*(?:Rs\.?|₹|INR)?\s*([\d,]+(?:\.\d{1,2})?)(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
+        # Common compact sticker layout: "MRP (Incl. of all taxes), USP, 550"
+        # where the amount follows the tax/USP descriptors instead of the MRP
+        # label directly.
+        r"MRP\s*(?:\([^\n)]*taxes[^\n)]*\))?\s*[,;:/\-]?\s*(?:USP\s*[,;:/\-]?)?\s*(?:Rs\.?|₹|INR)?\s*(\d[\d,]*(?:\.\d{1,2})?)(?![\d.])(?!\s*(?:/|per)\s*(?:g|ml|kg|l))",
+        # Tesseract may drop parts of "incl. of all taxes" but preserve the
+        # amount on the same line, e.g. "MRP (Incl. 550".
+        r"MRP[^\n\d]{0,35}(\d[\d,]*(?:\.\d{1,2})?)(?![\d.])(?!\s*(?:/|per)\s*(?:g|ml|kg|l))",
+        r"(?:MRP|Maximum\s*Retail\s*Price|Max\.?\s*Retail\s*Price)[:\-\s]*(?:Rs\.?|₹|INR)?\s*(\d[\d,]*(?:\.\d{1,2})?)(?![\d.])(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
         r"(?:₹|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)\s*(?:\(incl\.?\s*of\s*all\s*taxes\)|inclusive\s*of\s*all\s*taxes)",
-        r"(?:MRP)[:\-\s]*[Rs₹INR.\s]*([\d,]+(?:\.\d{1,2})?)",
-        r"(?:^|\n)\s*(?:₹|Rs\.?|[*#F])\s*([\d,]+(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
+        r"(?:MRP)[:\-\s]*[Rs₹INR.\s]*(\d[\d,]*(?:\.\d{1,2})?)",
+        r"(?:^|\n)\s*(?:₹|Rs\.?|[*#F])\s*(\d[\d,]*(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
         r"(?:^|\n)\s*([1-9]\d{1,4}(?:\.\d{1,2})?)\b(?!\s*(?:\/|per)\s*(?:g|ml|kg|l))",
     ],
 
@@ -126,6 +134,8 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
 
     # PCR-2011-R6(1)(e) — Date of Manufacture / Packing
     "manufacturingDate": [
+        # Stamp-box layout: "MFD. (M) & 05/24" or "MFD. (M) & Use Before (U): M 05/24".
+        r"MFD\.?\s*\(M\)[^\n\d]{0,35}((?:0?[1-9]|1[0-2])[\/\-.]\d{2,4})",
         r"(?:Mfg\.?\s*Date|Date\s*of\s*Mfg\.?|Mfd\.?|Date\s*of\s*Manufacture|Manufactured\s*On|MFD\.?\s*\(M\)|MFG\.?\s*\(M\))[:\-\s]*((?:\d{1,2}[\/\-\.]\d{2,4}|\d{2}[\/\-\.]\d{2}[\/\-\.]\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\/\-\.]\d{2,4}))",
         r"(?:^|\b)(?:MFD|MFG|M)[:\s\-.]+((?:0?[1-9]|1[0-2])[\/\-.\s1l]\d{2,4})(?:\s+\d{1,2}:\d{2})?",
         r"(?:Mfg\.?|Mfd\.?)[:\s]*((?:[0-3]?\d[\/\-][0-1]?\d[\/\-]\d{2,4})|(?:[A-Z]{3}[\/\-]\d{4}))",
@@ -166,10 +176,11 @@ FIELD_EXTRACTION_PATTERNS: Dict[str, List[str]] = {
 
     # PCR-2011-R6(1)(g) — Batch / Lot Number
     "batchNumber": [
-        r"(?:Batch\s*(?:No\.?|Code)|B\.?\s*No\.?|Lot\s*(?:No\.?|Code))[:\-\s]*([A-Za-z0-9\-\/]+(?:\s+[A-Za-z0-9]+)?)",
+        r"(?:Batch\s*(?:No\.?|Code)|B\.?\s*No\.?|Lot\s*(?:No\.?|Code))[:\-,;\s]*([A-Za-z0-9\-\/]+(?:\s+[A-Za-z0-9]+)?)",
         r"(?:^|\b)(?:BN|LOT(?!ION|ON)|BNO|BATCH)[:\s\-.]*([A-Z0-9\-\/]{3,18}(?:\s+[A-Z0-9]{1,4})?)\b",
-        # Prefix B or g (OCR misread of B) with required digit
-        r"(?:^|\b)[Bg][:.\s\-]*([0-9A-Z]{5,18}(?:\s+[A-Z0-9]{1,4})?)\b",
+        # Prefix B or g (OCR misread of B), but require a digit immediately
+        # after it so words such as "beiersdorf" cannot become batch values.
+        r"(?:^|\b)[Bg](?=[\s:.\-]*[0-9])[:.\s\-]*([0-9A-Z]{5,18}(?:\s+[A-Z0-9]{1,4})?)\b",
     ],
 
     # Manufacturer name (separate from address)
@@ -235,6 +246,65 @@ def clean_ocr_text(raw_text: str) -> str:
     return text.strip()
 
 
+def _normalize_ocr_email_token(value: str) -> str:
+    """Repair conservative OCR damage in email domains without inventing users."""
+    value = value.strip().strip(".,;:|_-=)")
+    value = value.replace(" ", "")
+    if "@" not in value:
+        return value
+    local, domain = value.rsplit("@", 1)
+    domain = domain.rstrip(".")
+    if "." not in domain:
+        # Tesseract commonly drops the dot before a familiar TLD.
+        for tld in ("com", "in", "org", "net", "co"):
+            if domain.lower().endswith(tld) and len(domain) > len(tld):
+                domain = f"{domain[:-len(tld)]}.{tld}"
+                break
+    return f"{local}@{domain}"
+
+
+def _extract_contact_details(text: str) -> Tuple[Optional[str], Optional[str]]:
+    """Extract phone/email evidence from noisy OCR contact text."""
+    cleaned = text.replace("©", "(").replace("%", "9")
+    phone_match = re.search(
+        r"(?:\(?0\d{2,4}\)?[\s\-]*\d{6,8}|1800[\s\-]?\d{3}[\s\-]?\d{3,4}|\+91[\s\-]?[6-9]\d{9})",
+        cleaned,
+        re.IGNORECASE,
+    )
+    email_match = re.search(
+        r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+(?:\.[a-zA-Z]{2,}|(?:com|in|org|net|co))",
+        cleaned,
+        re.IGNORECASE,
+    )
+    phone = phone_match.group(0).strip() if phone_match else None
+    email = _normalize_ocr_email_token(email_match.group(0)) if email_match else None
+    return phone, email
+
+
+def _extract_complete_address(text: str) -> Optional[str]:
+    """Collect the marketer/manufacturer address through the postal PIN line."""
+    match = re.search(
+        r"(?:Marketed\s*by|Manufactured\s*(?:by|for)|Packed\s*(?:by|&\s*Marketed\s*by))\s*:?[\s\-]*(.+?[1-9]\d{5})",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return None
+    address = re.sub(r"\s+", " ", match.group(1)).strip(" ,;:-")
+    # Keep only the address portion after the legal entity name when present.
+    # The manufacturer field is extracted separately; the address should still
+    # retain the city/state/PIN evidence.
+    return address if len(address) >= 12 else None
+
+
+def _normalize_product_name(value: str) -> str:
+    """Normalize common OCR punctuation in a product identity candidate."""
+    value = re.sub(r"[\"“”]+", "", value)
+    value = re.sub(r"\s+", " ", value).strip(" .,:;-|")
+    value = re.sub(r"\bNIVEA[\"']?\b", "NIVEA", value, flags=re.IGNORECASE)
+    return value
+
+
 # ─── Field Extractor ───────────────────────────────────────────────────────
 
 def extract_field(
@@ -252,7 +322,10 @@ def extract_field(
             if match:
                 groups = match.groups()
                 # Combine all capture groups into a single clean value
-                value = ' '.join(g.strip() for g in groups if g)
+                if field_key == "unitSalePrice" and len(groups) >= 2 and groups[0] and groups[1]:
+                    value = f"{groups[0].strip()}/{groups[1].strip()}"
+                else:
+                    value = ' '.join(g.strip() for g in groups if g)
                 value = re.sub(r'\s+', ' ', value).strip()
 
                 if field_key == "customerCare":
@@ -262,6 +335,11 @@ def extract_field(
                 elif field_key == "batchNumber":
                     # If batch starts with 'B' followed by space and alphanumeric, normalize
                     value = re.sub(r'^[B|]\s*', 'B', value)
+                    # Tesseract may read the leading B as 3/8/9 or omit it
+                    # after an explicit Batch No. label. Restore the prefix
+                    # only in that labelled context, never for free text.
+                    if re.search(r"batch\s*(?:no\.?|code|number)|b\.?\s*no\.?", match.group(0), re.I):
+                        value = re.sub(r"^3(?=\d{8}(?:\s+\d{1,4})?$)", "B", value)
 
                 if value and len(value) >= 1:
                     confidence = _estimate_field_confidence(field_key, value, pattern)
@@ -351,6 +429,8 @@ def collect_regex_candidates(text: str) -> Dict[str, List[Dict[str, str]]]:
                     groups = match.groups()
                     val = ' '.join(g.strip() for g in groups if g)
                     val = re.sub(r'\s+', ' ', val).strip()
+                    if field_key == "batchNumber" and re.search(r"batch\s*(?:no\.?|code|number)|b\.?\s*no\.?", match.group(0), re.I):
+                        val = re.sub(r"^3(?=\d{8}(?:\s+\d{1,4})?$)", "B", val)
                     if val and val.lower() not in seen_values and len(val) >= 1:
                         seen_values.add(val.lower())
                         raw_snippet = match.group(0).strip()
@@ -737,18 +817,40 @@ def extract_from_text(
             found_count += 1
             total_confidence += 0.95
 
+    # Recover a complete marketer/manufacturer address when OCR split it into
+    # several lines and the first candidate only retained the PIN-code line.
+    complete_address = _extract_complete_address(cleaned_text)
+    if complete_address:
+        for address_key in ("address", "manufacturerAddress"):
+            current = result.fields.get(address_key)
+            if not current or len(complete_address) > len(current.value):
+                result.fields[address_key] = ExtractedField(
+                    key=address_key,
+                    value=complete_address,
+                    raw_match=complete_address,
+                    confidence=0.92,
+                    regex_pattern="complete_address_through_pin",
+                    is_mandatory=True,
+                    validation_status="compliant",
+                )
+
+    # Normalize a product identity candidate only when it contains a product
+    # descriptor; do not promote arbitrary marketing copy.
+    product_field = result.fields.get("productName")
+    if product_field and product_field.value:
+        normalized_product = _normalize_product_name(product_field.value)
+        if re.search(r"\b(?:lotion|cream|shampoo|conditioner|soap|oil|biscuits?|tea|coffee|muesli)\b", normalized_product, re.I):
+            product_field.value = normalized_product
+
     # Guarantee clean extraction for customerCare
     cc = result.fields.get("customerCare")
     if not cc or not cc.value or cc.value.lower() in ("null", "none", "(not detected)"):
-        em_match = re.search(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}', cleaned_text)
-        clean_t = cleaned_text.replace('©', '(').replace('%', '8')
-        ph_match = re.search(r'(?:\(?0\d{2,4}\)?|\b0\d{2,4})[\s\-]*\d{6,8}\b|\b1800[\s\-]?\d{3}[\s\-]?\d{3,4}\b', clean_t)
+        phone, email = _extract_contact_details(cleaned_text)
         contacts = []
-        if ph_match:
-            contacts.append(ph_match.group(0).strip())
-        if em_match:
-            clean_em = re.sub(r'^[^\w@]+', '', em_match.group(0).strip())
-            contacts.append(clean_em)
+        if phone:
+            contacts.append(phone)
+        if email:
+            contacts.append(email)
         if contacts:
             result.fields["customerCare"] = ExtractedField(
                 key="customerCare",
@@ -775,9 +877,16 @@ def extract_from_text(
             found_count += 1
             total_confidence += 0.95
     else:
-        # Sanitize customerCare (clean weird chars from OCR like ©, %, d=)
-        clean_val = cc.value.replace('©', '(').replace('%9', '99').replace('d=d:', '').replace('d=', '').strip()
-        cc.value = clean_val
+        # A weak keyword match can hide a stronger phone/email pair found in
+        # the full transcript, so prefer the normalized evidence when present.
+        phone, email = _extract_contact_details(cleaned_text)
+        if phone or email:
+            cc.value = " | ".join(item for item in (phone, email) if item)
+            cc.raw_match = cc.value
+            cc.confidence = 0.95 if phone and email else max(cc.confidence, 0.80)
+        else:
+            # Sanitize customerCare (clean weird chars from OCR like ©, %, d=)
+            cc.value = cc.value.replace('©', '(').replace('%9', '99').replace('d=d:', '').replace('d=', '').strip()
 
     result.overall_confidence = (total_confidence / found_count) if found_count > 0 else 0.0
     return result
