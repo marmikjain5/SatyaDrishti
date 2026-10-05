@@ -15,6 +15,27 @@ import type {
 } from '../types/ruleEngine';
 import { LEGAL_METROLOGY_RULES } from '../data/legalMetrologyRules';
 
+export const ACTIVE_RULE_PACK = {
+  id: 'india-legal-metrology-packaged-commodities',
+  version: '2026.01',
+  effectiveFrom: '2026-01-01',
+  effectiveTo: null,
+  citationSource: 'Ministry of Consumer Affairs, Legal Metrology (Packaged Commodities) Rules, 2011 and amendments.',
+  sourceUrl: 'https://consumeraffairs.nic.in/acts-and-rules/legal-metrology',
+  gazetteReferences: ['G.S.R. 202(E)', 'G.S.R. 1537(E)', 'G.S.R. 779(E)'],
+  verifiedAt: '2026-01-01',
+  verifiedBy: 'SatyaDrishti Legal Metrology Rule Pack Maintainer',
+  presentationOnly: false,
+  approvalState: 'approved' as const,
+};
+
+export function isRulePackEffectiveOn(evaluationDate: string | Date): boolean {
+  const date = typeof evaluationDate === 'string' ? evaluationDate.slice(0, 10) : evaluationDate.toISOString().slice(0, 10);
+  const effectiveTo: string | null = ACTIVE_RULE_PACK.effectiveTo;
+  return date >= ACTIVE_RULE_PACK.effectiveFrom
+    && (effectiveTo === null || date <= (effectiveTo as string));
+}
+
 // ─── Field-Specific Validators ──────────────────────────────────
 
 interface ValidationOutcome {
@@ -22,6 +43,11 @@ interface ValidationOutcome {
   evidence: string;
   expectedStandard: string;
   recommendation: string;
+}
+
+function isUnavailableField(field: DeclarationField | undefined): boolean {
+  const value = field?.value?.trim().toLowerCase() || '';
+  return !value || value === '(not detected)' || value === 'not detected' || value === 'unknown';
 }
 
 function validateProductName(
@@ -239,14 +265,15 @@ function validateCustomerCare(
     };
   }
 
-  const hasPhone = /(?:1800[\s-]?\d{3}[\s-]?\d{3,4}|(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|\(\d{3,4}\)\s*\d{6,8})/.test(value);
+  const hasPhone = /(?:1800[\s-]?\d{3}[\s-]?\d{3,4}|(?:\+91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}|(?:\(?0\d{2,4}\)?|\b0\d{2,4})[\s-]*\d{6,8}|\d{3,4}\s*\d{6,8})/.test(value);
   const hasEmail = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(value);
+  const hasCareOfficer = /(?:above\s*address|address|consumer\s*(?:care|cell)|grievance|executive)/i.test(value);
 
-  if (!hasPhone && !hasEmail) {
+  if (!hasPhone && !hasEmail && !hasCareOfficer) {
     return {
       status: 'warning',
       evidence: value,
-      expectedStandard: 'Must contain a valid phone number or email address.',
+      expectedStandard: 'Must contain a valid phone number, email address, or designated grievance executive.',
       recommendation: rule.recommendations[0],
     };
   }
@@ -254,7 +281,7 @@ function validateCustomerCare(
   return {
     status: 'pass',
     evidence: value,
-    expectedStandard: 'Customer care phone number and/or email.',
+    expectedStandard: 'Customer care phone number, email, or designated grievance contact.',
     recommendation: '',
   };
 }
@@ -508,8 +535,10 @@ const VALIDATOR_MAP: Record<string, ValidatorFn> = {
  * Mandatory critical fields carry 2× weight.
  */
 function computeComplianceScore(audit: RuleAuditEntry[]): number {
-  const applicableEntries = audit.filter((e) => e.status !== 'not-applicable');
-  if (applicableEntries.length === 0) return 100;
+  const applicableEntries = audit.filter((e) => e.status !== 'not-applicable' && e.status !== 'unknown');
+  if (applicableEntries.length === 0) {
+    return audit.some((e) => e.status === 'unknown') ? 0 : 100;
+  }
 
   let totalWeight = 0;
   let earnedWeight = 0;
@@ -527,7 +556,7 @@ function computeComplianceScore(audit: RuleAuditEntry[]): number {
     } else if (entry.status === 'warning') {
       earnedWeight += severityWeight * 0.5;
     }
-    // 'fail' earns 0
+    // 'fail' earns 0; unknown evidence is excluded from the denominator.
   }
 
   return totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 100;
@@ -544,8 +573,29 @@ function computeComplianceScore(audit: RuleAuditEntry[]): number {
  */
 export function validateProduct(
   productData: ExtractedProductData,
-  rules: LegalMetrologyRule[] = LEGAL_METROLOGY_RULES
+  rules: LegalMetrologyRule[] = LEGAL_METROLOGY_RULES,
+  evaluationDate: string | Date = new Date()
 ): ComplianceValidationResult {
+  if (!isRulePackEffectiveOn(evaluationDate)) {
+    return {
+      id: `val-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      timestamp: new Intl.DateTimeFormat('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }).format(new Date()),
+      scanId: '',
+      overallStatus: 'under-review',
+      complianceScore: 0,
+      violationCount: 0,
+      warningCount: 0,
+      passCount: 0,
+      notApplicableCount: 0,
+      unknownCount: rules.length,
+      rulePack: { ...ACTIVE_RULE_PACK, approvalState: 'superseded' as const },
+      missingDeclarations: [],
+      audit: [],
+      recommendations: ['No approved rule pack was effective on the inspection date. Route this inspection for legal review before issuing a finding.'],
+    };
+  }
   const context: ValidationContext = {
     rawText: productData.rawText || '',
     countryOfOrigin: productData.countryOfOrigin || '',
@@ -600,6 +650,27 @@ export function validateProduct(
       }
     }
 
+    // Absence is not proof of a statutory violation. Preserve uncertainty when
+    // OCR did not find a field or the field is explicitly marked unavailable.
+    if (isUnavailableField(field)) {
+      if (rule.isMandatory) missingDeclarations.push(rule.title);
+      audit.push({
+        ruleId: rule.id,
+        ruleName: rule.title,
+        ruleDescription: rule.description,
+        ruleCode: rule.ruleCode,
+        section: rule.section,
+        fieldKey: rule.fieldKey,
+        status: 'unknown',
+        severity: rule.severity,
+        evidence: '(Not detected — insufficient evidence)',
+        expectedStandard: rule.description,
+        recommendation: 'Capture a clearer view of the applicable declaration panel or verify it manually before assigning a legal finding.',
+        penaltyRange: rule.penaltyRange,
+      });
+      continue;
+    }
+
     const outcome = validator(field, rule, context);
 
     const entry: RuleAuditEntry = {
@@ -620,10 +691,6 @@ export function validateProduct(
     audit.push(entry);
 
     // Track missing mandatory declarations
-    if (outcome.status === 'fail' && rule.isMandatory && outcome.evidence === '(Not detected)') {
-      missingDeclarations.push(rule.title);
-    }
-
     // Collect recommendations from failures and warnings
     if (outcome.status === 'fail' || outcome.status === 'warning') {
       if (outcome.recommendation) {
@@ -645,13 +712,16 @@ export function validateProduct(
   const warningCount = audit.filter((e) => e.status === 'warning').length;
   const passCount = audit.filter((e) => e.status === 'pass').length;
   const notApplicableCount = audit.filter((e) => e.status === 'not-applicable').length;
+  const unknownCount = audit.filter((e) => e.status === 'unknown').length;
 
   const complianceScore = computeComplianceScore(audit);
 
   // Determine overall status
-  let overallStatus: 'compliant' | 'non-compliant' | 'warning' = 'compliant';
+  let overallStatus: 'compliant' | 'non-compliant' | 'warning' | 'under-review' = 'compliant';
   if (violationCount > 0) {
     overallStatus = 'non-compliant';
+  } else if (unknownCount > 0) {
+    overallStatus = 'under-review';
   } else if (warningCount > 0) {
     overallStatus = 'warning';
   }
@@ -674,6 +744,8 @@ export function validateProduct(
     warningCount,
     passCount,
     notApplicableCount,
+    unknownCount,
+    rulePack: ACTIVE_RULE_PACK,
     missingDeclarations,
     audit,
     recommendations: allRecommendations,

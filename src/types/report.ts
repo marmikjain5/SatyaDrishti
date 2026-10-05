@@ -188,6 +188,18 @@ export interface ComplianceInspectionReport {
   evidence: ReportEvidenceData;
   recommendations: ReportRecommendationsData;
   verdict: ReportVerdictData;
+  rulePack?: {
+    id: string;
+    version: string;
+    effectiveFrom: string;
+    effectiveTo?: string | null;
+    citationSource: string;
+    sourceUrl?: string;
+    gazetteReferences?: string[];
+    verifiedAt?: string;
+    verifiedBy?: string;
+    approvalState: 'approved' | 'draft' | 'superseded';
+  };
   digitalSignature: DigitalSignatureInfo;
   /** Multi-Product Inspection Session specific data */
   sessionSummary?: InspectionSessionSummary;

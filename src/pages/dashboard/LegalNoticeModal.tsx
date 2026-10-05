@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/Button';
 import { Violation } from '../../types/compliance';
 import { formatCurrency } from '../../lib/utils';
 import { sendSCNNoticeEmail, SendEmailResult } from '../../services/gmailService';
+import { useAuthStore } from '../../store/authStore';
+import { appendInspectionAuditEvent } from '../../lib/inspectionAuditService';
 import {
   FileCheck2,
   Printer,
@@ -37,7 +39,9 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
   const [isDispatching, setIsDispatching] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [emailResult, setEmailResult] = useState<SendEmailResult | null>(null);
+  const [auditRecorded, setAuditRecorded] = useState(false);
   const noticePaperRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
 
   if (!violation) return null;
 
@@ -197,6 +201,19 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
   const handleDispatchNotice = async () => {
     setIsDispatching(true);
     try {
+      await appendInspectionAuditEvent({
+        caseId: violation.id,
+        type: 'SCN_APPROVED',
+        actorId: user?.email || 'local-session',
+        actorName: user?.name || 'Current inspector',
+        payload: {
+          noticeReference,
+          caseNumber: violation.caseNumber,
+          ruleCode: violation.ruleCode,
+          evidence: violation.evidence,
+          statusBeforeDispatch: violation.status,
+        },
+      });
       const res = await sendSCNNoticeEmail({
         noticeReference,
         caseNumber: violation.caseNumber,
@@ -216,6 +233,20 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
 
       setEmailResult(res);
       setIsDispatched(true);
+      await appendInspectionAuditEvent({
+        caseId: violation.id,
+        type: res.success ? 'SCN_SENT' : 'SCN_DISPATCH_FAILED',
+        actorId: user?.email || 'local-session',
+        actorName: user?.name || 'Current inspector',
+        payload: {
+          noticeReference,
+          recipient: res.recipient,
+          mode: res.mode,
+          messageId: res.messageId || null,
+          error: res.error || null,
+        },
+      });
+      setAuditRecorded(true);
       onDispatch(violation.id);
     } catch (err: any) {
       console.error('Failed to dispatch notice email:', err);
@@ -227,6 +258,7 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
   const handleReset = () => {
     setIsDispatched(false);
     setEmailResult(null);
+    setAuditRecorded(false);
     onClose();
   };
 
@@ -248,6 +280,9 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
             Statutory Notice Reference <strong className="text-slate-900 font-mono">{noticeReference}</strong> has been transmitted to registered corporate email of{' '}
             <strong className="text-slate-900">{violation.manufacturer}</strong> (<span className="text-blue-700 font-mono font-semibold">{emailResult?.recipient}</span>) and copied to Zonal Metrology Directorate.
           </p>
+          {auditRecorded && (
+            <p className="mt-2 text-[11px] text-slate-500 font-mono">Approval and dispatch outcome recorded in the local audit trail.</p>
+          )}
 
           {emailResult && (
             <div className="max-w-lg mx-auto p-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs space-y-2 shadow-inner">

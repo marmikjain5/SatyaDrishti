@@ -11,7 +11,9 @@
 
 import type { BoundingBox, DeclarationFieldKey } from './scan';
 
-export type ReadabilityStatus = 'compliant' | 'warning' | 'non-compliant';
+export type ReadabilityStatus = 'compliant' | 'warning' | 'non-compliant' | 'indeterminate';
+
+export type MeasurementStatus = 'measured' | 'unavailable' | 'timed-out';
 
 export type ReadabilityFlag =
   | 'LOW_CONFIDENCE'
@@ -36,6 +38,10 @@ export interface FontSizeMetrics {
   minThresholdMm: number;
   /** Whether the estimated font size is below the statutory threshold */
   isBelowThreshold: boolean;
+  /** Whether a calibrated physical scale was available for this measurement */
+  measurementStatus?: MeasurementStatus;
+  /** Calibration method used, when measured */
+  calibrationMethod?: string;
   /** Human-readable formatted string, e.g. "8.5 pt (2.3 mm)" */
   formatted: string;
 }
@@ -53,6 +59,10 @@ export interface ContrastMetrics {
   isLowContrast: boolean;
   /** Formatted contrast ratio string, e.g. "5.2:1" */
   formattedRatio: string;
+  /** Whether the image could be sampled successfully */
+  measurementStatus?: MeasurementStatus;
+  /** Reason when the optical measurement is unavailable */
+  failureReason?: string;
 }
 
 export interface TextRegionReadability {
@@ -99,6 +109,8 @@ export interface ReadabilitySummary {
   warningCount: number;
   /** Count of non-compliant text regions */
   nonCompliantCount: number;
+  /** Count of regions that could not be determined from available evidence */
+  indeterminateCount?: number;
   /** Total count of flagged problematic text regions */
   flaggedCount: number;
   /** Average estimated font size in pt */
@@ -117,7 +129,25 @@ export interface ReadabilityAnalysisResult {
   /** Analysis generation timestamp */
   timestamp: string;
   /** Engine version */
-  engineVersion: 'SatyaDrishti-Readability-4.0';
+  engineVersion: 'SatyaDrishti-Readability-4.0' | 'SatyaDrishti-Readability-5.0';
+  /** Physical-scale calibration used by this analysis, if any */
+  calibration?: {
+    status: MeasurementStatus;
+    method?: string;
+    packageWidthMm?: number;
+    packageHeightMm?: number;
+    packageWidthPx?: number;
+    packageHeightPx?: number;
+    uncertaintyMm?: number;
+    reason?: string;
+    sourceLabel?: string;
+    calibrationSourceLabel?: string;
+    details?: string;
+    pdpAreaCm2?: number;
+    minNumeralHeightMm?: number;
+    minNumeralHeightPt?: number;
+    scaleMmPerPx?: number;
+  };
   /** Original image dimensions */
   imageDimensions: { width: number; height: number };
   /** Overall summary metrics */

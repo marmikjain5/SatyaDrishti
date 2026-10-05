@@ -288,14 +288,14 @@ export const INITIAL_REGULATORY_CORPUS: RegulatoryDocumentChunk[] = [
     title: 'Legal Metrology (Packaged Commodities) Amendment Rules, 2021',
     ruleCode: 'PCR-2021-R6(1)(n)',
     section: 'Rule 6(1)(n) - Unit Sale Price Mandate',
-    officialGazetteRef: 'G.S.R. 779(E) dated 2nd November 2021',
+    officialGazetteRef: 'G.S.R. 779(E) dated 2nd November 2021 (Enforced from 1 Jan 2023)',
     sourceUrl: 'https://consumeraffairs.nic.in/sites/default/files/GSR779E.pdf',
     publicationDate: '2021-11-02',
-    effectiveDate: '2022-02-01',
+    effectiveDate: '2023-01-01',
     status: 'ACTIVE',
     categories: ['packaged_goods', 'food', 'all'],
-    content: 'Unit Sale Price (USP) per gram, per millilitre, per kilogram, or per litre must be declared in rupees alongside the total MRP to enable transparent price comparisons for consumers.',
-    verbatimClause: 'Rule 6(1)(n): Unit sale price in rupees rounded off to the nearest rupee or decimal places shall be declared on every package.',
+    content: 'Unit Sale Price (USP) per gram, per millilitre, per kilogram, or per litre must be declared in rupees alongside the total MRP to enable transparent price comparisons for consumers. Mandatory from 1 January 2023.',
+    verbatimClause: 'Rule 6(1)(n): Unit sale price in rupees rounded off to the nearest rupee or decimal places shall be declared on every package where MRP is declared.',
     penalties: { minFine: 25000, maxFine: 100000 },
   },
   {
@@ -469,6 +469,44 @@ export const INITIAL_RULE_REGISTRY: RegulatoryRuleItem[] = [
       },
     ],
   },
+  {
+    ruleId: 'rule-03',
+    code: 'PCR-2021-R6(1)(n)',
+    title: 'Unit Sale Price (USP) Mandatory Declaration',
+    authority: 'Legal Metrology',
+    act: 'Legal Metrology (Packaged Commodities) Amendment Rules, 2021 (G.S.R. 779(E))',
+    sourceSection: 'Rule 6(1)(n)',
+    appliesTo: ['packaged_goods', 'food', 'cosmetics', 'all'],
+    severity: 'HIGH',
+    status: 'ACTIVE',
+    activeVersion: 2,
+    versions: [
+      {
+        versionId: 'ver-usp-1',
+        versionNumber: 1,
+        effectiveFrom: '2011-04-01',
+        effectiveUntil: '2022-12-31',
+        status: 'SUPERSEDED',
+        changeSummary: 'Unit Sale Price declaration was advisory/optional under original 2011 rules.',
+        proposedBy: 'Department of Consumer Affairs',
+        approvedBy: 'Gazette Officer',
+        approvedAt: '2011-03-01',
+        ruleDefinition: { field: 'unitSalePrice', condition: 'optional', mandatory: false },
+      },
+      {
+        versionId: 'ver-usp-2',
+        versionNumber: 2,
+        effectiveFrom: '2023-01-01',
+        effectiveUntil: null,
+        status: 'ACTIVE',
+        changeSummary: 'Mandatory Unit Sale Price (USP in Rs. per g/ml/kg/l) enforced under G.S.R. 779(E) from 1 Jan 2023.',
+        proposedBy: 'Legal Metrology Division',
+        approvedBy: 'Secretary - Department of Consumer Affairs',
+        approvedAt: '2022-11-14',
+        ruleDefinition: { field: 'unitSalePrice', condition: 'valid_unit_price_format', mandatory: true },
+      },
+    ],
+  },
 ];
 
 // ─── 5. Hybrid Retrieval RAG Algorithm ───────────────────────────
@@ -572,3 +610,149 @@ export function queryRegulatoryRAG(params: RAGSearchQuery): RAGSearchResult {
     },
   };
 }
+
+export interface VectorRAGRuleItem {
+  id: string;
+  rule_code: string;
+  act_name: string;
+  section_clause: string;
+  target_field: string;
+  title: string;
+  description: string;
+  category_scope: string;
+  severity: string;
+  is_mandatory: boolean;
+  min_fine_inr: number;
+  max_fine_inr: number;
+  imprisonment_months: number;
+  gazette_notification_no?: string;
+  gazette_date?: string;
+  effective_from: string;
+  similarity_score: number;
+}
+
+export interface VectorRAGResult {
+  engine: string;
+  is_pgvector: boolean;
+  total_matches: number;
+  rules: VectorRAGRuleItem[];
+  fallbackResult?: RAGSearchResult;
+}
+
+/**
+ * Queries Supabase pgvector HNSW Cosine Distance on the PostgreSQL regulatory_rules table.
+ * Automatically and seamlessly falls back to the client-side deterministic RAG engine if offline or unreachable.
+ */
+export async function queryRegulatoryVectorRAG(params: RAGSearchQuery): Promise<VectorRAGResult> {
+  const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const localFallback = queryRegulatoryRAG(params);
+
+  try {
+    const query = params.queryText || params.fieldKey || '';
+    if (!query) {
+      return {
+        engine: 'Client Local Corpus',
+        is_pgvector: false,
+        total_matches: localFallback.matchedChunks.length,
+        rules: localFallback.matchedChunks.map((c) => ({
+          id: c.chunkId,
+          rule_code: c.ruleCode,
+          act_name: c.authority,
+          section_clause: c.section,
+          target_field: c.ruleCode,
+          title: c.title,
+          description: c.content,
+          category_scope: c.categories.join(', '),
+          severity: 'CRITICAL',
+          is_mandatory: true,
+          min_fine_inr: c.penalties.minFine,
+          max_fine_inr: c.penalties.maxFine,
+          imprisonment_months: c.penalties.imprisonmentMonths || 0,
+          effective_from: c.effectiveDate,
+          similarity_score: c.relevanceScore,
+        })),
+        fallbackResult: localFallback,
+      };
+    }
+
+    const res = await fetch(`${BACKEND_BASE_URL}/api/rules/search-vector`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query_text: query,
+        category: params.productCategory,
+        limit: 6,
+        threshold: 0.20,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Vector endpoint status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data && Array.isArray(data.rules) && data.rules.length > 0) {
+      return {
+        engine: data.engine || 'Supabase pgvector (HNSW Cosine Distance)',
+        is_pgvector: !!data.is_pgvector,
+        total_matches: data.total_matches || data.rules.length,
+        rules: data.rules,
+        fallbackResult: localFallback,
+      };
+    }
+
+    // If pgvector returned empty, use local fallback
+    return {
+      engine: 'Client Deterministic Engine (Empty Vector Result Fallback)',
+      is_pgvector: false,
+      total_matches: localFallback.matchedChunks.length,
+      rules: localFallback.matchedChunks.map((c) => ({
+        id: c.chunkId,
+        rule_code: c.ruleCode,
+        act_name: c.authority,
+        section_clause: c.section,
+        target_field: c.ruleCode,
+        title: c.title,
+        description: c.content,
+        category_scope: c.categories.join(', '),
+        severity: 'CRITICAL',
+        is_mandatory: true,
+        min_fine_inr: c.penalties.minFine,
+        max_fine_inr: c.penalties.maxFine,
+        imprisonment_months: c.penalties.imprisonmentMonths || 0,
+        effective_from: c.effectiveDate,
+        similarity_score: c.relevanceScore,
+      })),
+      fallbackResult: localFallback,
+    };
+  } catch (err) {
+    console.warn('[RAG] Backend pgvector unreachable, using client deterministic fallback:', err);
+    return {
+      engine: 'Client-Side In-Memory Engine (Offline Fallback)',
+      is_pgvector: false,
+      total_matches: localFallback.matchedChunks.length,
+      rules: localFallback.matchedChunks.map((c) => ({
+        id: c.chunkId,
+        rule_code: c.ruleCode,
+        act_name: c.authority,
+        section_clause: c.section,
+        target_field: c.ruleCode,
+        title: c.title,
+        description: c.content,
+        category_scope: c.categories.join(', '),
+        severity: 'CRITICAL',
+        is_mandatory: true,
+        min_fine_inr: c.penalties.minFine,
+        max_fine_inr: c.penalties.maxFine,
+        imprisonment_months: c.penalties.imprisonmentMonths || 0,
+        effective_from: c.effectiveDate,
+        similarity_score: c.relevanceScore,
+      })),
+      fallbackResult: localFallback,
+    };
+  }
+}
+

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers, GitBranch, Home } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { AnimatedThemeToggler } from '../ui/AnimatedThemeToggler';
@@ -13,8 +13,7 @@ export const LandingNavbar: React.FC = () => {
 
   const isDirectoryActive = location.pathname === '/' || location.pathname === '/directory' || location.pathname === '/verify';
   const isAboutActive = location.pathname === '/about' && (!location.hash || location.hash === '#about');
-  const isCapabilitiesActive = location.pathname === '/about' && location.hash === '#capabilities';
-  const isWorkflowActive = location.pathname === '/about' && location.hash === '#workflow';
+  const isArchitectureActive = location.pathname === '/system-architecture' || location.pathname === '/architecture';
 
   const handleNavClick = (targetId: string) => {
     setIsMobileMenuOpen(false);
@@ -27,7 +26,7 @@ export const LandingNavbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-[100] w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md transition-colors">
       {/* Main Nav Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
@@ -48,10 +47,10 @@ export const LandingNavbar: React.FC = () => {
         </Link>
 
         {/* Center Nav Links (Desktop) */}
-        <nav className="hidden md:flex items-center space-x-2 lg:space-x-4 text-sm font-medium">
+        <nav className="hidden md:flex shrink-0 items-center space-x-1 lg:space-x-2 xl:space-x-3 text-sm font-medium whitespace-nowrap">
           <Link
             to="/"
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
               isDirectoryActive
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -64,7 +63,7 @@ export const LandingNavbar: React.FC = () => {
           <Link
             to="/about#about"
             onClick={() => handleNavClick('about')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               isAboutActive
                 ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -74,27 +73,27 @@ export const LandingNavbar: React.FC = () => {
           </Link>
 
           <Link
-            to="/about#capabilities"
-            onClick={() => handleNavClick('capabilities')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              isCapabilitiesActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
+            to="/system-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              isArchitectureActive
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Core Capabilities
+            System Architecture
           </Link>
 
           <Link
-            to="/about#workflow"
-            onClick={() => handleNavClick('workflow')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              isWorkflowActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 shadow-xs'
+            to="/technical-blog"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              location.pathname === '/technical-blog'
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            Enforcement Flow
+            Blog
           </Link>
         </nav>
 
@@ -171,29 +170,29 @@ export const LandingNavbar: React.FC = () => {
           </Link>
 
           <Link
-            to="/about#capabilities"
-            onClick={() => handleNavClick('capabilities')}
+            to="/system-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
-              isCapabilitiesActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+              isArchitectureActive
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <Layers className="h-4 w-4 shrink-0" />
-            <span>Core Capabilities</span>
+            <Layers className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span>System Architecture (HLA / LLA)</span>
           </Link>
 
           <Link
-            to="/about#workflow"
-            onClick={() => handleNavClick('workflow')}
+            to="/technical-blog"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
-              isWorkflowActive
-                ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+              location.pathname === '/technical-blog'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            <GitBranch className="h-4 w-4 shrink-0" />
-            <span>Enforcement Flow</span>
+            <BookOpen className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+            <span>Blog</span>
           </Link>
 
           {/* Auth Button in Mobile Menu */}

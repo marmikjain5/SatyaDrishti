@@ -32,6 +32,23 @@ export const LandingFooter: React.FC = () => {
               <li className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">Consumer Protection (E-Commerce) Rules 2020</li>
             </ul>
           </div>
+
+          {/* Col 3: Prototype demo */}
+          <div className="space-y-3 w-full md:max-w-md">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+              Prototype Demo
+            </h4>
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-900 shadow-sm">
+              <iframe
+                className="block w-full aspect-video"
+                src="https://www.youtube.com/embed/b8JsUxylmGk?si=00o61Leb2CgYm5b8"
+                title="SatyaDrishti prototype demo video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
         </div>
 
         {/* Bottom disclaimer */}

@@ -83,6 +83,19 @@ function grayscale(imageData: ImageData): ImageData {
 }
 
 /**
+ * Invert luminance (converts white text on dark packaging into dark text on light).
+ */
+function invertColors(imageData: ImageData): ImageData {
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 255 - data[i];
+    data[i + 1] = 255 - data[i + 1];
+    data[i + 2] = 255 - data[i + 2];
+  }
+  return imageData;
+}
+
+/**
  * Enhance contrast using histogram stretching.
  * Finds min/max pixel values and stretches them to 0-255 range,
  * then applies a contrast multiplier for extra punch.
@@ -241,87 +254,100 @@ export async function preprocessImage(imageSource: string): Promise<Preprocessin
   const height = img.naturalHeight || img.height;
   const variants: PreprocessedVariant[] = [];
 
-  // 1. Original (no processing)
-  variants.push({
-    name: 'original',
-    dataUrl: imageSource,
-    description: 'Original image',
-    scale: 1,
-  });
-
-  // 2. Grayscale + Contrast Enhancement
+  // 1. High Contrast Clean (reads general packaging text: brand, mfg, address, origin, net qty)
   {
     const { canvas, ctx } = imageToCanvas(img, 1);
     let pixels = getPixels(ctx, canvas.width, canvas.height);
     pixels = grayscale(pixels);
-    pixels = enhanceContrast(pixels, 1.6);
+    pixels = enhanceContrast(pixels, 1.5);
+    pixels = sharpen(pixels, canvas.width);
     putPixels(ctx, pixels);
     variants.push({
       name: 'high_contrast',
       dataUrl: canvas.toDataURL('image/png'),
-      description: 'Grayscale + high contrast',
+      description: 'Grayscale + high contrast + edge sharpen',
       scale: 1,
     });
   }
 
-  // 3. Sharpened
+  // 2. Statutory Declaration Panel Zoom (lower 36% focused crop for small print: MRP, USP, Net Qty, dates)
   {
-    const { canvas, ctx } = imageToCanvas(img, 1);
+    const cropY = Math.floor(height * 0.64);
+    const cropH = height - cropY;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(width * 2.2);
+    canvas.height = Math.floor(cropH * 2.2);
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, cropY, width, cropH, 0, 0, canvas.width, canvas.height);
     let pixels = getPixels(ctx, canvas.width, canvas.height);
     pixels = grayscale(pixels);
+    pixels = enhanceContrast(pixels, 1.6);
     pixels = sharpen(pixels, canvas.width);
     putPixels(ctx, pixels);
     variants.push({
-      name: 'sharpened',
+      name: 'declaration_panel_zoom',
       dataUrl: canvas.toDataURL('image/png'),
-      description: 'Grayscale + sharpened text edges',
-      scale: 1,
+      description: 'Statutory declaration panel zoom (MRP, USP, Stamp)',
+      scale: 2.2,
     });
   }
 
-  // 4. Denoised
+  // 3. Dot-Matrix & Faint Stamp Normalization (lower 28% focused on white stamp box with min-max contrast stretch)
   {
-    const { canvas, ctx } = imageToCanvas(img, 1);
+    const cropY = Math.floor(height * 0.72);
+    const cropH = height - cropY;
+    const cropX = Math.floor(width * 0.15);
+    const cropW = Math.floor(width * 0.75);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(cropW * 2.5);
+    canvas.height = Math.floor(cropH * 2.5);
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
     let pixels = getPixels(ctx, canvas.width, canvas.height);
     pixels = grayscale(pixels);
-    pixels = medianDenoise(pixels, canvas.width);
-    pixels = enhanceContrast(pixels, 1.3);
-    putPixels(ctx, pixels);
-    variants.push({
-      name: 'denoised',
-      dataUrl: canvas.toDataURL('image/png'),
-      description: 'Denoised + contrast',
-      scale: 1,
-    });
-  }
 
-  // 5. Adaptive Threshold
-  {
-    const { canvas, ctx } = imageToCanvas(img, 1);
-    let pixels = getPixels(ctx, canvas.width, canvas.height);
-    pixels = adaptiveThreshold(pixels, canvas.width, 15, 8);
-    putPixels(ctx, pixels);
-    variants.push({
-      name: 'adaptive_threshold',
-      dataUrl: canvas.toDataURL('image/png'),
-      description: 'Binary text via adaptive threshold',
-      scale: 1,
-    });
-  }
-
-  // 6. Upscaled 2× (for small text)
-  {
-    const { canvas, ctx } = imageToCanvas(img, 2);
-    let pixels = getPixels(ctx, canvas.width, canvas.height);
-    pixels = grayscale(pixels);
-    pixels = enhanceContrast(pixels, 1.4);
+    // Min-Max stretch for dot-matrix stamp ink on white boxes
+    const d = pixels.data;
+    let min = 255;
+    let max = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = d[i];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    const range = max > min ? max - min : 1;
+    for (let i = 0; i < d.length; i += 4) {
+      const norm = Math.floor(((d[i] - min) / range) * 255);
+      d[i] = norm;
+      d[i + 1] = norm;
+      d[i + 2] = norm;
+    }
     pixels = sharpen(pixels, canvas.width);
     putPixels(ctx, pixels);
     variants.push({
-      name: 'upscaled_2x',
+      name: 'dot_matrix_stamp',
       dataUrl: canvas.toDataURL('image/png'),
-      description: '2× upscaled + grayscale + enhanced',
-      scale: 2,
+      description: 'Isolated stamp panel + contrast stretch',
+      scale: 2.5,
+    });
+  }
+
+  // 4. Inverted Luminance Pass (Transforms white text on dark packaging into crisp dark-on-white text for Tesseract)
+  {
+    const { canvas, ctx } = imageToCanvas(img, 1);
+    let pixels = getPixels(ctx, canvas.width, canvas.height);
+    pixels = grayscale(pixels);
+    pixels = invertColors(pixels);
+    pixels = enhanceContrast(pixels, 1.6);
+    pixels = sharpen(pixels, canvas.width);
+    putPixels(ctx, pixels);
+    variants.push({
+      name: 'inverted_dark_packaging',
+      dataUrl: canvas.toDataURL('image/png'),
+      description: 'Inverted luminance for white text on dark packaging (dark bottles, blue tubes, dark boxes)',
+      scale: 1,
     });
   }
 

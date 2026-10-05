@@ -103,10 +103,10 @@ export const HeroSection: React.FC = () => {
 
               <div className="space-y-2 max-w-xl mx-auto text-center">
                 <p className="text-lg sm:text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 dark:from-blue-400 dark:via-sky-300 dark:to-indigo-300 leading-snug">
-                  Autonomous Intelligence for Statutory Packaging Verification.
+                  Compliance Checking System for Legal Metrology (Packaged Commodities) Rules, 2011.
                 </p>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  Bridging cutting-edge optical recognition with statutory consumer laws to ensure transparency and compliance.
+                  Automated detection, extraction, and validation of mandatory declarations via Computer Vision &amp; OCR — with font size and readability analysis for enforcement officials across India.
                 </p>
               </div>
             </motion.div>

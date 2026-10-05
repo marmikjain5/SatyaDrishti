@@ -5,6 +5,7 @@ import {
   XCircle,
   AlertTriangle,
   MinusCircle,
+  HelpCircle,
   ChevronDown,
   ChevronUp,
   ChevronRight,
@@ -29,6 +30,8 @@ const StatusIcon: React.FC<{ status: RuleAuditEntry['status'] }> = ({ status }) 
       return <XCircle className="h-4 w-4 text-red-600 shrink-0" />;
     case 'warning':
       return <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />;
+    case 'unknown':
+      return <HelpCircle className="h-4 w-4 text-blue-600 shrink-0" />;
     case 'not-applicable':
     default:
       return <MinusCircle className="h-4 w-4 text-slate-400 shrink-0" />;
@@ -39,6 +42,7 @@ const statusLabel: Record<RuleAuditEntry['status'], string> = {
   pass: 'Pass',
   fail: 'Fail',
   warning: 'Warning',
+  unknown: 'Unknown',
   'not-applicable': 'N/A',
 };
 
@@ -49,6 +53,7 @@ const statusBadgeVariant: Record<
   pass: 'success',
   fail: 'danger',
   warning: 'warning',
+  unknown: 'neutral',
   'not-applicable': 'neutral',
 };
 
@@ -196,13 +201,14 @@ const AuditRow: React.FC<{ entry: RuleAuditEntry; index: number }> = ({ entry, i
 
 // ─── Filter Buttons ─────────────────────────────────────────────
 
-type FilterStatus = 'all' | 'pass' | 'fail' | 'warning' | 'not-applicable';
+type FilterStatus = 'all' | 'pass' | 'fail' | 'warning' | 'unknown' | 'not-applicable';
 
 const FILTER_OPTIONS: { key: FilterStatus; label: string; icon: React.ElementType }[] = [
   { key: 'all', label: 'All', icon: ClipboardCheck },
   { key: 'pass', label: 'Pass', icon: CheckCircle2 },
   { key: 'fail', label: 'Fail', icon: XCircle },
   { key: 'warning', label: 'Warning', icon: AlertTriangle },
+  { key: 'unknown', label: 'Unknown', icon: HelpCircle },
   { key: 'not-applicable', label: 'N/A', icon: MinusCircle },
 ];
 

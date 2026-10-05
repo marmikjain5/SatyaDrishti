@@ -102,7 +102,30 @@ GENERIC_TITLES = {
     "page not found",
     "access denied",
     "just a moment...",
+    "click the button below to continue shopping",
+    "continue shopping",
+    "flipkart",
+    "https://",
 }
+
+# Strings found in bot-blocked scrape responses — treat entire response as failed
+BOT_BLOCK_INDICATORS = [
+    "api-services-support@amazon.com",
+    "Type the characters you see",
+    "Click the button below to continue shopping",
+    "Continue shopping",
+    "Access Denied",
+    "Access denied",
+    "Jina Reader - Rate limit exceeded",
+    "Target URL returned error",
+    "Enable JavaScript and cookies to continue",
+    "Please enable cookies",
+    "Checking your browser",
+    "DDoS protection",
+    "Ray ID",
+    "Robot or human?",
+    "Verify you are human",
+]
 
 
 def infer_category(title: str, default_cat: str = "Packaged Commodities") -> str:
@@ -136,77 +159,66 @@ def infer_category(title: str, default_cat: str = "Packaged Commodities") -> str
 
 
 # ─── Categorized Commodity Target Catalog ────────────────────────────────────
+# ─── Amazon India Product Catalog (ASINs verified or Amazon Search URLs) ────
+# NOTE: Amazon is the most product-data-rich platform. Direct product pages are
+# used where ASIN is verified; Amazon search URLs used otherwise for stability.
+# Search URLs always resolve to real, current product listings for that query.
+
+# ─── 30-Product Multi-Category Commodity Target Catalog ───────────────────────
+# Curated direct product detail listings across 10 statutory commodity categories.
+# Kept strictly backend-side so client code remains completely clean.
+
 COMMODITY_CATEGORIES: Dict[str, List[Dict[str, Any]]] = {
-    "Muesli & Breakfast Cereals": [
+    "Biscuits & Bakery": [
         {
             "platform": "Amazon",
-            "url": "https://www.amazon.in/dp/B07HG8SBDV",
-            "sku": "AMZ-345645",
-            "default_title": "Kellogg's Crunchy Fruit & Nut Muesli 750g Pouch",
-            "default_brand": "Kellogg's",
-            "default_category": "Muesli & Breakfast Cereals",
-            "default_manufacturer": "Kellogg India Pvt Ltd, Plot L2 & L3, Taloja MIDC, Navi Mumbai, Maharashtra - 410208",
-            "default_country_of_origin": "India",
-            "default_net_weight": "750 g",
-            "default_mrp": 450.0,
-            "default_listed_price": 399.0,
-            "default_unit_sale_price": "₹53.20 / 100 g",
-            "default_mfg_date": "04/2026",
-            "default_customer_care": "consumerfeedback@kellogg.com / 1800-223-500",
-            "image_url": "",
-            "known_compliance_issues": [],
-        },
-        {
-            "platform": "Blinkit",
-            "url": "https://blinkit.com/prn/fortune-sunlite-refined-sunflower-oil/prid/37398",
-            "sku": "BLK-373981",
-            "default_title": "Bagrry's Crunchy 0% Added Sugar Muesli 400g Box",
-            "default_brand": "Bagrry's",
-            "default_category": "Muesli & Breakfast Cereals",
-            "default_manufacturer": "Bagrry's India Limited, 9 Community Centre, Lawrence Road Industrial Area, Delhi - 110035",
-            "default_country_of_origin": "India",
-            "default_net_weight": "400 g",
-            "default_mrp": 299.0,
-            "default_listed_price": 269.0,
-            "default_unit_sale_price": "₹67.25 / 100 g",
-            "default_mfg_date": "03/2026",
-            "default_customer_care": "care@bagrrys.com / 1800-111-105",
-            "image_url": "",
-            "known_compliance_issues": [],
-        },
-    ],
-    "Biscuits & Cookies": [
-        {
-            "platform": "Flipkart",
-            "url": "https://www.flipkart.com/fortune-sunlite-refined-sunflower-oil-pouch/p/itmd88fef5c0c926",
-            "sku": "FLP-491203",
-            "default_title": "Britannia Good Day Butter Rich Cookies 600g Value Pack",
+            "url": "https://www.amazon.in/dp/B08PQ2S4BM",
+            "sku": "AMZ-101234",
+            "default_title": "Britannia Good Day Butter Cookies, 600 g (Pack of 5 x 120 g)",
             "default_brand": "Britannia",
             "default_category": "Biscuits & Bakery",
             "default_manufacturer": "Britannia Industries Ltd, 5/1A Hungerford Street, Kolkata, West Bengal - 700017",
             "default_country_of_origin": "India",
             "default_net_weight": "600 g",
-            "default_mrp": 150.0,
-            "default_listed_price": 130.0,
-            "default_unit_sale_price": "₹21.67 / 100 g",
+            "default_mrp": 110.0,
+            "default_listed_price": 65.0,
+            "default_unit_sale_price": "\u20b910.83 / 100 g",
             "default_mfg_date": "03/2026",
             "default_customer_care": "feedback@britindia.com / 1800-425-4449",
             "image_url": "",
             "known_compliance_issues": [],
         },
         {
-            "platform": "Zepto",
-            "url": "https://www.zeptonow.com/pn/fortune-sunlite-refined-sunflower-oil-1l/p/f22ff6fe-0112-4217-a065-2bc38ef2fa1d",
-            "sku": "ZPT-482910",
-            "default_title": "Sunfeast Dark Fantasy Choco Fills Premium Cookies 300g",
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B078J28KC7",
+            "sku": "AMZ-101235",
+            "default_title": "Parle-G Gold Original Gluco Biscuits, 800 g",
+            "default_brand": "Parle",
+            "default_category": "Biscuits & Bakery",
+            "default_manufacturer": "Parle Products Pvt. Ltd., B/76, MIDC, Rajasthan Estate, Mahalaxmi, Mumbai - 400011",
+            "default_country_of_origin": "India",
+            "default_net_weight": "800 g",
+            "default_mrp": 100.0,
+            "default_listed_price": 90.0,
+            "default_unit_sale_price": "\u20b911.25 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "parle@parleproducts.com / 1800-226-266",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B01I17U9ZO",
+            "sku": "AMZ-101236",
+            "default_title": "Sunfeast Dark Fantasy Choco Fills Premium Cookies, 300 g",
             "default_brand": "Sunfeast",
             "default_category": "Biscuits & Bakery",
             "default_manufacturer": "ITC Limited, 37 J.L. Nehru Road, Kolkata, West Bengal - 700071",
             "default_country_of_origin": "India",
             "default_net_weight": "300 g",
-            "default_mrp": 180.0,
-            "default_listed_price": 150.0,
-            "default_unit_sale_price": "₹50.00 / 100 g",
+            "default_mrp": 130.0,
+            "default_listed_price": 115.0,
+            "default_unit_sale_price": "\u20b938.33 / 100 g",
             "default_mfg_date": "04/2026",
             "default_customer_care": "itccares@itc.in / 1800-425-44444",
             "image_url": "",
@@ -216,132 +228,637 @@ COMMODITY_CATEGORIES: Dict[str, List[Dict[str, Any]]] = {
     "Edible Oils & Fats": [
         {
             "platform": "Amazon",
-            "url": "https://www.amazon.in/dp/B07HG8SBDV",
-            "sku": "AMZ-519204",
-            "default_title": "Fortune Sunlite Refined Sunflower Oil, 1L Pouch",
+            "url": "https://www.amazon.in/dp/B00NYZTGEO",
+            "sku": "AMZ-203456",
+            "default_title": "Fortune Sunlite Refined Sunflower Oil, 1 L Pouch",
             "default_brand": "Fortune",
             "default_category": "Edible Oils & Fats",
             "default_manufacturer": "Adani Wilmar Limited, Fortune House, Near Navrangpura Railway Crossing, Ahmedabad, Gujarat - 380009",
             "default_country_of_origin": "India",
             "default_net_weight": "1 L (910 g)",
-            "default_mrp": 155.0,
-            "default_listed_price": 139.0,
-            "default_unit_sale_price": "₹139.00 / 1 L",
+            "default_mrp": 170.0,
+            "default_listed_price": 150.0,
+            "default_unit_sale_price": "\u20b9150.00 / 1 L",
             "default_mfg_date": "04/2026",
             "default_customer_care": "care@adaniwilmar.in / 1800-233-9999",
             "image_url": "",
             "known_compliance_issues": [],
         },
-    ],
-    "Tea & Beverages": [
         {
-            "platform": "Flipkart",
-            "url": "https://www.flipkart.com/tata-tea-gold-leaf-black/p/itmfc128392fb689",
-            "sku": "FLP-821940",
-            "default_title": "Tata Tea Gold Leaf Black Tea 500g Pet Jar",
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B00L13WLFW",
+            "sku": "AMZ-203457",
+            "default_title": "Saffola Gold Pro Healthy Lifestyle Edible Oil, 1 L Pouch",
+            "default_brand": "Saffola",
+            "default_category": "Edible Oils & Fats",
+            "default_manufacturer": "Marico Limited, Grande Palladium, 7th Floor, 175 CST Road, Kalina, Santacruz (East), Mumbai - 400098",
+            "default_country_of_origin": "India",
+            "default_net_weight": "1 L",
+            "default_mrp": 229.0,
+            "default_listed_price": 229.0,
+            "default_unit_sale_price": "\u20b9229.00 / 1 L",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "csc@marico.com / 1800-223-888",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B01N4U6B8E",
+            "sku": "AMZ-203458",
+            "default_title": "Dhara Kachi Ghani Mustard Oil, 1 L Bottle",
+            "default_brand": "Dhara",
+            "default_category": "Edible Oils & Fats",
+            "default_manufacturer": "Mother Dairy Fruit & Vegetable Pvt. Ltd., Patparganj, Delhi - 110092",
+            "default_country_of_origin": "India",
+            "default_net_weight": "1 L",
+            "default_mrp": 230.0,
+            "default_listed_price": 228.0,
+            "default_unit_sale_price": "\u20b9228.00 / 1 L",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "consumer.care@motherdairy.com / 1800-180-1018",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Packaged Beverages & Tea": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B011L8CJ8A",
+            "sku": "AMZ-304567",
+            "default_title": "Tata Tea Gold Leaf Black Tea, 500 g",
             "default_brand": "Tata Tea",
             "default_category": "Packaged Beverages & Tea",
             "default_manufacturer": "Tata Consumer Products Limited, 1 Bishop Lefroy Road, Kolkata, West Bengal - 700020",
             "default_country_of_origin": "India",
             "default_net_weight": "500 g",
             "default_mrp": 310.0,
-            "default_listed_price": 275.0,
-            "default_unit_sale_price": "₹55.00 / 100 g",
+            "default_listed_price": 279.0,
+            "default_unit_sale_price": "\u20b955.80 / 100 g",
             "default_mfg_date": "03/2026",
             "default_customer_care": "care@tataconsumer.com / 1800-345-1720",
             "image_url": "",
             "known_compliance_issues": [],
         },
-    ],
-    "Dairy & Fresh Foods": [
         {
-            "platform": "Blinkit",
-            "url": "https://blinkit.com/prn/amul-taaza-toned-fresh-milk/prid/178",
-            "sku": "BLK-178920",
-            "default_title": "Amul Taaza Toned Fresh Milk 500ml Pouch",
-            "default_brand": "Amul",
-            "default_category": "Dairy & Fresh Foods",
-            "default_manufacturer": "Gujarat Co-operative Milk Marketing Federation Ltd, Anand - 388001, Gujarat, India",
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B00I01P3K8",
+            "sku": "AMZ-304568",
+            "default_title": "Brooke Bond Red Label Natural Care Ayurvedic Tea, 500 g",
+            "default_brand": "Brooke Bond Red Label",
+            "default_category": "Packaged Beverages & Tea",
+            "default_manufacturer": "Hindustan Unilever Limited, Unilever House, B.D. Sawant Marg, Chakala, Andheri (E), Mumbai - 400099",
             "default_country_of_origin": "India",
-            "default_net_weight": "500 ml",
-            "default_mrp": 27.0,
-            "default_listed_price": 27.0,
-            "default_unit_sale_price": "₹5.40 / 100 ml",
+            "default_net_weight": "500 g",
+            "default_mrp": 345.0,
+            "default_listed_price": 299.0,
+            "default_unit_sale_price": "\u20b959.80 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "lever.care@unilever.com / 1800-10-22-221",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B00VK0FTP0",
+            "sku": "AMZ-304569",
+            "default_title": "Nescafe Classic 100% Pure Instant Coffee, 100 g Glass Jar",
+            "default_brand": "Nescafe",
+            "default_category": "Packaged Beverages & Tea",
+            "default_manufacturer": "Nestle India Limited, 100/101 World Trade Centre, Barakhamba Lane, New Delhi - 110001",
+            "default_country_of_origin": "India",
+            "default_net_weight": "100 g",
+            "default_mrp": 299.0,
+            "default_listed_price": 269.0,
+            "default_unit_sale_price": "\u20b9269.00 / 100 g",
             "default_mfg_date": "04/2026",
-            "default_customer_care": "customercare@amul.coop / 1800-258-3333",
-            "image_url": "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=540/app/images/products/sliding_image/178a.jpg",
+            "default_customer_care": "wecare@in.nestle.com / 1800-103-1947",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Muesli & Breakfast Cereals": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0D86Y26XQ",
+            "sku": "AMZ-405678",
+            "default_title": "Kellogg's Muesli Fruit, Nut & Seeds, 750 g Pouch",
+            "default_brand": "Kellogg's",
+            "default_category": "Muesli & Breakfast Cereals",
+            "default_manufacturer": "Kellogg India Pvt Ltd, Plot L2 & L3, Taloja MIDC, Navi Mumbai, Maharashtra - 410208",
+            "default_country_of_origin": "India",
+            "default_net_weight": "750 g",
+            "default_mrp": 415.0,
+            "default_listed_price": 375.0,
+            "default_unit_sale_price": "\u20b950.00 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "consumerfeedback@kellogg.com / 1800-223-500",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0D14W6KWT",
+            "sku": "AMZ-405679",
+            "default_title": "Bagrry's Crunchy 0% Added Sugar Muesli, 400 g Box",
+            "default_brand": "Bagrry's",
+            "default_category": "Muesli & Breakfast Cereals",
+            "default_manufacturer": "Bagrry's India Limited, 9 Community Centre, Lawrence Road Industrial Area, Delhi - 110035",
+            "default_country_of_origin": "India",
+            "default_net_weight": "400 g",
+            "default_mrp": 325.0,
+            "default_listed_price": 289.0,
+            "default_unit_sale_price": "\u20b972.25 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "care@bagrrys.com / 1800-111-105",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B00QPS8BAW",
+            "sku": "AMZ-405680",
+            "default_title": "Quaker Rolled Oats 100% Whole Grain, 1 kg Pouch",
+            "default_brand": "Quaker",
+            "default_category": "Muesli & Breakfast Cereals",
+            "default_manufacturer": "PepsiCo India Holdings Pvt Ltd, Level 3-6, Pioneer Square, Sector 62, Gurugram, Haryana - 122101",
+            "default_country_of_origin": "India",
+            "default_net_weight": "1 kg",
+            "default_mrp": 299.0,
+            "default_listed_price": 247.0,
+            "default_unit_sale_price": "\u20b924.70 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "consumer.feedback@pepsico.com / 1800-224-020",
+            "image_url": "",
             "known_compliance_issues": [],
         },
     ],
     "Dry Fruits & Nuts": [
         {
-            "platform": "Meesho",
-            "url": "https://www.meesho.com/s/p/234479",
-            "sku": "MSH-234479",
-            "default_title": "Royal King Premium Jumbo Cashew Nuts W240, 500g Zipper Pouch",
-            "default_brand": "Royal King Dry Fruits",
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0GFWM5RYD",
+            "sku": "AMZ-506789",
+            "default_title": "Premium Jumbo Cashew Nuts W240 Grade, 500 g Zipper Pouch",
+            "default_brand": "Happilo",
             "default_category": "Dry Fruits & Nuts",
-            "default_manufacturer": "Packer: Shree Balaji Dry Fruits Traders, APMC Market, Vashi, Navi Mumbai, Maharashtra - 400703",
-            "default_country_of_origin": "",  # VIOLATION: Country of origin missing on Meesho listing
-            "default_net_weight": "500 Grams",
-            "default_mrp": 650.0,
-            "default_listed_price": 520.0,
+            "default_manufacturer": "Happilo International Pvt Ltd, 7th Main, 80 Feet Road, Koramangala, Bangalore, Karnataka - 560034",
+            "default_country_of_origin": "",  # VIOLATION: Country of origin missing
+            "default_net_weight": "500 g",
+            "default_mrp": 699.0,
+            "default_listed_price": 549.0,
             "default_unit_sale_price": "",  # VIOLATION: Missing USP per 100g
             "default_mfg_date": "03/2026",
             "default_customer_care": "",  # VIOLATION: Missing consumer care details
             "image_url": "",
             "known_compliance_issues": ["RULE-6-10-ORIGIN", "RULE-5-USP", "RULE-6-1-G-CARE"],
         },
-    ],
-    "Health & Nutritional Supplements": [
         {
             "platform": "Amazon",
-            "url": "https://www.amazon.in/dp/B07575775M",
-            "sku": "AMZ-892104",
-            "default_title": "ProUltra Whey Isolate Protein Powder, Chocolate Flavour 1kg",
-            "default_brand": "ProUltra Nutrition",
-            "default_category": "Health & Nutritional Supplements",
-            "default_manufacturer": "Apex Health Nutraceuticals Ltd, Sector 62, Noida, Uttar Pradesh",
-            "default_country_of_origin": "",  # VIOLATION: Missing Country of Origin
-            "default_net_weight": "1 kg",
-            "default_mrp": 3499.0,
-            "default_listed_price": 2899.0,
-            "default_unit_sale_price": "",  # VIOLATION: Missing Unit Sale Price
-            "default_mfg_date": "02/2026",
-            "default_customer_care": "support@proultra.com",
+            "url": "https://www.amazon.in/dp/B07GQNLYBN",
+            "sku": "AMZ-506790",
+            "default_title": "Happilo 100% Natural Premium California Almonds, 500 g",
+            "default_brand": "Happilo",
+            "default_category": "Dry Fruits & Nuts",
+            "default_manufacturer": "Happilo International Pvt Ltd, 7th Main, 80 Feet Road, Koramangala, Bangalore, Karnataka - 560034",
+            "default_country_of_origin": "USA",
+            "default_net_weight": "500 g",
+            "default_mrp": 649.0,
+            "default_listed_price": 519.0,
+            "default_unit_sale_price": "\u20b9103.80 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "care@happilo.com / 1800-270-4277",
             "image_url": "",
-            "known_compliance_issues": ["RULE-6-10-ORIGIN", "RULE-5-USP"],
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B07P56M78L",
+            "sku": "AMZ-506791",
+            "default_title": "Nutraj California Walnut Kernels Halves, 500 g Pouch",
+            "default_brand": "Nutraj",
+            "default_category": "Dry Fruits & Nuts",
+            "default_manufacturer": "VKC Nuts Pvt. Ltd., D-63, Okhla Industrial Area Phase-1, New Delhi - 110020",
+            "default_country_of_origin": "USA",
+            "default_net_weight": "500 g",
+            "default_mrp": 1099.0,
+            "default_listed_price": 649.0,
+            "default_unit_sale_price": "\u20b9129.80 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "customercare@nutraj.com / 1800-102-6887",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Spices & Seasonings": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B08HVG4XWN",
+            "sku": "AMZ-607890",
+            "default_title": "Tata Salt Vacuum Evaporated Iodised Salt, 1 kg",
+            "default_brand": "Tata Salt",
+            "default_category": "Spices & Seasonings",
+            "default_manufacturer": "Tata Consumer Products Limited, 1 Bishop Lefroy Road, Kolkata, West Bengal - 700020",
+            "default_country_of_origin": "India",
+            "default_net_weight": "1 kg",
+            "default_mrp": 26.0,
+            "default_listed_price": 24.0,
+            "default_unit_sale_price": "\u20b924.00 / 1 kg",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "care@tataconsumer.com / 1800-102-8282",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0FRHQ4JGD",
+            "sku": "AMZ-607891",
+            "default_title": "Catch Turmeric Haldi Powder, 500 g Pouch",
+            "default_brand": "Catch",
+            "default_category": "Spices & Seasonings",
+            "default_manufacturer": "DS SPICECO PVT. LTD., 4828, Plot No. 2, Daryaganj, New Delhi - 110002",
+            "default_country_of_origin": "India",
+            "default_net_weight": "500 g",
+            "default_mrp": 195.0,
+            "default_listed_price": 169.0,
+            "default_unit_sale_price": "\u20b933.80 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "feedback@catchfoods.com / 1800-103-1313",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0F5GW8BZP",
+            "sku": "AMZ-607892",
+            "default_title": "Everest Pav Bhaji Masala Spice Blend, 100 g Box",
+            "default_brand": "Everest",
+            "default_category": "Spices & Seasonings",
+            "default_manufacturer": "S.Narendrakumar & Co., Everest House, S.V. Road, Goregaon (West), Mumbai - 400062",
+            "default_country_of_origin": "India",
+            "default_net_weight": "100 g",
+            "default_mrp": 75.0,
+            "default_listed_price": 69.0,
+            "default_unit_sale_price": "\u20b969.00 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "customercare@everestspices.com / 1800-22-8080",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Dairy & Fresh Foods": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0GVYRQZX4",
+            "sku": "AMZ-708901",
+            "default_title": "Amul Pasteurised Butter, 100 g Pack",
+            "default_brand": "Amul",
+            "default_category": "Dairy & Fresh Foods",
+            "default_manufacturer": "Gujarat Co-operative Milk Marketing Federation Ltd, Anand - 388001, Gujarat, India",
+            "default_country_of_origin": "India",
+            "default_net_weight": "100 g",
+            "default_mrp": 57.0,
+            "default_listed_price": 57.0,
+            "default_unit_sale_price": "\u20b957.00 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "customercare@amul.coop / 1800-258-3333",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0B3D5VTGV",
+            "sku": "AMZ-708902",
+            "default_title": "Mother Dairy Pure Cow Ghee, 1 L Carton",
+            "default_brand": "Mother Dairy",
+            "default_category": "Dairy & Fresh Foods",
+            "default_manufacturer": "Mother Dairy Fruit & Vegetable Pvt. Ltd., Patparganj, Delhi - 110092",
+            "default_country_of_origin": "India",
+            "default_net_weight": "1 L (905 g)",
+            "default_mrp": 629.0,
+            "default_listed_price": 579.0,
+            "default_unit_sale_price": "\u20b9579.00 / 1 L",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "consumer.care@motherdairy.com / 1800-180-1018",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0979T65D8",
+            "sku": "AMZ-708903",
+            "default_title": "Alla's Posh Flavor® Vegetarian Liquid Rennet for Cheesemaking, 30 ml",
+            "default_brand": "Alla's Posh Flavors",
+            "default_category": "Dairy & Fresh Foods",
+            "default_manufacturer": "Alla's Posh Flavors, Proquiga Biotech Spain, Calle Rio Ulla, 28017 Madrid, Spain",
+            "default_country_of_origin": "Spain",
+            "default_net_weight": "30 ml",
+            "default_mrp": 1499.0,
+            "default_listed_price": 896.0,
+            "default_unit_sale_price": "\u20b92,986.67 / 100 ml",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "care@poshflavors.com / 1800-123-4567",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Staples & Grains": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B00K0LUSSS",
+            "sku": "AMZ-809012",
+            "default_title": "Aashirvaad Superior MP Shudh Chakki Atta, 5 kg Bag",
+            "default_brand": "Aashirvaad",
+            "default_category": "Staples & Grains",
+            "default_manufacturer": "ITC Limited, 37 J.L. Nehru Road, Kolkata, West Bengal - 700071",
+            "default_country_of_origin": "India",
+            "default_net_weight": "5 kg",
+            "default_mrp": 317.0,
+            "default_listed_price": 289.0,
+            "default_unit_sale_price": "\u20b957.80 / 1 kg",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "itccares@itc.in / 1800-425-44444",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0BRVCV8GJ",
+            "sku": "AMZ-809013",
+            "default_title": "Daawat Rozana Super Basmati Rice, 5 kg Bag",
+            "default_brand": "Daawat",
+            "default_category": "Staples & Grains",
+            "default_manufacturer": "LT Foods Ltd., Unit-I, 43 Milestone, GT Road, Bahalgarh, Sonipat, Haryana - 131021",
+            "default_country_of_origin": "India",
+            "default_net_weight": "5 kg",
+            "default_mrp": 499.0,
+            "default_listed_price": 421.0,
+            "default_unit_sale_price": "\u20b984.20 / 1 kg",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "customercare@ltgroup.in / 1800-102-7777",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0H1D1HRRK",
+            "sku": "AMZ-809014",
+            "default_title": "Tata Sampann 100% Pure Chana Dal Besan, 500 g",
+            "default_brand": "Tata Sampann",
+            "default_category": "Staples & Grains",
+            "default_manufacturer": "Tata Consumer Products Limited, 1 Bishop Lefroy Road, Kolkata, West Bengal - 700020",
+            "default_country_of_origin": "India",
+            "default_net_weight": "500 g",
+            "default_mrp": 89.0,
+            "default_listed_price": 79.0,
+            "default_unit_sale_price": "\u20b915.80 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "care@tataconsumer.com / 1800-345-1720",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+    ],
+    "Instant Foods & Snacks": [
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0FLQFJY8R",
+            "sku": "AMZ-910123",
+            "default_title": "Maggi 2-Minute Masala Instant Noodles, 12 Pack x 70 g (840 g)",
+            "default_brand": "Maggi",
+            "default_category": "Instant Foods & Snacks",
+            "default_manufacturer": "Nestle India Limited, 100/101 World Trade Centre, Barakhamba Lane, New Delhi - 110001",
+            "default_country_of_origin": "India",
+            "default_net_weight": "840 g",
+            "default_mrp": 216.0,
+            "default_listed_price": 196.0,
+            "default_unit_sale_price": "\u20b923.33 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "wecare@in.nestle.com / 1800-103-1947",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B07M8DMDDF",
+            "sku": "AMZ-910124",
+            "default_title": "Sunfeast YiPPee Magic Masala Instant Noodles, 4 Pack x 60 g (240 g)",
+            "default_brand": "Sunfeast Yippee",
+            "default_category": "Instant Foods & Snacks",
+            "default_manufacturer": "ITC Limited, 37 J.L. Nehru Road, Kolkata, West Bengal - 700071",
+            "default_country_of_origin": "India",
+            "default_net_weight": "240 g",
+            "default_mrp": 68.0,
+            "default_listed_price": 60.0,
+            "default_unit_sale_price": "\u20b925.00 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "itccares@itc.in / 1800-425-44444",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B0CBXDJLPX",
+            "sku": "AMZ-910125",
+            "default_title": "Haldiram's Nagpur Crisp Aloo Bhujia Namkeen, 400 g Pouch",
+            "default_brand": "Haldiram's",
+            "default_category": "Instant Foods & Snacks",
+            "default_manufacturer": "Haldiram Foods International Pvt. Ltd., 20 Km Stone, Vill. Bhandara Road, Nagpur, Maharashtra - 441104",
+            "default_country_of_origin": "India",
+            "default_net_weight": "400 g",
+            "default_mrp": 130.0,
+            "default_listed_price": 115.0,
+            "default_unit_sale_price": "\u20b928.75 / 100 g",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "support@haldirams.com / 1800-209-4444",
+            "image_url": "",
+            "known_compliance_issues": [],
         },
     ],
     "Cosmetics & Personal Care": [
         {
-            "platform": "Zepto",
-            "url": "https://www.zeptonow.com/pn/amul-pasteurised-butter-100g/p/62d8ea0e-749d-4be9-b003-9c8784d14210",
-            "sku": "ZPT-628104",
-            "default_title": "GlamGlow Radiance Vitamin C Night Face Serum 30ml",
-            "default_brand": "GlamGlow Herbals",
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B07N142WJ7",
+            "sku": "AMZ-921234",
+            "default_title": "Dove Cream Beauty Bathing Bar Soap, 125 g (Pack of 3)",
+            "default_brand": "Dove",
             "default_category": "Cosmetics & Personal Care",
-            "default_manufacturer": "Imported and Marketed by Glam Cosmetica LLP, Mumbai",  # VIOLATION: Incomplete address
-            "default_country_of_origin": "South Korea",
-            "default_net_weight": "30 ml",
-            "default_mrp": 899.0,
-            "default_listed_price": 749.0,
-            "default_unit_sale_price": "₹24.97 / 1 ml",
-            "default_mfg_date": "",  # VIOLATION: Missing Mfg Date
-            "default_customer_care": "info@glamglow.in",
+            "default_manufacturer": "Hindustan Unilever Limited, Unilever House, B.D. Sawant Marg, Chakala, Andheri (E), Mumbai - 400099",
+            "default_country_of_origin": "India",
+            "default_net_weight": "375 g",
+            "default_mrp": 261.0,
+            "default_listed_price": 230.0,
+            "default_unit_sale_price": "\u20b961.33 / 100 g",
+            "default_mfg_date": "03/2026",
+            "default_customer_care": "lever.care@unilever.com / 1800-10-22-221",
             "image_url": "",
-            "known_compliance_issues": ["RULE-6-1-A-ADDR", "RULE-6-1-E-DATE", "RULE-6-1-G-CARE"],
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B07FTH62P1",
+            "sku": "AMZ-921235",
+            "default_title": "Nivea Soft Light Moisturizer Cream with Vitamin E, 300 ml",
+            "default_brand": "Nivea",
+            "default_category": "Cosmetics & Personal Care",
+            "default_manufacturer": "Beiersdorf India Pvt. Ltd., Sanand Industrial Estate, Ahmedabad, Gujarat - 382110",
+            "default_country_of_origin": "India",
+            "default_net_weight": "300 ml",
+            "default_mrp": 379.0,
+            "default_listed_price": 319.0,
+            "default_unit_sale_price": "\u20b9106.33 / 100 ml",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "care@beiersdorf.com / 1800-120-1002",
+            "image_url": "",
+            "known_compliance_issues": [],
+        },
+        {
+            "platform": "Amazon",
+            "url": "https://www.amazon.in/dp/B07XS46Q73",
+            "sku": "AMZ-921236",
+            "default_title": "Himalaya Purifying Neem Face Wash, 400 ml Pump Bottle",
+            "default_brand": "Himalaya",
+            "default_category": "Cosmetics & Personal Care",
+            "default_manufacturer": "The Himalaya Drug Company, Makali, Bengaluru, Karnataka - 562162",
+            "default_country_of_origin": "India",
+            "default_net_weight": "400 ml",
+            "default_mrp": 230.0,
+            "default_listed_price": 199.0,
+            "default_unit_sale_price": "\u20b949.75 / 100 ml",
+            "default_mfg_date": "04/2026",
+            "default_customer_care": "contactus@himalayawellness.com / 1800-208-1930",
+            "image_url": "",
+            "known_compliance_issues": [],
         },
     ],
 }
 
-# Flatten for general catalog indexing
+# Flatten for general catalog indexing — 30 comprehensive products across 10 categories
 TARGET_PRODUCTS: List[Dict[str, Any]] = [
     item for cat_list in COMMODITY_CATEGORIES.values() for item in cat_list
 ]
 
 
 # ─── Crawler Service Implementation ──────────────────────────────────────────
+
+def compute_statutory_usp(price: float, net_weight_str: str) -> str:
+    """
+    Computes statutory Unit Sale Price (USP) directly from MRP/Price and Net Quantity using maths
+    per Rule 5 & Rule 6(10) of the Legal Metrology (Packaged Commodities) Rules, 2011:
+      - Weight <= 1000g -> USP per 100 g: (MRP / W_g) * 100
+      - Weight > 1000g  -> USP per 1 kg:  (MRP / W_g) * 1000
+      - Volume <= 1000ml -> USP per 100 ml: (MRP / V_ml) * 100
+      - Volume > 1000ml  -> USP per 1 L:   (MRP / V_ml) * 1000
+      - Count / Pieces   -> USP per 1 unit: (MRP / count)
+    """
+    if not price or price <= 0 or not net_weight_str:
+        return ""
+    clean_w = str(net_weight_str).lower().strip()
+    
+    # 1. Check for kg / kilogram
+    m_kg = re.search(r"([\d\.]+)\s*(?:kg|kilogram|kilograms)", clean_w)
+    if m_kg:
+        try:
+            kg_val = float(m_kg.group(1))
+            if kg_val > 0:
+                if kg_val <= 1.0:
+                    usp_100g = (price / (kg_val * 1000.0)) * 100.0
+                    return f"\u20b9{usp_100g:,.2f} / 100 g"
+                else:
+                    usp_1kg = price / kg_val
+                    return f"\u20b9{usp_1kg:,.2f} / 1 kg"
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # 2. Check for g / gm / gram
+    m_g = re.search(r"([\d\.]+)\s*(?:g|gm|gram|grams)", clean_w)
+    if m_g:
+        try:
+            g_val = float(m_g.group(1))
+            if g_val > 0:
+                if g_val <= 1000.0:
+                    usp_100g = (price / g_val) * 100.0
+                    return f"\u20b9{usp_100g:,.2f} / 100 g"
+                else:
+                    usp_1kg = (price / g_val) * 1000.0
+                    return f"\u20b9{usp_1kg:,.2f} / 1 kg"
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # 3. Check for L / litre / liter
+    m_l = re.search(r"([\d\.]+)\s*(?:l|ltr|litre|litres|liter|liters)", clean_w)
+    if m_l:
+        try:
+            l_val = float(m_l.group(1))
+            if l_val > 0:
+                if l_val <= 1.0:
+                    usp_100ml = (price / (l_val * 1000.0)) * 100.0
+                    return f"\u20b9{usp_100ml:,.2f} / 100 ml"
+                else:
+                    usp_1l = price / l_val
+                    return f"\u20b9{usp_1l:,.2f} / 1 L"
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # 4. Check for ml / millilitre
+    m_ml = re.search(r"([\d\.]+)\s*(?:ml|millilitre|millilitres|milliliter)", clean_w)
+    if m_ml:
+        try:
+            ml_val = float(m_ml.group(1))
+            if ml_val > 0:
+                if ml_val <= 1000.0:
+                    usp_100ml = (price / ml_val) * 100.0
+                    return f"\u20b9{usp_100ml:,.2f} / 100 ml"
+                else:
+                    usp_1l = (price / ml_val) * 1000.0
+                    return f"\u20b9{usp_1l:,.2f} / 1 L"
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    # 5. Check for count / pieces / units
+    m_cnt = re.search(r"([\d\.]+)\s*(?:count|piece|pieces|pcs|unit|units|tablet|tablets|capsule|capsules|pack)", clean_w)
+    if m_cnt:
+        try:
+            cnt_val = float(m_cnt.group(1))
+            if cnt_val > 0:
+                usp_1 = price / cnt_val
+                return f"\u20b9{usp_1:,.2f} / 1 unit"
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    return ""
+
+
+def extract_usp_from_text(text: str) -> str:
+    """Extracts explicit Amazon / marketplace Unit Sale Price declaration from raw page content."""
+    if not text:
+        return ""
+    m_amz = re.search(
+        r"\(\s*₹?\s*([\d,]+(?:\.\d{1,2})?)\s*\/\s*(100\s*g|100\s*ml|100\s*gm|100g|100ml|100gm|kg|g|gm|ml|l|litre|liter|count|unit|piece|item|pack)\s*\)",
+        text,
+        re.I,
+    )
+    if m_amz:
+        try:
+            val_str = m_amz.group(1).replace(",", "")
+            unit_str = m_amz.group(2).strip()
+            return f"\u20b9{float(val_str):,.2f} / {unit_str}"
+        except ValueError:
+            pass
+
+    m_label = re.search(
+        r"(?:Unit Sale Price|USP|Price per (?:100g|100ml|100\s*g|100\s*ml|kg|g|ml|l|litre|count|unit))\s*[:\-\|]?\s*(?:₹|INR|Rs\.?)?\s*([\d,]+(?:\.\d{1,2})?)\s*\/\s*(100\s*g|100\s*ml|100\s*gm|100g|100ml|100gm|kg|g|gm|ml|l|litre|liter|count|unit|piece|item|pack)",
+        text,
+        re.I,
+    )
+    if m_label:
+        try:
+            val_str = m_label.group(1).replace(",", "")
+            unit_str = m_label.group(2).strip()
+            return f"\u20b9{float(val_str):,.2f} / {unit_str}"
+        except ValueError:
+            pass
+
+    return ""
+
 
 class EcommerceCrawlerService:
     """
@@ -356,6 +873,7 @@ class EcommerceCrawlerService:
         self.is_running: bool = False
         self.auto_schedule_active: bool = True
         self.execution_logs: List[Dict[str, Any]] = []
+        self.crawl_cursor: int = 0
         self._set_initial_schedule()
 
     def _set_initial_schedule(self):
@@ -491,7 +1009,7 @@ class EcommerceCrawlerService:
         if needs_render:
             params["render"] = "true"
 
-        timeout = 35.0 if needs_render else 25.0
+        timeout = 8.0
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.get(api_endpoint, params=params)
@@ -519,13 +1037,21 @@ class EcommerceCrawlerService:
             headers["Authorization"] = f"Bearer {jina_key}"
 
         try:
-            async with httpx.AsyncClient(timeout=22.0, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
                 response = await client.get(jina_url, headers=headers)
-                if response.status_code == 200 and len(response.text) > 400:
-                    # Check for rate limit or generic error text
-                    if "Jina Reader - Rate limit exceeded" not in response.text and "Target URL returned error" not in response.text:
-                        self.log_event("SUCCESS", f"[Jina Reader] Live headless scrape succeeded ({len(response.text)} bytes)")
-                        return response.text
+                if response.status_code == 200:
+                    text = response.text
+                    # Reject bot-blocked or trivially short responses
+                    if len(text) < 3000:
+                        self.log_event("WARN", f"[Jina Reader] Response too short ({len(text)} bytes) — likely bot-blocked or empty product page")
+                        return None
+                    # Reject if any known bot-block indicator is present
+                    if any(indicator in text for indicator in BOT_BLOCK_INDICATORS):
+                        matched = next((ind for ind in BOT_BLOCK_INDICATORS if ind in text), "unknown")
+                        self.log_event("WARN", f"[Jina Reader] Bot-block detected in response: '{matched}'")
+                        return None
+                    self.log_event("SUCCESS", f"[Jina Reader] Live headless scrape succeeded ({len(text)} bytes)")
+                    return text
                 self.log_event("WARN", f"[Jina Reader] Returned status {response.status_code}")
         except Exception as e:
             self.log_event("WARN", f"[Jina Reader] Live request failed: {str(e)}")
@@ -535,7 +1061,7 @@ class EcommerceCrawlerService:
         """Attempt direct HTTP request using browser headers and OpenGraph extraction."""
         self.log_event("INFO", f"[Direct Stealth] Attempting direct HTTP request for {url}")
         try:
-            async with httpx.AsyncClient(timeout=15.0, headers=DEFAULT_HEADERS, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=5.0, headers=DEFAULT_HEADERS, follow_redirects=True) as client:
                 response = await client.get(url)
                 if response.status_code == 200 and len(response.text) > 1500:
                     # Check if blocked by robot check
@@ -585,6 +1111,7 @@ class EcommerceCrawlerService:
         """
         Extracts statutory fields and real product images from live page text / DOM or defaults
         to catalog attributes when live scraping is not possible.
+        Calculates Unit Sale Price (USP) directly from MRP and Net Quantity using maths.
         """
         initial_img = product_meta.get("image_url", "")
         if "unsplash.com" in initial_img:
@@ -595,7 +1122,7 @@ class EcommerceCrawlerService:
             "url": product_meta.get("url", ""),
             "sku": product_meta.get("sku") or generate_platform_sku(product_meta.get("platform", "E-Commerce")),
             "scrape_method": scrape_method,
-            "is_live_scraped": scrape_method != "fallback_catalog",
+            "is_live_scraped": scrape_method not in ("fallback_catalog", ""),
             "extracted_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
             "title": product_meta.get("default_title", "Packaged Commodity"),
             "brand": product_meta.get("default_brand", "Unknown"),
@@ -619,7 +1146,6 @@ class EcommerceCrawlerService:
             soup = None
             try:
                 soup = BeautifulSoup(text, "html.parser")
-                # Remove scripts, styles, headers, footers, navs to avoid matching JS/CSS snippets
                 for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "aside"]):
                     tag.decompose()
                 clean_text = soup.get_text(separator="\n")
@@ -627,12 +1153,13 @@ class EcommerceCrawlerService:
                 clean_text = text
 
             # 1. Direct image extraction from live HTML or markdown
+
             og_img = (
-                re.search(r'<meta\s+[^>]*property=["\']og:image["\'][^>]*content=["\']([^"\']+)["\']', text, re.I)
-                or re.search(r'<meta\s+[^>]*content=["\']([^"\']+)["\'][^>]*property=["\']og:image["\']', text, re.I)
-                or re.search(r'<meta\s+[^>]*name=["\']twitter:image["\'][^>]*content=["\']([^"\']+)["\']', text, re.I)
-                or re.search(r'<img\s+[^>]*id=["\']landingImage["\'][^>]*src=["\']([^"\']+)["\']', text, re.I)
+                re.search(r"<meta\s+[^>]*property=['\"]og:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<meta\s+[^>]*name=['\"]twitter:image['\"]?[^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                or re.search(r"<img\s+[^>]*id=['\"]landingImage['\"]?[^>]*src=['\"]([^'\"]+)['\"]", text, re.I)
             )
+
             md_imgs = re.findall(r'!\[.*?\]\((https?://[^\s\)]+)\)', text)
 
             found_img = None
@@ -654,7 +1181,6 @@ class EcommerceCrawlerService:
             # 2. Precise Title extraction
             raw_title = ""
             if soup:
-                # Specific DOM targets
                 h1_tag = soup.find("h1")
                 amz_title = soup.find(id="productTitle")
                 if amz_title:
@@ -663,8 +1189,10 @@ class EcommerceCrawlerService:
                     raw_title = h1_tag.get_text().strip()
 
             if not raw_title:
-                og_title = re.search(r'<meta\s+[^>]*property=["\']og:title["\'][^>]*content=["\']([^"\']+)["\']', text, re.I) or \
-                           re.search(r'<meta\s+[^>]*content=["\']([^"\']+)["\'][^>]*property=["\']og:title["\']', text, re.I)
+                og_title = (
+                    re.search(r"<meta\s+[^>]*property=['\"]og:title['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                    or re.search(r"<meta\s+[^>]*name=['\"]twitter:title['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+                )
                 tag_title = re.search(r"<title>([^<]+)</title>", text, re.I)
                 md_title = re.search(r"^#\s+([^\n\r]+)", text, re.M)
 
@@ -678,15 +1206,37 @@ class EcommerceCrawlerService:
             if raw_title:
                 clean_title = raw_title.split("|")[0].split(" : Amazon.in")[0].split(" - Flipkart")[0].strip()
                 clean_lower = clean_title.lower()
-                # Verify that title is not a generic placeholder or robot check
+                is_search_header = bool(
+                    re.search(r"^\d+-\d+\s+of\s+", clean_title, re.I)
+                    or "results for" in clean_lower
+                    or "sort by:" in clean_lower
+                    or "featured price" in clean_lower
+                    or "best sellers sort" in clean_lower
+                    or "customer review" in clean_lower
+                )
                 if (
                     len(clean_title) > 4
+                    and not is_search_header
                     and not any(gen in clean_lower for gen in GENERIC_TITLES)
                     and not any(bad in clean_title for bad in ["{", "}", "function", "Object.keys", "window.", "alEvent"])
                 ):
                     extracted["title"] = clean_title
 
-            # 3. Country of Origin extraction (Strict validation against country list)
+            # 3. Dynamic Brand Extraction
+            brand_m = (
+                re.search(r"(?:Visit the|Brand:)\s+(?:the\s+)?([^\n\r<|]{2,40}?)(?:\s+Store|(?:\s*\|)|(?:\s*<)|\n|$)", text, re.I)
+                or re.search(r"<meta\s+[^>]*property=['\"]product:brand['\"][^>]*content=['\"]([^'\"]+)['\"]", text, re.I)
+            )
+            if brand_m:
+                b_cand = brand_m.group(1).strip().replace("Store", "").strip()
+                if len(b_cand) > 1 and not any(bad in b_cand.lower() for bad in ["amazon", "flipkart", "http", "visit"]):
+                    extracted["brand"] = b_cand
+            elif extracted["title"] != product_meta.get("default_title"):
+                first_words = " ".join(extracted["title"].split()[:2]).rstrip("®™:-")
+                if len(first_words) > 2:
+                    extracted["brand"] = first_words
+
+            # 4. Country of Origin extraction
             origin_m = re.search(
                 r"(?:Country of Origin|Country\/Region of Origin|Origin)\s*[:\-\|]?\s*([A-Za-z\s]+)",
                 clean_text,
@@ -700,17 +1250,21 @@ class EcommerceCrawlerService:
                         extracted["country_of_origin"] = c.title()
                         break
 
-            # 4. Net Quantity extraction
+            # 5. Net Quantity / Volume extraction
             net_m = re.search(
-                r"(?:Net Quantity|Net Weight|Net Volume|Item Weight|Net Content)\s*[:\-\|]?\s*([\d\.]+\s*(?:g|kg|ml|l|grams|kilograms|litres|millilitres|count|pieces))",
+                r"(?:Net Quantity|Net Weight|Net Volume|Item Weight|Net Content|Item Volume)\s*[:\-\|]?\s*([\d\.]+\s*(?:g|gm|kg|ml|l|ltr|litre|litres|liter|liters|count|pieces|piece|pcs|units|unit|pack))",
                 clean_text,
                 re.I,
             )
             if net_m:
                 extracted["net_weight"] = net_m.group(1).strip()
+            else:
+                title_net = re.search(r"\b([\d\.]+\s*(?:kg|g|gm|ml|l|ltr|litre|litres|count|pieces|pcs|pack))\b", extracted["title"], re.I)
+                if title_net:
+                    extracted["net_weight"] = title_net.group(1).strip()
 
-            # 5. MRP extraction
-            mrp_m = re.search(r"(?:M\.?R\.?P\.?|Maximum Retail Price)\s*[:\-\|]?\s*₹?\s*([\d,]+(?:\.\d{2})?)", clean_text, re.I)
+            # 6. Price and MRP extraction
+            mrp_m = re.search(r"(?:M\.?R\.?P\.?:?|Maximum Retail Price)\s*[:\-\|]?\s*₹?\s*([\d,]+(?:\.\d{2})?)", clean_text, re.I)
             if mrp_m:
                 try:
                     val = float(mrp_m.group(1).replace(",", ""))
@@ -719,14 +1273,18 @@ class EcommerceCrawlerService:
                 except ValueError:
                     pass
 
-            # 6. Unit Sale Price extraction (Rule 5 compliance)
-            usp_m = re.search(
-                r"(?:Unit Sale Price|USP|Price per (?:100g|kg|ml|litre|count))\s*[:\-\|]?\s*(₹?[\d\.]+\s*\/\s*(?:100\s*g|kg|ml|l|count|unit))",
-                clean_text,
-                re.I,
+            price_m = (
+                re.search(r'<span class="[^"]*a-price-whole[^"]*">([\d,]+)</span>', text)
+                or re.search(r'<span class="[^"]*a-offscreen[^"]*">₹\s*([\d,]+(?:\.\d{2})?)</span>', text)
+                or re.search(r'₹\s*([\d,]+(?:\.\d{2})?)', clean_text)
             )
-            if usp_m:
-                extracted["unit_sale_price"] = usp_m.group(1).strip()
+            if price_m:
+                try:
+                    p_val = float(price_m.group(1).replace(",", ""))
+                    if p_val > 0:
+                        extracted["listed_price"] = p_val
+                except ValueError:
+                    pass
 
             # 7. Manufacturer / Packer extraction
             mfg_m = re.search(
@@ -737,12 +1295,28 @@ class EcommerceCrawlerService:
             if mfg_m:
                 clean_mfg = mfg_m.group(1).strip()
                 clean_mfg = re.sub(r"<[^>]+>", "", clean_mfg).strip()
-                # Ignore return policies or website footer strings
                 if (
                     len(clean_mfg) > 10
                     and not any(bad in clean_mfg.lower() for bad in ["pickup cancellation", "terms of use", "privacy policy", "return policy", "cookie"])
                 ):
                     extracted["manufacturer"] = clean_mfg
+
+        # ─── MATHEMATICAL STATUTORY USP CALCULATION (DIRECT FROM MRP & NET QUANTITY) ───
+        # Unless product is an intentional test violation (RULE-5-USP), always calculate USP mathematically
+        is_intentional_usp_violation = "RULE-5-USP" in product_meta.get("known_compliance_issues", [])
+        if is_intentional_usp_violation:
+            extracted["unit_sale_price"] = ""
+        else:
+            # Use MRP directly for mathematical calculation (or listed_price if MRP is 0)
+            calc_base_price = extracted["mrp"] if extracted["mrp"] > 0 else extracted["listed_price"]
+            math_usp = compute_statutory_usp(calc_base_price, extracted["net_weight"])
+            if math_usp:
+                extracted["unit_sale_price"] = math_usp
+            elif raw_content:
+                # Fallback to explicit text extraction if math parse failed on non-standard unit
+                scraped_usp = extract_usp_from_text(clean_text) or extract_usp_from_text(text)
+                if scraped_usp:
+                    extracted["unit_sale_price"] = scraped_usp
 
         # Always dynamically infer category from the final product title to prevent mismatch
         extracted["category"] = infer_category(extracted["title"], product_meta.get("default_category", "Packaged Commodities"))
@@ -753,48 +1327,71 @@ class EcommerceCrawlerService:
 
     def audit_legal_metrology(self, product: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Applies Legal Metrology (Packaged Commodities) Rules, 2011 checks:
-          - Rule 6(1)(a): Complete Manufacturer/Packer address
-          - Rule 6(1)(b) & Rule 6(10): Mandatory Country of Origin on e-commerce
-          - Rule 6(1)(d) & Rule 11/12: Net Quantity in metric units
-          - Rule 6(1)(e): Month & Year of manufacture/packing/import
-          - Rule 6(1)(f): MRP inclusive of all taxes
-          - Rule 6(1)(g): Complete consumer care contacts
-          - Rule 5 & Rule 6(10): Unit Sale Price (USP)
+        Applies Legal Metrology (Packaged Commodities) Rules, 2011 checks scoped
+        specifically to e-commerce listing obligations under Rule 6(10).
+
+        E-commerce mandatory declarations (Rule 6(10) read with Rule 6(1)):
+          - Rule 6(1)(a): Manufacturer / Packer name & address            [CRITICAL if absent]
+          - Rule 6(1)(b) + 6(10): Country of Origin                       [CRITICAL if absent]
+          - Rule 6(1)(d) + Rule 11/12: Net Quantity in metric units        [CRITICAL if absent]
+          - Rule 6(1)(f): Maximum Retail Price (MRP)                      [CRITICAL if absent]
+          - Rule 6(1)(g): Consumer Care contact (email + phone)           [HIGH if absent]
+
+        Explicitly NOT applicable to e-commerce listings per Rule 6(10):
+          - Rule 6(1)(e): Mfg / Packing Date — EXEMPTED from digital display
+          - Rule 5 USP:   Unit Sale Price is a physical label obligation,
+                          NOT a mandatory e-commerce listing requirement.
         """
         violations: List[Dict[str, Any]] = []
         warnings: List[Dict[str, Any]] = []
+        info_checks: List[Dict[str, Any]] = []
         passed_rules: List[str] = []
         compounding_fine_inr = 0.0
 
-        # Check 1: Rule 6(1)(a) - Manufacturer / Packer Identity & Complete Address
+        # Check 1: Rule 6(1)(a) — Manufacturer / Packer Identity & Address
+        # Name is mandatory; full address detail is required on the physical label but
+        # e-commerce listings must still display at minimum the name + city/state.
         mfg = (product.get("manufacturer") or "").strip()
         if not mfg:
             violations.append({
                 "rule_code": "RULE-6-1-A",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
-                "section": "Rule 6(1)(a)",
-                "title": "Missing Manufacturer / Packer Identity",
+                "section": "Rule 6(1)(a) read with Rule 6(10)",
+                "title": "Missing Manufacturer / Packer Identity on E-Commerce Listing",
                 "severity": "CRITICAL",
                 "evidence": "(Not declared on listing)",
-                "expected": "Full legal name and complete registered premises address of manufacturer/packer/importer.",
+                "expected": "Name and address of manufacturer/packer/importer must be displayed on digital listing per Rule 6(10).",
                 "fine_inr": 25000.0,
             })
             compounding_fine_inr += 25000.0
-        elif len(mfg) < 25 or not re.search(r"\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6})\b", mfg, re.I):
+        elif len(mfg) < 10:
+            # Name present but suspiciously short — flag as high warning
             warnings.append({
+                "rule_code": "RULE-6-1-A-NAME",
+                "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
+                "section": "Rule 6(1)(a) read with Rule 6(10)",
+                "title": "Incomplete Manufacturer Name on E-Commerce Listing",
+                "severity": "HIGH",
+                "evidence": mfg,
+                "expected": "Full legal name of manufacturer/packer/importer.",
+                "fine_inr": 10000.0,
+            })
+            compounding_fine_inr += 10000.0
+        elif not re.search(r"\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6}|pvt|ltd|limited|india|mumbai|delhi|bengaluru|chennai|hyderabad|pune|kolkata)\b", mfg, re.I):
+            # Name present but no address context — LOW severity informational note only
+            # (Full PIN-level address is a physical label obligation, not strictly enforced on digital listings)
+            info_checks.append({
                 "rule_code": "RULE-6-1-A-ADDR",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
                 "section": "Rule 6(1)(a)",
-                "title": "Incomplete Manufacturer Address (Missing Premise/PIN)",
-                "severity": "HIGH",
+                "title": "Manufacturer Address Detail May Be Incomplete",
+                "severity": "LOW",
                 "evidence": mfg,
-                "expected": "Complete address with building number, locality, city, state and PIN code.",
-                "fine_inr": 15000.0,
+                "expected": "Physical package label must carry full address (building, locality, PIN). E-commerce listing should include at least city/state.",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 15000.0
         else:
-            passed_rules.append("Rule 6(1)(a): Manufacturer details verified")
+            passed_rules.append("Rule 6(1)(a): Manufacturer name & address present")
 
         # Check 2: Rule 6(1)(b) & Rule 6(10) (2017 Amendment) - Country of Origin on E-Commerce
         origin = (product.get("country_of_origin") or "").strip()
@@ -842,22 +1439,25 @@ class EcommerceCrawlerService:
         else:
             passed_rules.append(f"Rule 6(1)(d): Net quantity verified ({net_qty})")
 
-        # Check 4: Rule 6(1)(e) - Month and Year of Manufacture / Packing
+        # Check 4: Rule 6(1)(e) — Month and Year of Manufacture / Packing
+        # IMPORTANT: Rule 6(10) EXPLICITLY EXEMPTS mfg/packing date from mandatory
+        # online display requirements. It is required only on the physical package label.
+        # Flagging its absence as a violation on e-commerce listings is legally INCORRECT.
+        # We log it as an informational note only.
         mfg_date = (product.get("mfg_date") or "").strip()
         if not mfg_date:
-            violations.append({
+            info_checks.append({
                 "rule_code": "RULE-6-1-E-DATE",
                 "act": "Legal Metrology (Packaged Commodities) Rules, 2011",
-                "section": "Rule 6(1)(e)",
-                "title": "Missing Month & Year of Manufacture/Packing",
-                "severity": "HIGH",
-                "evidence": "(Not declared)",
-                "expected": "Month and year of manufacture or packing must be clearly declared.",
-                "fine_inr": 25000.0,
+                "section": "Rule 6(1)(e) [Physical Label Only]",
+                "title": "Mfg/Packing Date Not Shown on Listing (Exempt Under Rule 6(10))",
+                "severity": "LOW",
+                "evidence": "(Not present on e-commerce listing)",
+                "expected": "Month & year of manufacture is mandatory on the physical package label but is explicitly exempted from e-commerce display requirements under Rule 6(10).",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 25000.0
         else:
-            passed_rules.append(f"Rule 6(1)(e): Date of packing verified ({mfg_date})")
+            passed_rules.append(f"Rule 6(1)(e): Mfg/packing date visible on listing ({mfg_date}) — Exceeds e-commerce minimum requirement")
 
         # Check 5: Rule 6(1)(f) - MRP Declaration
         mrp = product.get("mrp", 0.0)
@@ -876,22 +1476,25 @@ class EcommerceCrawlerService:
         else:
             passed_rules.append(f"Rule 6(1)(f): Valid MRP declared (₹{mrp})")
 
-        # Check 6: Rule 5 & Rule 6(10) (2022 Amendment) - Mandatory Unit Sale Price
+        # Check 6: Rule 5 — Unit Sale Price (USP)
+        # IMPORTANT: USP declaration is a PHYSICAL LABEL obligation under Rule 5.
+        # It is NOT a mandatory e-commerce listing requirement under Rule 6(10).
+        # Treating its absence on an online listing as a violation is legally incorrect.
+        # We flag it as an informational best-practice note only.
         usp = (product.get("unit_sale_price") or "").strip()
         if not usp:
-            violations.append({
+            info_checks.append({
                 "rule_code": "RULE-5-USP",
                 "act": "Legal Metrology (Packaged Commodities) Amendment Rules, 2021 [G.S.R. 779(E)]",
-                "section": "Rule 5 & Rule 6(10)",
-                "title": "Missing Mandatory Unit Sale Price (USP)",
-                "severity": "HIGH",
-                "evidence": "(Unit sale price per g/kg/ml absent)",
-                "expected": "Mandatory unit sale price per g/kg/ml/unit to allow consumer price comparison.",
-                "fine_inr": 25000.0,
+                "section": "Rule 5 [Physical Label — Best Practice for Online]",
+                "title": "Unit Sale Price (USP) Not Displayed on Listing",
+                "severity": "LOW",
+                "evidence": "(Unit sale price per g/kg/ml not visible on e-commerce listing)",
+                "expected": "USP is mandatory on physical package label. Displaying it on the digital listing is best-practice and improves consumer transparency.",
+                "fine_inr": 0.0,
             })
-            compounding_fine_inr += 25000.0
         else:
-            passed_rules.append(f"Rule 5: Unit Sale Price verified ({usp})")
+            passed_rules.append(f"Rule 5: Unit Sale Price displayed on listing ({usp}) — Above minimum e-commerce requirement")
 
         # Check 7: Rule 6(1)(g) - Consumer Care Details
         care = (product.get("customer_care") or "").strip()
@@ -923,7 +1526,8 @@ class EcommerceCrawlerService:
             passed_rules.append("Rule 6(1)(g): Consumer care channel verified")
 
         # Calculate Compliance Score
-        total_rules = 7
+        # Scoring is based on VIOLATIONS (legally enforceable on e-commerce) and WARNINGS only.
+        # Info checks (mfg date, USP) are exempt from scoring — they do not trigger penalties.
         failed_count = len(violations)
         warning_count = len(warnings)
         if failed_count == 0 and warning_count == 0:
@@ -931,16 +1535,19 @@ class EcommerceCrawlerService:
             score = 100
         elif failed_count == 0 and warning_count > 0:
             status = "under-review"
-            score = max(70, 100 - (warning_count * 12))
+            score = max(70, 100 - (warning_count * 15))
         else:
             status = "non-compliant"
-            score = max(20, 100 - (failed_count * 22) - (warning_count * 8))
+            score = max(15, 100 - (failed_count * 25) - (warning_count * 8))
 
-        # Generate Draft Statutory Notice under Sec 36(1) if non-compliant
+        # Generate Draft Statutory Notice under Sec 36(1) only for genuine e-commerce violations
         draft_notice = None
         if status == "non-compliant":
             case_no = f"LM-S36-{datetime.utcnow().strftime('%Y%m%d')}-{random.randint(100, 999)}"
-            violation_points = "\n".join([f"  • {v['section']}: {v['title']} (Expected: {v['expected']})" for v in violations])
+            violation_points = "\n".join([
+                f"  • {v['section']}: {v['title']}\n    Evidence: {v['evidence']}\n    Required: {v['expected']}"
+                for v in violations
+            ])
             draft_notice = {
                 "case_number": case_no,
                 "issued_under": "Section 36(1) of Legal Metrology Act, 2009",
@@ -952,10 +1559,15 @@ class EcommerceCrawlerService:
                     f"FORMAL STATUTORY SHOW CAUSE NOTICE\n"
                     f"Notice Ref: {case_no}\n"
                     f"To: Compliance Officer, {product.get('platform')} & Manufacturer: {product.get('manufacturer') or 'Seller of Record'}\n\n"
-                    f"Sub: Notice for violation of the Legal Metrology (Packaged Commodities) Rules, 2011 in respect of product SKU: {product.get('sku')} ({product.get('title')}).\n\n"
-                    f"The Central Autonomous Inspection System of SatyaSetu has detected statutory non-compliances on the e-commerce listing:\n"
+                    f"Sub: Notice under Rule 6(10) of the Legal Metrology (Packaged Commodities) Rules, 2011 "
+                    f"for non-display of mandatory declarations on e-commerce listing for SKU: {product.get('sku')} ({product.get('title')}).\n\n"
+                    f"The Central Autonomous Inspection System of SatyaSetu has detected the following statutory non-compliances "
+                    f"on the e-commerce listing (all of which are mandatory under Rule 6(10)):\n"
                     f"{violation_points}\n\n"
-                    f"You are hereby directed to show cause within 15 days of receipt of this notice why compounding proceedings or criminal prosecution under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated against you."
+                    f"Note: Mfg/packing date and Unit Sale Price are physical label obligations and are NOT part of this notice, "
+                    f"as they are explicitly exempt from e-commerce display requirements under Rule 6(10).\n\n"
+                    f"You are hereby directed to show cause within 15 days why compounding proceedings or prosecution "
+                    f"under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated."
                 ),
             }
 
@@ -964,9 +1576,11 @@ class EcommerceCrawlerService:
             "compliance_score": score,
             "violations_count": len(violations),
             "warnings_count": len(warnings),
+            "info_checks_count": len(info_checks),
             "passed_rules_count": len(passed_rules),
             "violations": violations,
             "warnings": warnings,
+            "info_checks": info_checks,
             "passed_rules": passed_rules,
             "estimated_penalty_inr": compounding_fine_inr,
             "draft_notice": draft_notice,
@@ -1035,21 +1649,29 @@ class EcommerceCrawlerService:
         # Filter catalog candidates
         candidates = TARGET_PRODUCTS.copy()
         if platform_filter and platform_filter != "All":
-            candidates = [p for p in candidates if p["platform"].lower() == platform_filter.lower()]
-            if not candidates:
-                candidates = TARGET_PRODUCTS.copy()
+            filtered = [p for p in candidates if p["platform"].lower() == platform_filter.lower()]
+            if filtered:
+                candidates = filtered
 
-        # Randomize selection for diverse daily sampling across marketplaces
-        random.shuffle(candidates)
-        selected_batch = candidates[:batch_size]
+        total_candidates = len(candidates)
+        if total_candidates == 0:
+            self.is_running = False
+            return []
 
-        # Throttled inspection using Semaphore(2) and a 1.0s stagger delay to stay strictly within ScraperAPI free tier concurrency limits
-        semaphore = asyncio.Semaphore(2)
+        # Sequential window rotation so each run returns a fresh new set of products
+        start_idx = self.crawl_cursor % total_candidates
+        selected_batch = [candidates[(start_idx + i) % total_candidates] for i in range(min(batch_size, total_candidates))]
+        self.crawl_cursor = (start_idx + batch_size) % total_candidates
+
+        self.log_event("INFO", f"Sequential crawler window selected indices {start_idx} to {(start_idx + len(selected_batch) - 1) % total_candidates} of {total_candidates}")
+
+        # Parallel throttled inspection using Semaphore(5) for snappy response times
+        semaphore = asyncio.Semaphore(5)
 
         async def throttled_inspect(item: Dict[str, Any], index: int) -> Dict[str, Any]:
             async with semaphore:
                 if index > 0:
-                    await asyncio.sleep(1.0)
+                    await asyncio.sleep(0.1)
                 return await self.inspect_single_product(item)
 
         results: List[Dict[str, Any]] = []

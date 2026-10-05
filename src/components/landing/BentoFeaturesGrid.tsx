@@ -207,7 +207,7 @@ export const BentoFeaturesGrid: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 6: Factory Hygiene Monitoring */}
+          {/* Card 6: Autonomous Gazette Crawler & RAG Knowledge */}
           <div className="w-[300px] sm:w-[340px] md:w-[360px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-slate-300 hover:shadow-card transition-all shadow-subtle">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -215,29 +215,29 @@ export const BentoFeaturesGrid: React.FC = () => {
                   <Share2 className="h-5 w-5" />
                 </div>
                 <Badge variant="secondary" size="sm">
-                  Visual Inspection
+                  Live Gazette Crawler
                 </Badge>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Factory Hygiene Monitoring</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Autonomous Gazette Crawler &amp; RAG</h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Analyzes factory inspection inputs to assess hygiene and workplace conditions and track detected violations.
+                Continuously crawls e-Gazette notifications, PIB press releases, and CCPA orders to update active legal rule versions.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-100">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-[11px] text-slate-700 space-y-1.5">
                 <div className="text-slate-800 truncate">
-                  <span className="text-blue-600">Live Factory Inspection</span>
+                  <span className="text-blue-600">Real-Time Gazette PDF Parsing</span>
                 </div>
                 <div className="text-slate-800 truncate">
-                  <span className="text-blue-600">Hygiene Assessment</span>
+                  <span className="text-blue-600">Verbatim Clause Retrieval</span>
                 </div>
                 <div className="text-slate-800 truncate">
-                  <span className="text-blue-600">Zone Monitoring</span>
+                  <span className="text-blue-600">Automatic Rule Versioning</span>
                 </div>
               </div>
             </div>
             <div className="mt-3 text-[11px] text-slate-500 font-mono">
-              Inspection → Assessment → Violation
+              Crawling → Parsing → RAG Knowledge
             </div>
           </div>
 

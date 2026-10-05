@@ -407,7 +407,7 @@ const OpticalStagesInspector: React.FC<OpticalStagesInspectorProps> = ({
 };
 
 export const OCRResultsPanel: React.FC = () => {
-  const { currentScan, activeAngleIndex, setActiveAngleIndex } = useScanStore();
+  const { currentScan, activeAngleIndex, setActiveAngleIndex, validationResults } = useScanStore();
   const [activeTab, setActiveTab] = useState('declarations');
   const [copiedPayload, setCopiedPayload] = useState(false);
   const [highlightedKey, setHighlightedKey] = useState<DeclarationFieldKey | null>(null);
@@ -452,6 +452,21 @@ export const OCRResultsPanel: React.FC = () => {
   const violationCount = allDeclarationsList.filter((d) => d.validationStatus === 'non-compliant').length;
   const naCount = allDeclarationsList.filter((d) => !d.isMandatory).length || 1;
   const totalCount = allDeclarationsList.length;
+
+  const valResult = currentScan ? validationResults[currentScan.id] : null;
+  const hasLocalOverrides = Object.keys(localOverrides).length > 0;
+  const computedFallbackScore = Math.round(
+    ((compliantCount + warningCount * 0.7) / Math.max(1, totalCount - (naCount > 0 ? naCount : 0))) * 100
+  );
+  const displayScore = hasLocalOverrides
+    ? computedFallbackScore
+    : (valResult?.complianceScore ?? data.compliancePayload?.mandatorySummary?.compliancePercentage ?? computedFallbackScore);
+
+  const scoreTheme = displayScore >= 80
+    ? { border: 'border-emerald-200', bg: 'bg-emerald-50/70', text: 'text-emerald-700', label: 'text-emerald-600' }
+    : displayScore >= 60
+    ? { border: 'border-amber-200', bg: 'bg-amber-50/70', text: 'text-amber-700', label: 'text-amber-600' }
+    : { border: 'border-red-200', bg: 'bg-red-50/70', text: 'text-red-700', label: 'text-red-600' };
 
   const handleEditSave = (key: DeclarationFieldKey) => {
     setLocalOverrides((prev) => ({ ...prev, [key]: editingValue.trim() }));
@@ -545,12 +560,12 @@ export const OCRResultsPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Top-right prominent Compliance Score box from reference design */}
-        <div className="rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-2 text-center shrink-0 self-start min-w-[100px]">
-          <span className="text-xl font-extrabold font-mono text-blue-600 leading-none block">
-            {data.confidence}%
+        {/* Top-right Compliance Score */}
+        <div className={cn("rounded-lg border px-3.5 py-1.5 text-center min-w-[110px] shadow-2xs shrink-0 self-start transition-colors", scoreTheme.border, scoreTheme.bg)}>
+          <span className={cn("text-xl font-black font-mono leading-none block", scoreTheme.text)}>
+            {displayScore} / 100
           </span>
-          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mt-1">
+          <span className={cn("text-[10px] font-bold uppercase tracking-wider block mt-0.5", scoreTheme.label)}>
             Compliance Score
           </span>
         </div>

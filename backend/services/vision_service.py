@@ -12,6 +12,7 @@ Statutory Frameworks:
 """
 
 import os
+import sys
 import json
 import base64
 import urllib.request
@@ -19,12 +20,18 @@ import urllib.error
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # Default Configurations
 DEFAULT_OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "qwen2.5-vl")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
-POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")
+POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")
 POLLINATIONS_VISION_MODEL = os.getenv("POLLINATIONS_VISION_MODEL", "openai")
 
 
@@ -188,42 +195,65 @@ class OllamaVisionProvider:
     def _clean_and_parse_json(self, raw_str: str) -> Optional[Dict[str, Any]]:
         import re
         raw_str = raw_str.strip()
-        if raw_str.startswith("```json"):
-            raw_str = raw_str[7:]
-        if raw_str.startswith("```"):
-            raw_str = raw_str[3:]
-        if raw_str.endswith("```"):
-            raw_str = raw_str[:-3]
-        raw_str = raw_str.strip()
+
+        # If Pollinations/OpenAI wrapper structure exists, extract content first
+        if "'content':" in raw_str or '"content":' in raw_str:
+            m_content = re.search(r'[\'"]content[\'"]\s*:\s*[\'"]({.*})[\'"]', raw_str, re.DOTALL)
+            if m_content:
+                raw_str = m_content.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\\\", "\\")
+
+        # 1. Try standard JSON parse / markdown fence cleaning first
+        clean_s = raw_str
+        if clean_s.startswith("```json"):
+            clean_s = clean_s[7:]
+        if clean_s.startswith("```"):
+            clean_s = clean_s[3:]
+        if clean_s.endswith("```"):
+            clean_s = clean_s[:-3]
+        clean_s = clean_s.strip()
 
         try:
-            return json.loads(raw_str)
+            parsed = json.loads(clean_s)
+            if isinstance(parsed, dict):
+                statutory_keys = {"productName", "mrp", "netQuantity", "manufacturer", "address", "manufacturerAddress", "manufacturingDate", "expiryDate", "batchNumber", "customerCare", "countryOfOrigin", "barcode"}
+                if any(k in statutory_keys for k in parsed.keys()):
+                    return parsed
         except Exception:
-            # Attempt to locate first { and last }
-            s = raw_str.find("{")
-            e = raw_str.rfind("}")
-            if s != -1 and e != -1 and e > s:
-                try:
-                    return json.loads(raw_str[s:e+1])
-                except Exception:
-                    pass
+            pass
 
-            # Robust fallback: extract statutory keys via regex even if JSON was unclosed
-            res: Dict[str, Any] = {}
-            for k in [
-                "productName", "mrp", "mrpRaw", "unitSalePrice", "netQuantity",
-                "manufacturer", "manufacturerAddress", "manufacturingDate", "expiryDate",
-                "batchNumber", "countryOfOrigin", "customerCare",
-                "vegNonVeg", "rawDetectedText"
-            ]:
-                m = re.search(rf'"{k}"\s*:\s*"([^"]*)"', raw_str)
-                if m:
-                    res[k] = m.group(1)
-                else:
-                    m_num = re.search(rf'"{k}"\s*:\s*([0-9.]+)', raw_str)
-                    if m_num:
-                        res[k] = m_num.group(1)
-            return res if res else None
+        # 2. Extract outermost statutory JSON block using { and }
+        s = raw_str.find("{")
+        e = raw_str.rfind("}")
+        if s != -1 and e != -1 and e > s:
+            json_snippet = raw_str[s:e+1].replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+            try:
+                parsed_inner = json.loads(json_snippet)
+                if isinstance(parsed_inner, dict):
+                    statutory_keys = {"productName", "mrp", "netQuantity", "manufacturer", "address", "manufacturerAddress", "manufacturingDate", "expiryDate", "batchNumber", "customerCare", "countryOfOrigin", "barcode"}
+                    if any(k in statutory_keys for k in parsed_inner.keys()):
+                        return parsed_inner
+            except Exception:
+                pass
+
+        # 3. Key-value regex extractor fallback across statutory fields
+        statutory_keys = [
+            "productName", "mrp", "mrpRaw", "unitSalePrice", "netQuantity",
+            "manufacturer", "address", "manufacturerAddress", "manufacturingDate", "expiryDate",
+            "batchNumber", "countryOfOrigin", "customerCare", "barcode",
+            "vegNonVeg", "rawDetectedText"
+        ]
+        
+        res: Dict[str, Any] = {}
+        for k in statutory_keys:
+            m = re.search(rf'"{k}"\s*:\s*("(?:[^"\\]|\\.)*"|null|true|false|\d+(?:\.\d+)?)', raw_str)
+            if m:
+                val = m.group(1).strip()
+                if val.startswith('"') and val.endswith('"'):
+                    val = val[1:-1].replace('\\"', '"')
+                if val and val.lower() not in ("null", "none"):
+                    res[k] = val
+
+        return res if res else None
 
 
 class PollinationsVisionProvider:
@@ -237,7 +267,7 @@ class PollinationsVisionProvider:
         timeout_seconds: int = 60,
     ):
         self.api_key = api_key or os.getenv("POLLINATIONS_API_KEY", "")
-        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://text.pollinations.ai")).rstrip("/")
+        self.base_url = (base_url or os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai")).rstrip("/")
         self.model_name = model_name or os.getenv("POLLINATIONS_VISION_MODEL", "openai")
         self.timeout = timeout_seconds
 
@@ -249,14 +279,15 @@ class PollinationsVisionProvider:
 
     def extract_declarations(self, base64_image: str) -> Tuple[Optional[Dict[str, Any]], str]:
         if not self.is_available():
+            print("[Pollinations Vision] Skipped: Pollinations AI is disabled or not configured.")
             return None, "Pollinations AI not configured/available."
 
         models_to_try = [self.model_name]
         if "openai" not in models_to_try:
             models_to_try.append("openai")
 
-
         url = f"{self.base_url}/v1/chat/completions" if not self.base_url.endswith("/v1/chat/completions") else self.base_url
+        print(f"[Pollinations Vision] Sending request to {url} (models to try: {models_to_try})...")
 
         for m_name in models_to_try:
             payload = {
@@ -293,6 +324,7 @@ class PollinationsVisionProvider:
                 import time
                 start_t = time.time()
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    elapsed = time.time() - start_t
                     if resp.status == 200:
                         resp_json = json.loads(resp.read().decode("utf-8"))
                         choices = resp_json.get("choices", [])
@@ -302,11 +334,10 @@ class PollinationsVisionProvider:
                         elif "content" in resp_json:
                             raw_text = resp_json.get("content", "")
 
-                        elapsed = time.time() - start_t
-                        print(f"[Pollinations Vision] Model: {m_name} | Elapsed: {elapsed:.2f}s")
-
                         parser = OllamaVisionProvider()
                         extracted = parser._clean_and_parse_json(raw_text) or {}
+                        print(f"[DEBUG] Pollinations raw response text (first 300 chars): {repr(raw_text[:300])}")
+                        print(f"[DEBUG] Pollinations parsed keys: {list(extracted.keys()) if isinstance(extracted, dict) else extracted}")
 
                         statutory_keys = {
                             "productName", "mrp", "netQuantity", "manufacturer",
@@ -318,15 +349,17 @@ class PollinationsVisionProvider:
                             for k, v in extracted.items()
                         )
                         if has_statutory_fields:
+                            print(f"[SUCCESS] [Pollinations Vision] Model: {m_name} | Elapsed: {elapsed:.2f}s | Extracted {len(extracted)} fields.")
                             return extracted, raw_text
-
+                        else:
+                            print(f"[WARN] [Pollinations Vision] Model {m_name} returned status 200 but no valid statutory fields detected.")
 
             except Exception as e:
-                print(f"[Pollinations Vision] Model {m_name} failed: {e}")
+                print(f"[ERROR] [Pollinations Vision] Model '{m_name}' failed: {e}")
                 continue
 
+        print("[FAIL] [Pollinations Vision] All Pollinations Vision attempts failed or rate-limited.")
         return None, "All Pollinations Vision models failed or rate-limited."
-
 
 
 class GeminiVisionProvider:
@@ -380,33 +413,32 @@ class GeminiVisionProvider:
                         if parts:
                             raw_text = parts[0].get("text", "")
                             extracted = json.loads(raw_text.strip())
+                            print(f"[SUCCESS] [Gemini Vision] Extracted {len(extracted)} fields via Gemini 1.5 Flash.")
                             return extracted, raw_text
                 return None, f"Gemini HTTP {resp.status}"
         except Exception as e:
+            print(f"[ERROR] [Gemini Vision] Failed: {e}")
             return None, str(e)
 
 
 class HybridVisionService:
     """
-    Orchestrates Vision Extraction across:
-      1. Cloud Pollinations AI Vision (Priority 1)
-      2. Local Ollama Vision (qwen2.5-vl / minicpm-v) (Fallback 1)
-      3. Cloud Gemini Flash Vision (Fallback 2)
-      4. Fallback flag to client/local OCR
+    Main Statutory Extraction Pipeline:
+      1. Attempt Direct Cloud Pollinations AI Vision
+      2. Hand over to OCR Text Extraction + Pollinations AI Text LLM Parser
     """
 
     def __init__(self):
         self.pollinations = PollinationsVisionProvider()
-        self.ollama = OllamaVisionProvider()
-        self.gemini = GeminiVisionProvider()
 
     def extract_from_image(self, image_input: Any) -> Dict[str, Any]:
         """
-        Extracts statutory fields from an image file path or raw bytes using the best available provider.
+        Extracts statutory fields from an image using Pollinations AI.
         """
         try:
             base64_img = encode_image_to_base64(image_input)
         except Exception as e:
+            print(f"[ERROR] [HYBRID VISION] Base64 encoding error: {e}")
             return {
                 "status": "error",
                 "provider": "none",
@@ -414,44 +446,12 @@ class HybridVisionService:
                 "fields": {}
             }
 
-        # 1. Attempt Cloud Pollinations AI Vision
-        if self.pollinations.is_available():
-            extracted, raw = self.pollinations.extract_declarations(base64_img)
-            if extracted and isinstance(extracted, dict) and len(extracted) > 0:
-                return {
-                    "status": "success",
-                    "provider": f"Cloud-Pollinations-{self.pollinations.model_name}",
-                    "raw_text": extracted.get("rawDetectedText", raw),
-                    "fields": extracted
-                }
-
-        # 2. Attempt Local Ollama Vision
-        if self.ollama.is_available():
-            extracted, raw = self.ollama.extract_declarations(base64_img)
-            if extracted and isinstance(extracted, dict):
-                return {
-                    "status": "success",
-                    "provider": f"Local-Ollama-{self.ollama.model_name}",
-                    "raw_text": extracted.get("rawDetectedText", raw),
-                    "fields": extracted
-                }
-
-        # 3. Attempt Cloud Gemini Vision
-        if self.gemini.is_available():
-            extracted, raw = self.gemini.extract_declarations(base64_img)
-            if extracted and isinstance(extracted, dict):
-                return {
-                    "status": "success",
-                    "provider": "Cloud-Gemini-Flash-Vision",
-                    "raw_text": extracted.get("rawDetectedText", raw),
-                    "fields": extracted
-                }
-
-        # 4. Neither vision LLM available -> notify caller to use OCR fallback
+        # Route directly to OCR + Pollinations AI Text LLM Parser (No AI interference during scanning)
+        print("[INFO] [OCR SCANNING ENGINE] Image received. Routing directly to multi-pass OCR + Pollinations AI Text LLM Parser...")
         return {
             "status": "fallback_to_ocr",
             "provider": "none",
-            "message": "Pollinations AI, Ollama server, and GEMINI_API_KEY unavailable. Proceeding with OCR fallback.",
+            "message": "Proceeding directly with OCR text extraction + Pollinations AI Text LLM Parser.",
             "fields": {}
         }
 

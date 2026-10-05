@@ -35,6 +35,9 @@ import { ReportHistoryModal } from '../../components/scanner/ReportHistoryModal'
 import { HistoricalIntelligencePanel } from '../../components/scanner/HistoricalIntelligencePanel';
 import { ScanModeSelector } from '../../components/scanner/ScanModeSelector';
 import { ParallelScanQueue } from '../../components/scanner/ParallelScanQueue';
+import { OfflineInspectionQueue } from '../../components/scanner/OfflineInspectionQueue';
+import { ScanOptionsCard, DEFAULT_SCAN_OPTIONS, type ScanOptionsValue } from '../../components/scanner/ScanOptionsCard';
+import { Rule7MeasurementPanel } from '../../components/scanner/Rule7MeasurementPanel';
 import type { ComplianceInspectionReport, ReportGenerationOptions } from '../../types/report';
 
 export const ProductScanner: React.FC = () => {
@@ -60,6 +63,7 @@ export const ProductScanner: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [showMobileDeepAnalytics, setShowMobileDeepAnalytics] = useState(false);
   const [showMobileScanHistory, setShowMobileScanHistory] = useState(false);
+  const [scanOptions, setScanOptions] = useState<ScanOptionsValue>(DEFAULT_SCAN_OPTIONS);
 
   const isParallelMode = scanMode === 'parallel-products';
 
@@ -192,6 +196,7 @@ export const ProductScanner: React.FC = () => {
         </div>
       </div>
 
+      <OfflineInspectionQueue />
 
       {/* Stat Cards - Compact 3-metric banner on mobile, 4 full cards on tablet/desktop */}
       <div className="grid grid-cols-3 gap-2 sm:hidden">
@@ -285,6 +290,14 @@ export const ProductScanner: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Scan Options — calibration method */}
+      <ScanOptionsCard
+        value={scanOptions}
+        onChange={setScanOptions}
+        disabled={isProcessing}
+      />
+
       {/* Packaging Capture & Upload Zone */}
       {/* ══ Scan Mode Selector ══════════════════════════════════════ */}
       <ScanModeSelector />
@@ -350,6 +363,11 @@ export const ProductScanner: React.FC = () => {
 
       {/* Historical Batch Verification & Dual MRP Detection Panel */}
       {currentScan?.status === 'completed' && <HistoricalIntelligencePanel />}
+
+      {/* Rule 7 — Physical Letter Height Measurement (Table-I compliance) */}
+      {currentScan?.status === 'completed' && (
+        <Rule7MeasurementPanel scanOptions={scanOptions} />
+      )}
 
       {/* Mobile Progressive Disclosure for Secondary Panels */}
       <div className="block lg:hidden space-y-4">
@@ -419,6 +437,7 @@ export const ProductScanner: React.FC = () => {
 
       {/* Desktop View: Full secondary panels */}
       <div className="hidden lg:block space-y-6">
+        {currentScan?.status === 'completed' && <Rule7MeasurementPanel scanOptions={scanOptions} />}
         {currentScan?.status === 'completed' && <ReadabilityAnalysisPanel />}
         {currentScan?.status === 'completed' && <ScanCorrelationCard />}
         {currentScan?.status === 'completed' && currentScan?.extractedData && (

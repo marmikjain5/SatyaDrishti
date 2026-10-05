@@ -214,7 +214,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             {/* Gradient Fill under Violations Line */}
             <Area
               yAxisId="violations"
-              type="monotone"
+              type="linear"
               dataKey="violations"
               stroke="none"
               fill="url(#colorViolationsArea)"
@@ -224,7 +224,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
             {/* Line for Confirmed Violations (Right Y-Axis) */}
             <Line
               yAxisId="violations"
-              type="monotone"
+              type="linear"
               dataKey="violations"
               name="violations"
               stroke="#DC2626"

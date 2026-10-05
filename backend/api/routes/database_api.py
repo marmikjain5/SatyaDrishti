@@ -243,6 +243,8 @@ class OCRScanCreateSchema(BaseModel):
     extracted_parameters: Dict[str, Any] = Field(default_factory=dict)
     bounding_boxes: List[Any] = Field(default_factory=list)
     readability_scores: Dict[str, Any] = Field(default_factory=dict)
+    rule_pack_metadata: Dict[str, Any] = Field(default_factory=dict)
+    evidence_quality: Dict[str, Any] = Field(default_factory=dict)
     status: str = "completed"
 
 
@@ -274,6 +276,8 @@ def create_ocr_scan(scan_in: OCRScanCreateSchema, db: Session = Depends(get_db))
         extracted_parameters=scan_in.extracted_parameters,
         bounding_boxes=scan_in.bounding_boxes,
         readability_scores=scan_in.readability_scores,
+        rule_pack_metadata=scan_in.rule_pack_metadata,
+        evidence_quality=scan_in.evidence_quality,
         status=scan_in.status,
     )
     db.add(scan)
@@ -476,8 +480,62 @@ def update_complaint(
 
 
 # ============================================================================
-# 6. REGULATORY RULES CRUD
+# 6. REGULATORY RULES CRUD & SUPABASE PGVECTOR SEMANTIC RETRIEVAL
 # ============================================================================
+try:
+    from backend.services.rule_vector_service import (
+        search_rules_vector,
+        save_rule_embedding,
+        seed_all_rule_embeddings,
+        check_rules_pgvector_readiness,
+    )
+except ImportError:
+    from services.rule_vector_service import (
+        search_rules_vector,
+        save_rule_embedding,
+        seed_all_rule_embeddings,
+        check_rules_pgvector_readiness,
+    )
+
+
+class RuleVectorSearchSchema(BaseModel):
+    query_text: str
+    category: Optional[str] = None
+    limit: int = 5
+    threshold: float = 0.25
+
+
+@router.get("/rules/vector-status")
+def get_rules_vector_status(db: Session = Depends(get_db)):
+    """Check whether Supabase pgvector extension is active on regulatory_rules."""
+    return check_rules_pgvector_readiness(db)
+
+
+@router.post("/rules/search-vector")
+def search_regulatory_rules_vector(
+    req: RuleVectorSearchSchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Search for gazette-verified statutory rules using Supabase pgvector HNSW Cosine Distance,
+    with an automatic deterministic fallback for SQLite or unindexed databases.
+    """
+    return search_rules_vector(
+        db=db,
+        query_text=req.query_text,
+        category=req.category,
+        limit=req.limit,
+        threshold=req.threshold,
+    )
+
+
+@router.post("/rules/seed-embeddings")
+def seed_regulatory_rules_embeddings(db: Session = Depends(get_db)):
+    """Populate/sync vector embeddings for all statutory rules in the database."""
+    count = seed_all_rule_embeddings(db)
+    return {"status": "success", "embeddings_seeded": count}
+
+
 class RegulatoryRuleCreateSchema(BaseModel):
     id: Optional[str] = None
     rule_code: str
@@ -537,4 +595,12 @@ def create_regulatory_rule(rule_in: RegulatoryRuleCreateSchema, db: Session = De
     db.add(rule)
     db.commit()
     db.refresh(rule)
+
+    # Automatically compute and store vector embedding (Supabase pgvector / fallback)
+    try:
+        text_rep = f"{rule.act_name} {rule.section_clause} {rule.title} {rule.target_field} {rule.description}"
+        save_rule_embedding(db, rule.id, text_rep)
+    except Exception as e:
+        print(f"[RulesAPI] Warning: embedding could not be persisted: {e}")
+
     return rule

@@ -71,6 +71,7 @@ export interface DeclarationField {
   isMandatory: boolean;
   category: DeclarationFieldCategory;
   rawMatch?: string;
+  barcodeWidthPx?: number;
 }
 
 /** Per-field confidence scores (0–100) */

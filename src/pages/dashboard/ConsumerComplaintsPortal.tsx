@@ -28,6 +28,7 @@ import {
   Mail,
   Camera,
   Upload,
+  Sparkles,
 } from 'lucide-react';
 import { useComplianceStore } from '../../store/complianceStore';
 import {

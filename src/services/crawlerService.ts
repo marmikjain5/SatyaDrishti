@@ -59,9 +59,12 @@ export interface ProductAuditResult {
   compliance_score: number;
   violations_count: number;
   warnings_count: number;
+  info_checks_count: number;
   passed_rules_count: number;
   violations: RuleViolationFinding[];
   warnings: RuleViolationFinding[];
+  /** Informational notes — not enforceable violations on e-commerce listings */
+  info_checks: RuleViolationFinding[];
   passed_rules: string[];
   estimated_penalty_inr: number;
   draft_notice: DraftStatutoryNotice | null;
@@ -74,6 +77,12 @@ export interface CrawlerInspectionRecord {
   audit: ProductAuditResult;
   scrape_method: string;
   is_live: boolean;
+  /** Raw text returned by the live scraper (Jina/ScraperAPI). Undefined if catalog fallback was used. */
+  raw_live_content?: string;
+  /** ISO timestamp of when the live fetch was attempted. */
+  fetch_timestamp?: string;
+  /** Whether findings are grounded in live scraped data or the catalog benchmark. */
+  data_source?: 'live_jina_scrape' | 'catalog_benchmark';
 }
 
 export interface CrawlerStatus {
@@ -131,198 +140,8 @@ export const inferCategory = (title: string, defaultCat: string = 'Packaged Comm
   return defaultCat;
 };
 
-// Built-in catalog benchmarks for client-side fallback if backend server is unreachable
-const CLIENT_SEED_PRODUCTS: CrawlerProductData[] = [
-  {
-    platform: 'Amazon',
-    url: 'https://www.amazon.in/dp/B07HG8SBDV',
-    sku: 'AMZ-345645',
-    scrape_method: 'jina_reader',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: "Kellogg's Crunchy Fruit & Nut Muesli 750g Pouch",
-    brand: "Kellogg's",
-    category: 'Muesli & Breakfast Cereals',
-    manufacturer: 'Kellogg India Pvt Ltd, Plot L2 & L3, Taloja MIDC, Navi Mumbai, Maharashtra - 410208',
-    country_of_origin: 'India',
-    net_weight: '750 g',
-    mrp: 450.0,
-    listed_price: 399.0,
-    unit_sale_price: '₹53.20 / 100 g',
-    mfg_date: '04/2026',
-    customer_care: 'consumerfeedback@kellogg.com / 1800-223-500',
-    image_url: '',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Amazon',
-    url: 'https://www.amazon.in/dp/B07575775M',
-    sku: 'AMZ-892104',
-    scrape_method: 'jina_reader',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'ProUltra Whey Isolate Protein Powder, Chocolate Flavour 1kg',
-    brand: 'ProUltra Nutrition',
-    category: 'Health & Nutritional Supplements',
-    manufacturer: 'Apex Health Nutraceuticals Ltd, Sector 62, Noida, Uttar Pradesh',
-    country_of_origin: '', // Violation: Missing Origin on e-commerce listing
-    net_weight: '1 kg',
-    mrp: 3499.0,
-    listed_price: 2899.0,
-    unit_sale_price: '', // Violation: Missing USP
-    mfg_date: '02/2026',
-    customer_care: 'support@proultra.com',
-    image_url: '',
-    known_compliance_issues: ['RULE-6-10-ORIGIN', 'RULE-5-USP'],
-  },
-  {
-    platform: 'Flipkart',
-    url: 'https://www.flipkart.com/fortune-sunlite-refined-sunflower-oil-pouch/p/itmd88fef5c0c926',
-    sku: 'FLP-491203',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'Britannia Good Day Butter Rich Cookies 600g Value Pack',
-    brand: 'Britannia',
-    category: 'Biscuits & Bakery',
-    manufacturer: 'Britannia Industries Ltd, 5/1A Hungerford Street, Kolkata, West Bengal - 700017',
-    country_of_origin: 'India',
-    net_weight: '600 g',
-    mrp: 150.0,
-    listed_price: 130.0,
-    unit_sale_price: '₹21.67 / 100 g',
-    mfg_date: '03/2026',
-    customer_care: 'feedback@britindia.com / 1800-425-4449',
-    image_url: '',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Flipkart',
-    url: 'https://www.flipkart.com/tata-tea-gold-leaf-black/p/itmfc128392fb689',
-    sku: 'FLP-821940',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'Tata Tea Gold Leaf Black Tea 500g Pet Jar',
-    brand: 'Tata Tea',
-    category: 'Packaged Beverages & Tea',
-    manufacturer: 'Tata Consumer Products Limited, 1 Bishop Lefroy Road, Kolkata, West Bengal - 700020',
-    country_of_origin: 'India',
-    net_weight: '500 g',
-    mrp: 310.0,
-    listed_price: 275.0,
-    unit_sale_price: '₹55.00 / 100 g',
-    mfg_date: '03/2026',
-    customer_care: 'care@tataconsumer.com / 1800-345-1720',
-    image_url: '',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Blinkit',
-    url: 'https://blinkit.com/prn/fortune-sunlite-refined-sunflower-oil/prid/37398',
-    sku: 'BLK-373981',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: "Bagrry's Crunchy 0% Added Sugar Muesli 400g Box",
-    brand: "Bagrry's",
-    category: 'Muesli & Breakfast Cereals',
-    manufacturer: "Bagrry's India Limited, 9 Community Centre, Lawrence Road Industrial Area, Delhi - 110035",
-    country_of_origin: 'India',
-    net_weight: '400 g',
-    mrp: 299.0,
-    listed_price: 269.0,
-    unit_sale_price: '₹67.25 / 100 g',
-    mfg_date: '03/2026',
-    customer_care: 'care@bagrrys.com / 1800-111-105',
-    image_url: '',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Blinkit',
-    url: 'https://blinkit.com/prn/amul-taaza-toned-fresh-milk/prid/178',
-    sku: 'BLK-178920',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'Amul Taaza Toned Fresh Milk 500ml Pouch',
-    brand: 'Amul',
-    category: 'Dairy & Fresh Foods',
-    manufacturer: 'Gujarat Co-operative Milk Marketing Federation Ltd, Anand - 388001, Gujarat, India',
-    country_of_origin: 'India',
-    net_weight: '500 ml',
-    mrp: 27.0,
-    listed_price: 27.0,
-    unit_sale_price: '₹5.40 / 100 ml',
-    mfg_date: '04/2026',
-    customer_care: 'customercare@amul.coop / 1800-258-3333',
-    image_url: 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=540/app/images/products/sliding_image/178a.jpg',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Zepto',
-    url: 'https://www.zeptonow.com/pn/fortune-sunlite-refined-sunflower-oil-1l/p/f22ff6fe-0112-4217-a065-2bc38ef2fa1d',
-    sku: 'ZPT-482910',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'Sunfeast Dark Fantasy Choco Fills Premium Cookies 300g',
-    brand: 'Sunfeast',
-    category: 'Biscuits & Bakery',
-    manufacturer: 'ITC Limited, 37 J.L. Nehru Road, Kolkata, West Bengal - 700071',
-    country_of_origin: 'India',
-    net_weight: '300 g',
-    mrp: 180.0,
-    listed_price: 150.0,
-    unit_sale_price: '₹50.00 / 100 g',
-    mfg_date: '04/2026',
-    customer_care: 'itccares@itc.in / 1800-425-44444',
-    image_url: '',
-    known_compliance_issues: [],
-  },
-  {
-    platform: 'Zepto',
-    url: 'https://www.zeptonow.com/pn/amul-pasteurised-butter-100g/p/62d8ea0e-749d-4be9-b003-9c8784d14210',
-    sku: 'ZPT-628104',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'GlamGlow Radiance Vitamin C Night Face Serum 30ml',
-    brand: 'GlamGlow Herbals',
-    category: 'Cosmetics & Personal Care',
-    manufacturer: 'Imported and Marketed by Glam Cosmetica LLP, Mumbai', // Incomplete address
-    country_of_origin: 'South Korea',
-    net_weight: '30 ml',
-    mrp: 899.0,
-    listed_price: 749.0,
-    unit_sale_price: '₹24.97 / 1 ml',
-    mfg_date: '', // Missing mfg date
-    customer_care: 'info@glamglow.in',
-    image_url: '',
-    known_compliance_issues: ['RULE-6-1-A-ADDR', 'RULE-6-1-E-DATE', 'RULE-6-1-G-CARE'],
-  },
-  {
-    platform: 'Meesho',
-    url: 'https://www.meesho.com/s/p/234479',
-    sku: 'MSH-234479',
-    scrape_method: 'direct_stealth',
-    is_live_scraped: true,
-    extracted_at: new Date().toISOString(),
-    title: 'Royal King Premium Jumbo Cashew Nuts W240, 500g Zipper Pouch',
-    brand: 'Royal King Dry Fruits',
-    category: 'Dry Fruits & Nuts',
-    manufacturer: 'Packer: Shree Balaji Dry Fruits Traders, APMC Market, Vashi, Navi Mumbai, Maharashtra - 400703',
-    country_of_origin: '', // Missing Country of Origin
-    net_weight: '500 Grams',
-    mrp: 650.0,
-    listed_price: 520.0,
-    unit_sale_price: '', // Missing USP
-    mfg_date: '03/2026',
-    customer_care: '', // Missing Consumer Care
-    image_url: '',
-    known_compliance_issues: ['RULE-6-10-ORIGIN', 'RULE-5-USP', 'RULE-6-1-G-CARE'],
-  },
-];
+// Catalog items are securely managed backend-side to keep client code completely clean
+const CLIENT_SEED_PRODUCTS: CrawlerProductData[] = [];
 
 class CrawlerService {
   private clientHistory: CrawlerInspectionRecord[] = [];
@@ -346,43 +165,75 @@ class CrawlerService {
   /**
    * Evaluates Legal Metrology Rules (Packaged Commodities) 2011 on extracted product data.
    */
+  /**
+   * Audits a product against Legal Metrology (Packaged Commodities) Rules, 2011
+   * scoped to e-commerce listing obligations under Rule 6(10).
+   *
+   * Mandatory on e-commerce listings (Rule 6(10) read with Rule 6(1)):
+   *   - Rule 6(1)(a): Manufacturer/Packer name & address   → CRITICAL if absent
+   *   - Rule 6(1)(b) + 6(10): Country of Origin            → CRITICAL if absent
+   *   - Rule 6(1)(d) + Rule 11/12: Net Quantity (metric)   → CRITICAL if absent
+   *   - Rule 6(1)(f): MRP inclusive of all taxes            → CRITICAL if absent
+   *   - Rule 6(1)(g): Consumer Care (email + phone)         → HIGH if absent
+   *
+   * Explicitly EXEMPT from e-commerce display (Rule 6(10)):
+   *   - Rule 6(1)(e): Mfg/Packing Date — NOT required on digital listing
+   *   - Rule 5 USP:   Unit Sale Price is a physical label obligation only
+   */
   public auditProduct(product: CrawlerProductData): ProductAuditResult {
     const violations: RuleViolationFinding[] = [];
     const warnings: RuleViolationFinding[] = [];
+    const info_checks: RuleViolationFinding[] = []; // Informational only — not enforceable on e-commerce
     const passed_rules: string[] = [];
     let compounding_fine_inr = 0.0;
 
-    // Rule 6(1)(a) - Complete Manufacturer / Packer Address
+    // ── Check 1: Rule 6(1)(a) — Manufacturer / Packer Identity & Address ──────
+    // Name + address is mandatory; however exact PIN-code-level address is a
+    // physical label obligation. E-commerce requires at minimum name + city/state.
     const mfg = (product.manufacturer || '').trim();
     if (!mfg) {
       violations.push({
         rule_code: 'RULE-6-1-A',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(a)',
-        title: 'Missing Manufacturer / Packer Identity',
+        section: 'Rule 6(1)(a) read with Rule 6(10)',
+        title: 'Missing Manufacturer / Packer Identity on E-Commerce Listing',
         severity: 'CRITICAL',
         evidence: '(Not declared on listing)',
-        expected: 'Full legal name and complete registered premises address of manufacturer/packer/importer.',
+        expected: 'Name and address of manufacturer/packer/importer must be displayed on digital listing per Rule 6(10).',
         fine_inr: 25000.0,
       });
       compounding_fine_inr += 25000.0;
-    } else if (mfg.length < 25 || !/\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6})\b/i.test(mfg)) {
+    } else if (mfg.length < 10) {
+      // Name present but very short — likely a truncation
       warnings.push({
+        rule_code: 'RULE-6-1-A-NAME',
+        act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
+        section: 'Rule 6(1)(a) read with Rule 6(10)',
+        title: 'Incomplete Manufacturer Name on E-Commerce Listing',
+        severity: 'HIGH',
+        evidence: mfg,
+        expected: 'Full legal name of manufacturer/packer/importer.',
+        fine_inr: 10000.0,
+      });
+      compounding_fine_inr += 10000.0;
+    } else if (!/\b(road|street|plot|sector|estate|nagar|floor|building|dist|pin|pincode|\d{6}|pvt|ltd|limited|india|mumbai|delhi|bengaluru|chennai|hyderabad|pune|kolkata)\b/i.test(mfg)) {
+      // Name present but no address context at all — LOW informational note only
+      // (Full PIN-level address is a physical label obligation, not strictly enforceable on digital listings)
+      info_checks.push({
         rule_code: 'RULE-6-1-A-ADDR',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
         section: 'Rule 6(1)(a)',
-        title: 'Incomplete Manufacturer Address (Missing Premise/PIN)',
-        severity: 'HIGH',
+        title: 'Manufacturer Address Detail May Be Incomplete',
+        severity: 'LOW',
         evidence: mfg,
-        expected: 'Complete address with building number, locality, city, state and PIN code.',
-        fine_inr: 15000.0,
+        expected: 'Physical package label must carry full address (building, locality, PIN). E-commerce listing should include at least city/state.',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 15000.0;
     } else {
-      passed_rules.push('Rule 6(1)(a): Manufacturer details verified');
+      passed_rules.push('Rule 6(1)(a): Manufacturer name & address present');
     }
 
-    // Rule 6(1)(b) & Rule 6(10) - Country of Origin on E-Commerce
+    // ── Check 2: Rule 6(1)(b) & Rule 6(10) — Country of Origin ───────────────
     const origin = (product.country_of_origin || '').trim();
     if (!origin) {
       violations.push({
@@ -400,7 +251,7 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(b): Country of Origin declared (${origin})`);
     }
 
-    // Rule 6(1)(d) & Rule 11/12 - Net Quantity in Metric Units
+    // ── Check 3: Rule 6(1)(d) & Rule 11/12 — Net Quantity in Metric Units ─────
     const net_qty = (product.net_weight || '').trim();
     if (!net_qty) {
       violations.push({
@@ -430,25 +281,27 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(d): Net quantity verified (${net_qty})`);
     }
 
-    // Rule 6(1)(e) - Month and Year of Manufacture / Packing
+    // ── Check 4: Rule 6(1)(e) — Mfg / Packing Date ────────────────────────────
+    // IMPORTANT: Rule 6(10) EXPLICITLY EXEMPTS the month & year of manufacture/packing
+    // from mandatory online display requirements. It is required only on the physical label.
+    // Flagging its absence as a violation on e-commerce listings is legally INCORRECT.
     const mfg_date = (product.mfg_date || '').trim();
     if (!mfg_date) {
-      violations.push({
+      info_checks.push({
         rule_code: 'RULE-6-1-E-DATE',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(e)',
-        title: 'Missing Month & Year of Manufacture/Packing',
-        severity: 'HIGH',
-        evidence: '(Not declared)',
-        expected: 'Month and year of manufacture or packing must be clearly declared.',
-        fine_inr: 25000.0,
+        section: 'Rule 6(1)(e) [Physical Label Only — Exempt Under Rule 6(10)]',
+        title: 'Mfg/Packing Date Not Shown on Listing (Exempt from E-Commerce Display)',
+        severity: 'LOW',
+        evidence: '(Not present on e-commerce listing)',
+        expected: 'Mfg date is mandatory on physical package label but explicitly exempted from e-commerce display under Rule 6(10).',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 25000.0;
     } else {
-      passed_rules.push(`Rule 6(1)(e): Date of packing verified (${mfg_date})`);
+      passed_rules.push(`Rule 6(1)(e): Mfg/packing date visible on listing (${mfg_date}) — Exceeds e-commerce minimum requirement`);
     }
 
-    // Rule 6(1)(f) - MRP Declaration
+    // ── Check 5: Rule 6(1)(f) — MRP Declaration ───────────────────────────────
     const mrp = product.mrp || 0.0;
     if (mrp <= 0) {
       violations.push({
@@ -466,31 +319,33 @@ class CrawlerService {
       passed_rules.push(`Rule 6(1)(f): Valid MRP declared (₹${mrp})`);
     }
 
-    // Rule 5 & Rule 6(10) (2022 Amendment) - Mandatory Unit Sale Price
+    // ── Check 6: Rule 5 — Unit Sale Price (USP) ───────────────────────────────
+    // IMPORTANT: USP is a PHYSICAL LABEL obligation under Rule 5.
+    // It is NOT a mandatory e-commerce listing requirement under Rule 6(10).
+    // Treating its absence on an online listing as a violation is legally INCORRECT.
     const usp = (product.unit_sale_price || '').trim();
     if (!usp) {
-      violations.push({
+      info_checks.push({
         rule_code: 'RULE-5-USP',
         act: 'Legal Metrology (Packaged Commodities) Amendment Rules, 2021 [G.S.R. 779(E)]',
-        section: 'Rule 5 & Rule 6(10)',
-        title: 'Missing Mandatory Unit Sale Price (USP)',
-        severity: 'HIGH',
-        evidence: '(Unit sale price per g/kg/ml absent)',
-        expected: 'Mandatory unit sale price per g/kg/ml/unit to allow consumer price comparison.',
-        fine_inr: 25000.0,
+        section: 'Rule 5 [Physical Label — Best Practice for Online]',
+        title: 'Unit Sale Price (USP) Not Displayed on Listing',
+        severity: 'LOW',
+        evidence: '(Unit sale price per g/kg/ml not visible on e-commerce listing)',
+        expected: 'USP is mandatory on physical package label. Displaying it on the digital listing is best-practice for consumer transparency.',
+        fine_inr: 0.0,
       });
-      compounding_fine_inr += 25000.0;
     } else {
-      passed_rules.push(`Rule 5: Unit Sale Price verified (${usp})`);
+      passed_rules.push(`Rule 5: Unit Sale Price displayed on listing (${usp}) — Above minimum e-commerce requirement`);
     }
 
-    // Rule 6(1)(g) - Consumer Care Details
+    // ── Check 7: Rule 6(1)(g) — Consumer Care Details ─────────────────────────
     const care = (product.customer_care || '').trim();
     if (!care) {
       violations.push({
         rule_code: 'RULE-6-1-G-CARE',
         act: 'Legal Metrology (Packaged Commodities) Rules, 2011',
-        section: 'Rule 6(1)(g)',
+        section: 'Rule 6(1)(g) read with Rule 6(10)',
         title: 'Missing Consumer Care Contact Details',
         severity: 'HIGH',
         evidence: '(No consumer care details declared)',
@@ -514,7 +369,8 @@ class CrawlerService {
       passed_rules.push('Rule 6(1)(g): Consumer care channels verified');
     }
 
-    // Determine status & score
+    // ── Determine status & score ───────────────────────────────────────────────
+    // info_checks (mfg date, USP) do NOT affect score — they are legally exempt.
     const failed_count = violations.length;
     const warning_count = warnings.length;
     let status: 'compliant' | 'non-compliant' | 'under-review';
@@ -525,17 +381,19 @@ class CrawlerService {
       score = 100;
     } else if (failed_count === 0 && warning_count > 0) {
       status = 'under-review';
-      score = Math.max(70, 100 - warning_count * 12);
+      score = Math.max(70, 100 - warning_count * 15);
     } else {
       status = 'non-compliant';
-      score = Math.max(20, 100 - failed_count * 22 - warning_count * 8);
+      score = Math.max(15, 100 - failed_count * 25 - warning_count * 8);
     }
 
-    // Draft statutory notice
+    // Draft statutory notice — only for genuine e-commerce violations
     let draft_notice: DraftStatutoryNotice | null = null;
     if (status === 'non-compliant') {
       const case_no = `LM-S36-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100 + Math.random() * 900)}`;
-      const violation_points = violations.map((v) => `  • ${v.section}: ${v.title} (Evidence: ${v.evidence})`).join('\n');
+      const violation_points = violations
+        .map((v) => `  • ${v.section}: ${v.title}\n    Evidence: ${v.evidence}`)
+        .join('\n');
       draft_notice = {
         case_number: case_no,
         issued_under: 'Section 36(1) of Legal Metrology Act, 2009',
@@ -543,7 +401,13 @@ class CrawlerService {
         product_sku: product.sku,
         product_title: product.title,
         total_penalty_exposure_inr: compounding_fine_inr,
-        notice_body: `FORMAL STATUTORY SHOW CAUSE NOTICE\nNotice Ref: ${case_no}\nTo: Legal Compliance Directorate, ${product.platform} & Manufacturer/Seller: ${product.manufacturer || 'Seller of Record'}\n\nSub: Statutory Violation of Legal Metrology (Packaged Commodities) Rules, 2011 in respect of SKU: ${product.sku} (${product.title}).\n\nThe Central Autonomous Inspection Pipeline of SatyaSetu has detected statutory violations on the e-commerce listing:\n${violation_points}\n\nYou are hereby directed to show cause within 15 days of receipt of this notice why compounding proceedings or criminal prosecution under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated.`,
+        notice_body:
+          `FORMAL STATUTORY SHOW CAUSE NOTICE\nNotice Ref: ${case_no}\n` +
+          `To: Legal Compliance Directorate, ${product.platform} & Manufacturer: ${product.manufacturer || 'Seller of Record'}\n\n` +
+          `Sub: Notice under Rule 6(10) of the Legal Metrology (Packaged Commodities) Rules, 2011 for non-display of mandatory declarations on e-commerce listing for SKU: ${product.sku} (${product.title}).\n\n` +
+          `The following statutory violations have been detected (all mandatory under Rule 6(10)):\n${violation_points}\n\n` +
+          `Note: Mfg/packing date and Unit Sale Price are physical label obligations and are NOT part of this notice as they are explicitly exempt from e-commerce display requirements under Rule 6(10).\n\n` +
+          `You are directed to show cause within 15 days why compounding proceedings under Section 36(1) of the Legal Metrology Act, 2009 should not be initiated.`,
       };
     }
 
@@ -552,9 +416,11 @@ class CrawlerService {
       compliance_score: score,
       violations_count: failed_count,
       warnings_count: warning_count,
+      info_checks_count: info_checks.length,
       passed_rules_count: passed_rules.length,
       violations,
       warnings,
+      info_checks,
       passed_rules,
       estimated_penalty_inr: compounding_fine_inr,
       draft_notice,
@@ -732,14 +598,44 @@ class CrawlerService {
         method = 'fallback_catalog';
       }
 
-      const audit = this.auditProduct(item);
+      // Parse live content into product fields before auditing so the audit runs
+      // against live data, not the catalog benchmark.
+      let productForAudit = { ...item };
+      if (liveContent) {
+        method = 'jina_reader';
+        // Extract manufacturer / packer
+        const mfgMatch = liveContent.match(/(?:manufacturer|packer|marketed\s+by|packed\s+by)[:\s]+([^\n,]{5,80})/i);
+        if (mfgMatch) productForAudit.manufacturer = mfgMatch[1].trim();
+        // Extract country of origin
+        const originMatch = liveContent.match(/country\s+of\s+origin[:\s]+([A-Za-z\s]{3,30})/i);
+        if (originMatch) productForAudit.country_of_origin = originMatch[1].trim();
+        // Extract net quantity/weight
+        const qtyMatch = liveContent.match(/net\s+(?:quantity|weight|content)[:\s]+([\d.,]+\s*(?:g|kg|ml|l|gm|litre|liter)s?)/i);
+        if (qtyMatch) productForAudit.net_weight = qtyMatch[1].trim();
+        // Extract customer care (email or phone)
+        const careEmailMatch = liveContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const carePhoneMatch = liveContent.match(/(?:toll[- ]?free|helpline|consumer|customer|care)[:\s]*(\+?[\d\s\-()]{8,15})/i);
+        const careParts = [careEmailMatch?.[0], carePhoneMatch?.[1]].filter(Boolean);
+        if (careParts.length > 0) productForAudit.customer_care = careParts.join(' / ');
+        this.addLog('INFO', `[Provenance] Live fields parsed from Jina content for [${item.sku}]`);
+      } else {
+        method = 'fallback_catalog';
+        this.addLog('INFO', `[Provenance] Audit will use catalog benchmark for [${item.sku}] — live scrape unavailable`);
+      }
+
+      const audit = this.auditProduct(productForAudit);
+      const fetchTimestamp = new Date().toISOString();
       const rec: CrawlerInspectionRecord = {
         id: `CRAWL-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
         inspected_at: new Date().toLocaleString('en-IN'),
-        product: { ...item, scrape_method: method, is_live_scraped: method !== 'fallback_catalog' },
+        product: { ...productForAudit, scrape_method: method, is_live_scraped: method !== 'fallback_catalog' },
         audit,
         scrape_method: method,
         is_live: method !== 'fallback_catalog',
+        // Provenance: persist raw source, fetch timestamp, and data origin for every finding
+        raw_live_content: liveContent ?? undefined,
+        fetch_timestamp: fetchTimestamp,
+        data_source: method !== 'fallback_catalog' ? 'live_jina_scrape' : 'catalog_benchmark',
       };
 
       records.push(rec);

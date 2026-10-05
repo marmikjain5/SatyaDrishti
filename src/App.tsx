@@ -16,6 +16,9 @@ import { RegulatoryRAGPortal } from './pages/dashboard/RegulatoryRAGPortal';
 import { EcommerceCrawler } from './pages/dashboard/EcommerceCrawler';
 import { ScrollToAnchor } from './components/layout/ScrollToAnchor';
 
+import { TechnicalBlogPage } from './pages/TechnicalBlogPage';
+import { SystemArchitecturePage } from './pages/SystemArchitecturePage';
+
 export function App() {
   return (
     <BrowserRouter>
@@ -24,6 +27,10 @@ export function App() {
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/system-architecture" element={<SystemArchitecturePage />} />
+        <Route path="/architecture" element={<Navigate to="/system-architecture" replace />} />
+        <Route path="/technical-blog" element={<TechnicalBlogPage />} />
+        <Route path="/tech-blog" element={<Navigate to="/technical-blog" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/directory" element={<PublicDirectoryPage />} />
         <Route path="/verify" element={<PublicDirectoryPage />} />

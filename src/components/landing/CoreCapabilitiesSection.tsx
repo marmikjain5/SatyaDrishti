@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef } from 'react';
 import {
   ScanText,
   ShieldCheck,
-  Award,
-  AlertOctagon,
-  Network,
-  Cpu,
+  Sparkles,
+  MessageSquareWarning,
+  UserCheck,
+  Scale,
+  Building2,
+  FileCheck2,
   ArrowUpRight,
   Check,
   ChevronLeft,
@@ -23,69 +24,123 @@ export const CoreCapabilitiesSection: React.FC = () => {
   const capabilities = [
     {
       id: 1,
-      title: 'OCR Intelligence',
-      subtitle: 'Multi-Pass OCR & Image Processing',
+      title: 'Label & Packaging Scanning (OCR & Vision AI)',
+      subtitle: 'Automated Detection & Extraction of Mandatory Declarations',
       description:
-        'Processes packaging images through multiple preprocessing variants and OCR passes to extract statutory declarations such as MRP, net quantity, batch information, and manufacturing details.',
+        'Scans packaged commodity labels, product images, and packaging to automatically detect and extract mandatory declarations (MRP, net quantity, manufacturer, packer, importer, dates, and consumer care) using multi-pass Tesseract OCR and Multimodal Vision LLMs.',
       icon: ScanText,
-      badge: 'Multi-Pass OCR',
-      metrics: ['6 Optimized Image Variants', 'Image Preprocessing Pipeline', 'Statutory Declaration Extraction'],
-      tag: 'OCR Pipeline',
+      badge: 'Hybrid Vision AI',
+      metrics: [
+        'Mandatory Declarations Extraction',
+        'OpenCV Preprocessing & Deskew',
+        'Bounding-Box Canvas Overlays',
+      ],
+      tag: 'Rule 6(1) Extraction',
     },
     {
       id: 2,
-      title: 'Product Compliance Validation',
-      subtitle: 'Legal Metrology Rule Validation',
+      title: 'Rule-Based Compliance Engine (PCR 2011)',
+      subtitle: 'Font Size & Readability Analysis (Rule 7 & 9)',
       description:
-        'Validates extracted package declarations against applicable Legal Metrology requirements and produces structured compliance results.',
+        'Audits extracted declarations against the Legal Metrology (Packaged Commodities) Rules, 2011. Checks correctness, completeness, and placement, performing automated font size and readability analysis (numeral height relative to PDP area and contrast ratio).',
       icon: ShieldCheck,
-      badge: 'Rule Validation',
-      metrics: ['Declaration Rule Checks', 'Readability Analysis', 'Compliance Report Generation'],
-      tag: 'Compliance Engine',
+      badge: 'Rule Engine 2011',
+      metrics: [
+        'Font Size & Readability Analysis',
+        'Schedule I Permissible Error (MPE)',
+        'Missing / Misleading Declaration Flagging',
+      ],
+      tag: 'PCR 2011 Audit',
     },
     {
       id: 3,
-      title: 'AI Legal Review',
-      subtitle: 'Evidence-Based Violation Assessment',
+      title: 'Autonomous Gazette Crawler & RAG',
+      subtitle: 'Gazette Monitoring & Hybrid Legal Search',
       description:
-        'Reviews detected violations, evaluates evidence sufficiency and risk, and produces a structured legal assessment before human verification.',
-      icon: Award,
-      badge: 'Legal Review',
-      metrics: ['Violation Finding Analysis', 'Severity & Evidence Assessment', 'Human Verification Gate'],
-      tag: 'Legal Review',
-    },
-    {
-      id: 4,
-      title: 'Regulatory RAG Intelligence',
-      subtitle: 'Retrieval-Augmented Legal Intelligence',
-      description:
-        'Provides regulatory question answering and reference retrieval using the platform\'s legal knowledge and regulatory documents.',
-      icon: AlertOctagon,
-      badge: 'RAG Intelligence',
-      metrics: ['Regulatory Query Retrieval', 'Act & Rule References', 'Context-Aware Legal Answers'],
+        'Continuously crawls official e-Gazette notifications, PIB press releases, and CCPA orders. Parses gazette PDFs and vectorizes verbatim statutory clauses into a live RAG knowledge base for instant legal retrieval.',
+      icon: Sparkles,
+      badge: 'Live Gazette RAG',
+      metrics: [
+        'Real-Time Gazette PDF Parsing',
+        'Verbatim Clause & Penalty Retrieval',
+        'Automatic Rule Version Updating',
+      ],
       tag: 'Regulatory RAG',
     },
     {
-      id: 5,
-      title: 'Violation Management',
-      subtitle: 'Evidence & Case Tracking',
+      id: 4,
+      title: 'Supporting Photographic Evidence Engine',
+      subtitle: 'Citizen Complaints & Price Overcharge Audit',
       description:
-        'Centralizes detected violations with severity, evidence, review status, and case-level tracking for regulatory workflows.',
-      icon: Network,
-      badge: 'Violation Ledger',
-      metrics: ['Violation Case Tracking', 'Severity Categorization', 'Legal Notice Generation'],
-      tag: 'Violation Workflow',
+        'Empowers consumers to attach photographs and supporting evidence in Hindi, Kannada, Tamil, or English with Indic transliteration. Correlates packaging photos with retail receipts to auto-detect price overcharging beyond MRP.',
+      icon: MessageSquareWarning,
+      badge: 'Evidence Capture',
+      metrics: [
+        'Multi-Language (HI, KN, TA, EN)',
+        'Receipt vs Packaging MRP Audit',
+        'Photographic Evidence Attachment',
+      ],
+      tag: 'CPA 2019 Desk',
+    },
+    {
+      id: 5,
+      title: 'Enforcement Official Dashboard',
+      subtitle: 'Role-Based Access & Inspection Monitoring',
+      description:
+        'Provides dedicated dashboards for enforcement officials to monitor field inspections, detect repeat violations, review photographic evidence, verify barcode audit trails, and manage compliance queues.',
+      icon: UserCheck,
+      badge: 'Inspector Portal',
+      metrics: [
+        'Enforcement Official Dashboards',
+        'Role-Based User Access Control',
+        'Zonal Inspections & SLA Tracking',
+      ],
+      tag: 'Field Operations',
     },
     {
       id: 6,
-      title: 'Human Verification Workflow',
-      subtitle: 'Inspector Review & Publication Control',
+      title: 'Central Supervisor Directorate',
+      subtitle: 'Directorate Oversight & Section 36 SCN',
       description:
-        'Routes AI-generated legal assessments through human verification before a violation can proceed toward publication or regulatory action.',
-      icon: Cpu,
-      badge: 'Human-in-the-Loop',
-      metrics: ['Inspector Review', 'Verification / Rejection', 'Publication Approval Gate'],
-      tag: 'Human Verification',
+        'Provides Directorate Supervisors with high-priority enforcement queues, statutory Show Cause Notice (SCN) authorization under Section 36 of the Legal Metrology Act, 2009, 14-day hearing workflows, and inspector rosters.',
+      icon: Scale,
+      badge: 'Supervisor Portal',
+      metrics: [
+        'Statutory Section 36 SCN Issuance',
+        '14-Day Hearing & Notice Workflow',
+        'Enforcement Roster Analytics',
+      ],
+      tag: 'Directorate Desk',
+    },
+    {
+      id: 7,
+      title: 'E-Commerce Product Listing Scanner',
+      subtitle: 'Digital Marketplace Compliance (Rule 6(10))',
+      description:
+        'Scans product listings and packaged commodity images across e-commerce platforms (Amazon, Flipkart, Blinkit, Zepto, Meesho) to detect missing declarations, dual MRP, omitted unit sale price, and deceptive packaging.',
+      icon: Building2,
+      badge: 'Marketplace Audit',
+      metrics: [
+        'E-Commerce Product Listing Scan',
+        'Dual MRP & Unit Price Check',
+        'Missing Declarations Detection',
+      ],
+      tag: 'Digital Marketplace',
+    },
+    {
+      id: 8,
+      title: 'Digital Compliance Reports & Repository',
+      subtitle: 'PDF & Editable Reports with Inspection History',
+      description:
+        'Generates digital compliance reports and violation summaries in PDF and editable formats with embedded photographs. Maintains a searchable repository of scanned products and compliance history.',
+      icon: FileCheck2,
+      badge: 'PDF Reports & Repo',
+      metrics: [
+        'Compliance Reports (PDF & Editable)',
+        'Repository of Scanned Products',
+        'Inspection History & Evidence Chain',
+      ],
+      tag: 'Audit Ledger',
     },
   ];
 
@@ -132,7 +187,7 @@ export const CoreCapabilitiesSection: React.FC = () => {
             Core Capabilities
           </h2>
           <p className="text-sm text-slate-600 mt-2">
-            Intelligence. Automation. Enforcement.
+            Multimodal Vision AI. Autonomous Gazette RAG. Zonal Inspector Telemetry. Section 36 Enforcement.
           </p>
         </div>
 
@@ -185,8 +240,8 @@ export const CoreCapabilitiesSection: React.FC = () => {
                   onMouseLeave={() => setActiveCard(null)}
                 >
                   <SciFiCard
-                    className="p-6 h-[410px]"
-                    outerClassName="h-[410px]"
+                    className="p-6 h-[430px]"
+                    outerClassName="h-[430px]"
                   >
                     {/* Upper Content */}
                     <div>
@@ -209,7 +264,7 @@ export const CoreCapabilitiesSection: React.FC = () => {
                       </h3>
                       <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{item.subtitle}</p>
 
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 leading-relaxed">{item.description}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 leading-relaxed min-h-[72px]">{item.description}</p>
                     </div>
 
                     {/* Lower Metrics & Footer */}
@@ -224,7 +279,7 @@ export const CoreCapabilitiesSection: React.FC = () => {
                       </div>
 
                       <div className="pt-2 flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-slate-400">
-                        <span>Statutory Reference:</span>
+                        <span>Module Scope:</span>
                         <span className="bg-slate-100/80 dark:bg-slate-800/90 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium">
                           {item.tag}
                         </span>

@@ -23,7 +23,45 @@ import type {
   ContrastMetrics,
   ReadabilityStatus,
   ReadabilityFlag,
+  MeasurementStatus,
 } from '../types/readability';
+
+const DEFAULT_ANALYSIS_TIMEOUT_MS = 2500;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () => T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const timer = globalThis.setTimeout(() => resolve(onTimeout()), timeoutMs);
+    promise.then((value) => {
+      globalThis.clearTimeout(timer);
+      resolve(value);
+    }).catch(() => {
+      globalThis.clearTimeout(timer);
+      resolve(onTimeout());
+    });
+  });
+}
+
+export interface PhysicalCalibration {
+  method: 'aruco' | 'reference-object' | 'manual' | 'lidar' | 'open-food-facts' | 'optical-barcode' | 'local-registry' | 'unavailable';
+  packageWidthMm?: number;
+  packageHeightMm?: number;
+  packageWidthPx?: number;
+  packageHeightPx?: number;
+  uncertaintyMm?: number;
+  minNumeralHeightMm?: number;
+  minNumeralHeightPt?: number;
+  pdpAreaCm2?: number;
+  calibrationSourceLabel?: string;
+  sourceLabel?: string;
+  details?: string;
+  scaleMmPerPx?: number;
+}
+
+export interface ReadabilityAnalysisOptions {
+  calibration?: PhysicalCalibration;
+  calibrationProvider?: () => Promise<PhysicalCalibration | null>;
+  timeoutMs?: number;
+}
 
 // ─── Statutory Font Size Thresholds (Legal Metrology Rule 9 & Schedule II) ───
 
@@ -173,8 +211,20 @@ function contrastRatioToScore(ratio: number): number {
 async function sampleImageBoundingBoxContrast(
   imageDataUrl: string,
   bbox: BoundingBox['normalized'],
-  imageDimensions: { width: number; height: number }
+  imageDimensions: { width: number; height: number },
+  timeoutMs = DEFAULT_ANALYSIS_TIMEOUT_MS
 ): Promise<ContrastMetrics> {
+  const unavailable = (status: MeasurementStatus = 'unavailable', reason = 'Image contrast could not be measured.') => ({
+    contrastScore: 0,
+    contrastRatio: 0,
+    foregroundLuminance: 0,
+    backgroundLuminance: 0,
+    isLowContrast: true,
+    formattedRatio: 'Unavailable',
+    measurementStatus: status,
+    failureReason: reason,
+  });
+
   try {
     if (typeof document === 'undefined') {
       throw new Error('Running in non-DOM environment');
@@ -183,11 +233,12 @@ async function sampleImageBoundingBoxContrast(
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
+    const loaded = await withTimeout(new Promise<boolean>((resolve, reject) => {
+      img.onload = () => resolve(true);
       img.onerror = () => reject(new Error('Failed to load image for canvas analysis'));
       img.src = imageDataUrl;
-    });
+    }), timeoutMs, () => false);
+    if (!loaded) throw new Error('Timed out loading image for canvas analysis');
 
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth || imageDimensions.width || 800;
@@ -236,19 +287,11 @@ async function sampleImageBoundingBoxContrast(
       backgroundLuminance: Math.round(brightAvg * 100) / 100,
       isLowContrast: score < 45 || ratio < 3.0,
       formattedRatio: `${ratio.toFixed(1)}:1`,
+      measurementStatus: 'measured',
     };
-  } catch (_e) {
-    // Graceful fallback for synthetic or cross-origin canvas blocking
-    const simulatedRatio = 4.8;
-    const simulatedScore = contrastRatioToScore(simulatedRatio);
-    return {
-      contrastScore: simulatedScore,
-      contrastRatio: simulatedRatio,
-      foregroundLuminance: 0.12,
-      backgroundLuminance: 0.84,
-      isLowContrast: false,
-      formattedRatio: `${simulatedRatio.toFixed(1)}:1`,
-    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Canvas analysis failed.';
+    return unavailable(message.includes('Timed out') ? 'timed-out' : 'unavailable', message);
   }
 }
 
@@ -266,29 +309,46 @@ async function sampleImageBoundingBoxContrast(
 function estimateFontSizeMetrics(
   bbox: BoundingBox,
   imageDimensions: { width: number; height: number },
-  threshold: StatutoryThreshold
+  threshold: StatutoryThreshold,
+  calibration?: PhysicalCalibration
 ): FontSizeMetrics {
   const imgH = imageDimensions.height || 800;
   const bboxHeightPx = Math.max(6, Math.round(((bbox.y1 - bbox.y0) || ((bbox.normalized.height / 100) * imgH))));
   const relativePercent = Math.round((bboxHeightPx / imgH) * 1000) / 10;
 
-  // Normalized pt calculation relative to typical packaging reading distance
-  // Packaging height typically ~150mm–200mm in real life
-  const estimatedPhysicalImageHeightMm = 180; // Standard reference packaging height
-  const estimatedMm = Math.round(((bboxHeightPx / imgH) * estimatedPhysicalImageHeightMm) * 10) / 10;
+  const physicalHeightMm = calibration?.packageHeightMm;
+  const physicalHeightPx = calibration?.packageHeightPx || imgH;
+  const measurementStatus: MeasurementStatus = (physicalHeightMm && physicalHeightPx) || calibration?.scaleMmPerPx
+    ? 'measured'
+    : 'unavailable';
+  const estimatedMm = measurementStatus === 'measured'
+    ? (calibration?.scaleMmPerPx
+        ? Math.round(bboxHeightPx * calibration.scaleMmPerPx * 10) / 10
+        : Math.round(((bboxHeightPx / physicalHeightPx) * physicalHeightMm!) * 10) / 10)
+    : 0;
   const estimatedPt = Math.round((estimatedMm * (72 / 25.4)) * 10) / 10;
 
-  const isBelowThreshold = estimatedPt < threshold.minPt || estimatedMm < threshold.minMm;
+  // Apply Legal Metrology Schedule II statutory numeral tier if available for this package's PDP area
+  const effectiveMinMm = (calibration?.minNumeralHeightMm && (threshold.category === 'statutory_declaration' || threshold.minMm >= 1.5))
+    ? Math.max(threshold.minMm, calibration.minNumeralHeightMm)
+    : threshold.minMm;
+  const effectiveMinPt = Math.round((effectiveMinMm * (72 / 25.4)) * 10) / 10;
+
+  const isBelowThreshold = measurementStatus === 'measured' && (estimatedPt < effectiveMinPt || estimatedMm < effectiveMinMm);
 
   return {
     pt: estimatedPt,
     mm: estimatedMm,
     px: bboxHeightPx,
     relativeHeightPercent: relativePercent,
-    minThresholdPt: threshold.minPt,
-    minThresholdMm: threshold.minMm,
+    minThresholdPt: effectiveMinPt,
+    minThresholdMm: effectiveMinMm,
     isBelowThreshold,
-    formatted: `${estimatedPt.toFixed(1)} pt (${estimatedMm.toFixed(1)} mm)`,
+    measurementStatus,
+    calibrationMethod: calibration?.calibrationSourceLabel || calibration?.sourceLabel || calibration?.method,
+    formatted: measurementStatus === 'measured'
+      ? `${estimatedPt.toFixed(1)} pt (${estimatedMm.toFixed(1)} mm)`
+      : 'Unavailable — calibrated scale required',
   };
 }
 
@@ -345,6 +405,15 @@ function evaluateReadabilityDefects(
     advice.push(`Optical contrast (${contrast.formattedRatio}) is below statutory legibility minimum (min 4.5:1). Increase ink density against background.`);
   }
 
+  const measurementUnavailable = contrast.measurementStatus !== 'measured' || fontSize.measurementStatus !== 'measured';
+  if (measurementUnavailable) {
+    return {
+      status: 'indeterminate',
+      flags,
+      remediationAdvice: 'Unable to verify physical font size or optical contrast from this image. Capture the package with a visible calibrated reference or provide approved package dimensions; no legal pass/fail is assigned.',
+    };
+  }
+
   // Flag 3: Font size below statutory threshold
   if (fontSize.isBelowThreshold) {
     flags.push('BELOW_MIN_FONT_SIZE');
@@ -387,8 +456,18 @@ export class ReadabilityAnalysisEngine {
     scanId: string,
     imageDataUrl: string,
     extractedData: ExtractedProductData,
-    imageDimensions: { width: number; height: number }
+    imageDimensions: { width: number; height: number },
+    options: ReadabilityAnalysisOptions = {}
   ): Promise<ReadabilityAnalysisResult> {
+    const timeoutMs = options.timeoutMs ?? DEFAULT_ANALYSIS_TIMEOUT_MS;
+    let calibration = options.calibration;
+    if (!calibration && options.calibrationProvider) {
+      calibration = (await withTimeout(
+        options.calibrationProvider(),
+        timeoutMs,
+        () => null
+      )) || undefined;
+    }
     const regions: TextRegionReadability[] = [];
     const declarations = extractedData.declarations || {};
     const declarationKeys = Object.keys(declarations) as DeclarationFieldKey[];
@@ -420,11 +499,12 @@ export class ReadabilityAnalysisEngine {
       const contrast = await sampleImageBoundingBoxContrast(
         imageDataUrl,
         bbox.normalized,
-        imageDimensions
+        imageDimensions,
+        timeoutMs
       );
 
       // Estimate font size
-      const fontSize = estimateFontSizeMetrics(bbox, imageDimensions, threshold);
+      const fontSize = estimateFontSizeMetrics(bbox, imageDimensions, threshold, calibration);
 
       // Compute OCR Confidence
       const ocrConfidence = Math.max(10, Math.min(100, decl.confidence || extractedData.confidence || 75));
@@ -485,10 +565,11 @@ export class ReadabilityAnalysisEngine {
         const contrast = await sampleImageBoundingBoxContrast(
           imageDataUrl,
           lineBBox.normalized,
-          imageDimensions
+          imageDimensions,
+          timeoutMs
         );
 
-        const fontSize = estimateFontSizeMetrics(lineBBox, imageDimensions, lineThreshold);
+        const fontSize = estimateFontSizeMetrics(lineBBox, imageDimensions, lineThreshold, calibration);
         const ocrConfidence = Math.max(45, Math.min(95, extractedData.confidence - (i % 2 === 0 ? 5 : 12)));
         const visibilityScore = calculateVisibilityScore(contrast.contrastScore, ocrConfidence, fontSize);
         const evaluation = evaluateReadabilityDefects(
@@ -522,16 +603,19 @@ export class ReadabilityAnalysisEngine {
     const compliantCount = regions.filter((r) => r.status === 'compliant').length;
     const warningCount = regions.filter((r) => r.status === 'warning').length;
     const nonCompliantCount = regions.filter((r) => r.status === 'non-compliant').length;
+    const indeterminateCount = regions.filter((r) => r.status === 'indeterminate').length;
     const flaggedRegions = regions.filter((r) => r.flags.length > 0 || r.status !== 'compliant');
 
     const totalVisibility = regions.reduce((sum, r) => sum + r.visibilityScore, 0);
     const avgVisibilityScore = totalRegions > 0 ? Math.round(totalVisibility / totalRegions) : 0;
 
-    const totalPt = regions.reduce((sum, r) => sum + r.fontSize.pt, 0);
-    const avgFontSizePt = totalRegions > 0 ? Math.round((totalPt / totalRegions) * 10) / 10 : 0;
+    const measuredRegions = regions.filter((r) => r.fontSize.measurementStatus === 'measured');
+    const totalPt = measuredRegions.reduce((sum, r) => sum + r.fontSize.pt, 0);
+    const avgFontSizePt = measuredRegions.length > 0 ? Math.round((totalPt / measuredRegions.length) * 10) / 10 : 0;
 
-    const totalContrastRatio = regions.reduce((sum, r) => sum + r.contrast.contrastRatio, 0);
-    const avgContrastRatio = totalRegions > 0 ? Math.round((totalContrastRatio / totalRegions) * 10) / 10 : 0;
+    const measuredContrastRegions = regions.filter((r) => r.contrast.measurementStatus === 'measured');
+    const totalContrastRatio = measuredContrastRegions.reduce((sum, r) => sum + r.contrast.contrastRatio, 0);
+    const avgContrastRatio = measuredContrastRegions.length > 0 ? Math.round((totalContrastRatio / measuredContrastRegions.length) * 10) / 10 : 0;
 
     const totalConf = regions.reduce((sum, r) => sum + r.ocrConfidence, 0);
     const avgConfidence = totalRegions > 0 ? Math.round((totalConf / totalRegions) * 10) / 10 : 0;
@@ -543,7 +627,9 @@ export class ReadabilityAnalysisEngine {
     }
 
     let overallStatus: ReadabilityStatus = 'compliant';
-    if (overallScore < 60 || nonCompliantCount >= 2) {
+    if (totalRegions === 0 || indeterminateCount > 0) {
+      overallStatus = 'indeterminate';
+    } else if (overallScore < 60 || nonCompliantCount >= 2) {
       overallStatus = 'non-compliant';
     } else if (overallScore < 80 || warningCount > 0 || nonCompliantCount === 1) {
       overallStatus = 'warning';
@@ -556,6 +642,7 @@ export class ReadabilityAnalysisEngine {
       compliantCount,
       warningCount,
       nonCompliantCount,
+      indeterminateCount,
       flaggedCount: flaggedRegions.length,
       avgFontSizePt,
       avgContrastRatio,
@@ -566,7 +653,15 @@ export class ReadabilityAnalysisEngine {
     return {
       scanId,
       timestamp: new Date().toISOString(),
-      engineVersion: 'SatyaDrishti-Readability-4.0',
+      engineVersion: 'SatyaDrishti-Readability-5.0',
+      calibration: calibration
+        ? {
+            status: calibration.packageHeightMm && (calibration.packageHeightPx || calibration.scaleMmPerPx)
+              ? 'measured'
+              : 'unavailable',
+            ...calibration,
+          }
+        : { status: 'unavailable', reason: 'No approved physical scale calibration was supplied before the analysis deadline.' },
       imageDimensions,
       summary,
       regions,

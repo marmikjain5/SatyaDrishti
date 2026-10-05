@@ -1,6 +1,6 @@
 // SatyaDrishti Conservative Service Worker
-// Version: 1.0.0
-const CACHE_NAME = 'satyadrishti-shell-v1';
+// Version: 2.0.0
+const CACHE_NAME = 'satyadrishti-shell-v2';
 
 // Static UI shell assets to cache on install
 const SHELL_ASSETS = [
@@ -8,9 +8,13 @@ const SHELL_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/icon.svg',
+  '/ocr/worker.min.js',
+  '/ocr/tesseract-core-lstm.wasm.js',
+  '/ocr/tesseract-core-lstm.wasm',
+  '/ocr/eng.traineddata',
 ];
 
-// Install: pre-cache static UI shell only
+// Install: pre-cache the UI shell and local OCR runtime assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -51,6 +55,22 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('/stream')
   ) {
     event.respondWith(fetch(request));
+    return;
+  }
+
+  // OCR runtime/model assets are installed with the shell for offline field scans.
+  if (url.pathname.startsWith('/ocr/')) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) =>
+        cachedResponse || fetch(request).then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+      )
+    );
     return;
   }
 

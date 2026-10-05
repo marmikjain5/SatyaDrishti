@@ -35,7 +35,7 @@ Key mobile adaptations include:
 ## 3. Route-by-Route Responsiveness Audit
 
 ### 3.1 Public Landing Page (`/`)
-- **Navigation**: Desktop header features full navigation links and portal login button. Below `768px`, a hamburger toggle slides down a clean, accessible mobile drawer containing links to About, Capabilities, Enforcement Flow, Public Directory, and Portal Login.
+- **Navigation**: Desktop header features the primary navigation links and portal login button. Below `768px`, a hamburger toggle slides down a clean, accessible mobile drawer containing links to About, Public Directory, System Architecture, Technical Blog, and Portal Login.
 - **Hero & Metrics**: Two-column hero collapses into a single vertical column with prominent "Launch Inspector Portal" and "Consumer Grievance" call-to-action buttons.
 - **Scrolling**: Fluid vertical scrolling with zero horizontal overflow (`overflow-x-hidden`).
 - **Touch Targets**: All public links and buttons satisfy ≥ 44x44px touch targets.

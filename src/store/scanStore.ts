@@ -14,12 +14,14 @@ import type { ReadabilityAnalysisResult } from '../types/readability';
 import { ocrService } from '../lib/ocrService';
 import { validateProduct } from '../lib/ruleEngineService';
 import { readabilityService } from '../lib/readabilityService';
+import { productDimensionsService } from '../lib/productDimensionsService';
 import {
   processScanDiscrepanciesAndCorrelate,
   ScanCorrelationResult,
 } from '../lib/scanComplaintCorrelator';
 import { consolidateMultiAngleExtractions } from '../lib/multiAngleConsolidator';
 import { useComplianceStore } from './complianceStore';
+import { offlineInspectionQueue, type QueuedInspection } from '../services/offlineInspectionQueue';
 import { verifyBatch, verifyMRP } from '../lib/batchVerificationService';
 import {
   MOCK_SCANS,
@@ -92,6 +94,7 @@ interface ScanState {
   selectParallelJob: (jobId: string | null) => void;
   removeParallelJob: (jobId: string) => void;
   clearParallelJobs: () => void;
+  restoreOfflineInspections: (inspections: QueuedInspection[]) => Promise<void>;
 }
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -406,14 +409,40 @@ export const useScanStore = create<ScanState>((set, get) => ({
           }
         );
 
-        // Readability analysis for this angle
+        // Readability analysis for this angle (calibrated via Open Food Facts / Barcode Ruler)
         let angleReadability: ReadabilityAnalysisResult | undefined = undefined;
         try {
+          const angleBarcode = ocrResult.extractedData?.declarations?.barcode?.value;
+          const angleBarcodePx = ocrResult.extractedData?.declarations?.barcode?.barcodeWidthPx;
+          const angleProd = ocrResult.extractedData?.declarations?.productName?.value;
+          const angleDims = ocrResult.extractedData?.imageDimensions || { width: 1000, height: 800 };
+          const angleCalib = await productDimensionsService.resolveDimensions({
+            barcode: angleBarcode && angleBarcode !== '(Not detected)' ? angleBarcode : undefined,
+            productName: angleProd && angleProd !== '(Not detected)' ? angleProd : undefined,
+            barcodeWidthPx: angleBarcodePx,
+            imageDimensions: angleDims,
+          });
+
           angleReadability = await readabilityService.analyze(
             `${scanId}-angle-${i + 1}`,
             image.dataUrl,
             ocrResult.extractedData,
-            ocrResult.extractedData.imageDimensions || { width: 1000, height: 800 }
+            angleDims,
+            {
+              calibration: {
+                method: angleCalib.source as any,
+                packageWidthMm: angleCalib.packageWidthMm,
+                packageHeightMm: angleCalib.packageHeightMm,
+                packageWidthPx: angleDims.width,
+                packageHeightPx: angleDims.height,
+                scaleMmPerPx: angleCalib.scaleMmPerPx,
+                minNumeralHeightMm: angleCalib.minNumeralHeightMm,
+                minNumeralHeightPt: angleCalib.minNumeralHeightPt,
+                pdpAreaCm2: angleCalib.pdpAreaCm2,
+                calibrationSourceLabel: angleCalib.sourceLabel,
+                details: angleCalib.details,
+              },
+            }
           );
         } catch {
           // ignore readability errors for sub-angles
@@ -459,6 +488,12 @@ export const useScanStore = create<ScanState>((set, get) => ({
       const validationResult = validateProduct(masterExtractedData);
       validationResult.scanId = scanId;
 
+      await new Promise((r) => setTimeout(r, 300));
+      set({
+        currentProgress: 94,
+        currentStatusMessage: 'Correlating with Legal Metrology Statutory RAG Database...',
+      });
+
       // Step 4: Run RAG Statutory Mapping & Complaint Correlation
       const correlationResult = processScanDiscrepanciesAndCorrelate(
         scanId,
@@ -467,12 +502,45 @@ export const useScanStore = create<ScanState>((set, get) => ({
         consolidatedRawText
       );
 
-      // Step 5: Master Readability Analysis
+      await new Promise((r) => setTimeout(r, 250));
+      set({
+        currentProgress: 98,
+        currentStatusMessage: 'Finalizing readability analysis & compliance audit report...',
+      });
+
+      // Step 5: Master Readability Analysis (calibrated via Open Food Facts API / Barcode Optical Scale)
+      const masterBarcode = masterExtractedData.declarations?.barcode?.value;
+      const masterBarcodePx = masterExtractedData.declarations?.barcode?.barcodeWidthPx;
+      const masterProd = masterExtractedData.declarations?.productName?.value;
+      const masterDims = masterExtractedData.imageDimensions || { width: 1200, height: 900 };
+
+      const masterCalib = await productDimensionsService.resolveDimensions({
+        barcode: masterBarcode && masterBarcode !== '(Not detected)' ? masterBarcode : undefined,
+        productName: masterProd && masterProd !== '(Not detected)' ? masterProd : undefined,
+        barcodeWidthPx: masterBarcodePx,
+        imageDimensions: masterDims,
+      });
+
       const masterReadability = await readabilityService.analyze(
         scanId,
         primaryImage.dataUrl,
         masterExtractedData,
-        masterExtractedData.imageDimensions || { width: 1200, height: 900 }
+        masterDims,
+        {
+          calibration: {
+            method: masterCalib.source as any,
+            packageWidthMm: masterCalib.packageWidthMm,
+            packageHeightMm: masterCalib.packageHeightMm,
+            packageWidthPx: masterDims.width,
+            packageHeightPx: masterDims.height,
+            scaleMmPerPx: masterCalib.scaleMmPerPx,
+            minNumeralHeightMm: masterCalib.minNumeralHeightMm,
+            minNumeralHeightPt: masterCalib.minNumeralHeightPt,
+            pdpAreaCm2: masterCalib.pdpAreaCm2,
+            calibrationSourceLabel: masterCalib.sourceLabel,
+            details: masterCalib.details,
+          },
+        }
       );
 
       const completedScan: ScanRecord = {
@@ -486,6 +554,11 @@ export const useScanStore = create<ScanState>((set, get) => ({
         angles,
         activeAngleIndex: 0,
       };
+
+      await offlineInspectionQueue.enqueue(completedScan, uploadedImages, {
+        validationResult,
+        correlationResult,
+      });
 
       // Step 6: Ingest Scanned Product into Central Compliance Store
       useComplianceStore.getState().addScannedProduct(
@@ -651,6 +724,10 @@ export const useScanStore = create<ScanState>((set, get) => ({
         ...state.readabilityResults,
         [scanId]: result,
       },
+      currentScan:
+        state.currentScan && state.currentScan.id === scanId
+          ? { ...state.currentScan, readabilityResult: result }
+          : state.currentScan,
     }));
   },
 
@@ -745,6 +822,43 @@ export const useScanStore = create<ScanState>((set, get) => ({
     // Launch the concurrency-limited queue processor
     const jobIds = Object.keys(newJobs);
     await processParallelQueue(jobIds);
+  restoreOfflineInspections: async (inspections) => {
+    const inspectionsById = new Map(inspections.map((inspection) => [inspection.id, inspection]));
+    const restoredScans = await Promise.all(
+      inspections
+        .filter((inspection) => inspection.scan.status === 'completed' && inspection.scan.extractedData)
+        .map((inspection) => offlineInspectionQueue.restoreScan(inspection))
+    );
+    const restoredValidation = Object.fromEntries(
+      restoredScans.map((scan) => {
+        const queuedInspection = inspectionsById.get(scan.id);
+        const result = queuedInspection?.analysis.validationResult || validateProduct(scan.extractedData!);
+        result.scanId = scan.id;
+        return [scan.id, result];
+      })
+    );
+    const restoredCorrelation = Object.fromEntries(
+      restoredScans.map((scan) => [
+        scan.id,
+        inspectionsById.get(scan.id)!.analysis.correlationResult,
+      ])
+    );
+    const restoredReadability = Object.fromEntries(
+      restoredScans
+        .filter((scan) => scan.readabilityResult)
+        .map((scan) => [scan.id, scan.readabilityResult!])
+    );
+
+    set((state) => {
+      const existingIds = new Set(state.scans.map((scan) => scan.id));
+      const newScans = restoredScans.filter((scan) => !existingIds.has(scan.id));
+      return {
+        scans: [...newScans, ...state.scans],
+        validationResults: { ...restoredValidation, ...state.validationResults },
+        correlationResults: { ...restoredCorrelation, ...state.correlationResults },
+        readabilityResults: { ...restoredReadability, ...state.readabilityResults },
+      };
+    });
   },
 }));
 

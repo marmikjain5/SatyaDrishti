@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -16,6 +16,7 @@ import { useScanStore } from '../../store/scanStore';
 import { Button } from '../ui/Button';
 import { AnimatedThemeToggler } from '../ui/AnimatedThemeToggler';
 import { Loader2, Scan } from 'lucide-react';
+import { getNetworkStatusLabel } from '../../lib/networkStatus';
 
 interface TopbarProps {
   onOpenCommandPalette: () => void;
@@ -30,8 +31,19 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenCommandPalette, onToggleMo
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
 
   const isConsumer = user?.role === 'consumer';
+
+  useEffect(() => {
+    const updateNetworkStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    return () => {
+      window.removeEventListener('online', updateNetworkStatus);
+      window.removeEventListener('offline', updateNetworkStatus);
+    };
+  }, []);
 
   const officerNotifications = [
     {
@@ -160,6 +172,14 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenCommandPalette, onToggleMo
         )}
 
         {/* Animated Theme Toggler */}
+        <span
+          role="status"
+          aria-live="polite"
+          title={isOnline ? 'The platform is online' : 'The platform is offline. New inspections remain on this device.'}
+          className="inline-flex items-center px-2 py-1 text-[11px] font-semibold tracking-wide text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-md"
+        >
+          {getNetworkStatusLabel(isOnline)}
+        </span>
         <AnimatedThemeToggler />
 
         {/* Notifications */}
