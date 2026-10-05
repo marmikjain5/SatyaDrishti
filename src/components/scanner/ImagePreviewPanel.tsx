@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileImage, Layers, Info } from 'lucide-react';
+import { X, FileImage, Layers, Info, Grid3X3 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { useScanStore } from '../../store/scanStore';
@@ -11,11 +11,12 @@ function formatFileSize(bytes: number): string {
 }
 
 export const ImagePreviewPanel: React.FC = () => {
-  const { uploadedImages, removeImage, isProcessing } = useScanStore();
+  const { uploadedImages, removeImage, isProcessing, scanMode } = useScanStore();
 
   if (uploadedImages.length === 0) return null;
 
-  const isMultiAngle = uploadedImages.length > 1;
+  const isParallelMode = scanMode === 'parallel-products';
+  const isMultiAngle = !isParallelMode && uploadedImages.length > 1;
 
   return (
     <Card>
@@ -23,29 +24,49 @@ export const ImagePreviewPanel: React.FC = () => {
         <CardTitle className="flex items-center gap-2">
           <FileImage className="h-4 w-4 text-slate-700" />
           <span>
-            {isMultiAngle
+            {isParallelMode
+              ? `Product Images for Parallel Scan (${uploadedImages.length})`
+              : isMultiAngle
               ? `Multi-Angle Product Packaging Photos (${uploadedImages.length})`
               : `Uploaded Packaging Image (1)`}
           </span>
         </CardTitle>
-        {isMultiAngle && (
-          <Badge variant="primary" size="sm" className="gap-1 text-xs">
-            <Layers className="h-3 w-3" />
-            <span>Multi-Angle Mode</span>
+        {isParallelMode ? (
+          <Badge variant="secondary" size="sm" className="gap-1 text-xs">
+            <Grid3X3 className="h-3 w-3" />
+            <span>Parallel Mode</span>
           </Badge>
+        ) : (
+          isMultiAngle && (
+            <Badge variant="primary" size="sm" className="gap-1 text-xs">
+              <Layers className="h-3 w-3" />
+              <span>Multi-Angle Mode</span>
+            </Badge>
+          )
         )}
       </CardHeader>
 
       <CardContent className="p-4 space-y-3">
-        {isMultiAngle && (
-          <div className="flex items-center gap-2 rounded-lg bg-blue-50/80 border border-blue-200/80 px-3.5 py-2 text-xs text-blue-900">
-            <Info className="h-4 w-4 text-blue-600 shrink-0" />
+        {isParallelMode ? (
+          <div className="flex items-center gap-2 rounded-lg bg-indigo-50/80 border border-indigo-200/80 px-3.5 py-2 text-xs text-indigo-900">
+            <Info className="h-4 w-4 text-indigo-600 shrink-0" />
             <span>
-              All <strong>{uploadedImages.length} images</strong> are treated as photos of the{' '}
-              <strong>same product</strong> from different angles. Mandatory declarations from all angles
-              will be merged into a single consolidated audit.
+              Each image below is a <strong>separate product</strong>.{' '}
+              <strong>{uploadedImages.length}</strong> {uploadedImages.length === 1 ? 'product' : 'products'} will be
+              scanned independently and concurrently.
             </span>
           </div>
+        ) : (
+          isMultiAngle && (
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50/80 border border-blue-200/80 px-3.5 py-2 text-xs text-blue-900">
+              <Info className="h-4 w-4 text-blue-600 shrink-0" />
+              <span>
+                All <strong>{uploadedImages.length} images</strong> are treated as photos of the{' '}
+                <strong>same product</strong> from different angles. Mandatory declarations from all angles
+                will be merged into a single consolidated audit.
+              </span>
+            </div>
+          )
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -61,14 +82,14 @@ export const ImagePreviewPanel: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
 
-                {/* Angle Tag Badge */}
-                {isMultiAngle && (
-                  <div className="absolute top-1.5 left-1.5">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-900/85 text-white text-[10px] font-bold shadow-xs backdrop-blur-xs">
-                      Angle {idx + 1}
-                    </span>
-                  </div>
-                )}
+                {/* Tag Badge */}
+                <div className="absolute top-1.5 left-1.5">
+                  <span className={`px-2 py-0.5 rounded-md text-white text-[10px] font-bold shadow-xs backdrop-blur-xs ${
+                    isParallelMode ? 'bg-indigo-700/85' : 'bg-slate-900/85'
+                  }`}>
+                    {isParallelMode ? `Product ${idx + 1}` : `Angle ${idx + 1}`}
+                  </span>
+                </div>
               </div>
 
               {/* Remove button */}
@@ -85,10 +106,12 @@ export const ImagePreviewPanel: React.FC = () => {
               {/* File info */}
               <div className="px-2.5 py-2 border-t border-slate-200 bg-white">
                 <p className="text-[11px] font-semibold text-slate-900 truncate">
-                  {image.angleLabel || `Angle ${idx + 1}`}
+                  {isParallelMode ? image.name : (image.angleLabel || `Angle ${idx + 1}`)}
                 </p>
                 <p className="text-[10px] text-slate-500 truncate font-normal mt-0.5">
-                  {image.name} • {formatFileSize(image.size)}
+                  {isParallelMode
+                    ? formatFileSize(image.size)
+                    : `${image.name} • ${formatFileSize(image.size)}`}
                 </p>
               </div>
             </div>
