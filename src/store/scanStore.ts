@@ -6,6 +6,8 @@ import type {
   ScanAngle,
   BatchVerificationResult,
   MRPVerificationResult,
+  ScanMode,
+  ParallelScanJob,
 } from '../types/scan';
 import type { ComplianceValidationResult } from '../types/ruleEngine';
 import type { ReadabilityAnalysisResult } from '../types/readability';
@@ -26,6 +28,9 @@ import {
   MOCK_VALIDATION_RESULTS,
   MOCK_READABILITY_RESULTS,
 } from '../data/mockScans';
+
+/** Keep a small number of OCR pipelines active to avoid exhausting browser/API resources. */
+const MAX_PARALLEL_SCANS = 2;
 
 interface ScanState {
   // State
@@ -50,6 +55,11 @@ interface ScanState {
   /** MRP vs Product Directory verification results keyed by scan ID */
   mrpVerificationResults: Record<string, MRPVerificationResult>;
 
+  scanMode: ScanMode;
+  parallelScanJobs: Record<string, ParallelScanJob>;
+  selectedParallelJobId: string | null;
+  isParallelProcessing: boolean;
+
   // Actions
   addImages: (files: File[]) => void;
   loadSampleImage: (imageUrl: string, fileName: string) => Promise<void>;
@@ -73,6 +83,11 @@ interface ScanState {
   setValidationResult: (scanId: string, result: ComplianceValidationResult) => void;
   setReadabilityResult: (scanId: string, result: ReadabilityAnalysisResult) => void;
   restoreOfflineInspections: (inspections: QueuedInspection[]) => Promise<void>;
+  setScanMode: (mode: ScanMode) => void;
+  startParallelScan: () => Promise<void>;
+  selectParallelJob: (jobId: string | null) => void;
+  removeParallelJob: (jobId: string) => void;
+  clearParallelJobs: () => void;
 }
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
@@ -111,6 +126,105 @@ function formatTimestamp(): string {
   }).format(new Date());
 }
 
+async function processSingleParallelProduct(
+  imageDataUrl: string,
+  imageName: string,
+  onProgress: (progress: number, status: string) => void
+): Promise<{
+  scanRecord: ScanRecord;
+  validationResult: ComplianceValidationResult;
+  correlationResult: ScanCorrelationResult;
+  readabilityResult: ReadabilityAnalysisResult;
+  batchResult: BatchVerificationResult;
+  mrpResult: MRPVerificationResult;
+}> {
+  const scanId = generateId();
+  onProgress(5, 'Initializing OCR engine...');
+
+  const ocrResult = await ocrService.recognize(imageDataUrl, (progress, status) => {
+    onProgress(Math.min(60, Math.round(5 + (progress / 100) * 55)), status);
+  });
+
+  onProgress(65, 'Analyzing readability & font compliance...');
+  const extracted = ocrResult.extractedData;
+  const dimensions = extracted.imageDimensions || { width: 1000, height: 800 };
+  const barcode = extracted.declarations?.barcode?.value;
+  const calibration = await productDimensionsService.resolveDimensions({
+    barcode: barcode && barcode !== '(Not detected)' ? barcode : undefined,
+    productName: extracted.declarations?.productName?.value,
+    barcodeWidthPx: extracted.declarations?.barcode?.barcodeWidthPx,
+    imageDimensions: dimensions,
+  });
+  const readabilityResult = await readabilityService.analyze(
+    scanId,
+    imageDataUrl,
+    extracted,
+    dimensions,
+    { calibration: {
+      method: calibration.source as any,
+      packageWidthMm: calibration.packageWidthMm,
+      packageHeightMm: calibration.packageHeightMm,
+      packageWidthPx: dimensions.width,
+      packageHeightPx: dimensions.height,
+      scaleMmPerPx: calibration.scaleMmPerPx,
+      minNumeralHeightMm: calibration.minNumeralHeightMm,
+      minNumeralHeightPt: calibration.minNumeralHeightPt,
+      pdpAreaCm2: calibration.pdpAreaCm2,
+      calibrationSourceLabel: calibration.sourceLabel,
+      details: calibration.details,
+    } }
+  );
+
+  onProgress(75, 'Validating statutory declarations & compliance rules...');
+  const validationResult = validateProduct(extracted);
+  validationResult.scanId = scanId;
+  onProgress(82, 'Mapping regulatory discrepancies...');
+  const correlationResult = processScanDiscrepanciesAndCorrelate(
+    scanId,
+    extracted,
+    validationResult,
+    ocrResult.rawText
+  );
+
+  onProgress(88, 'Registering in compliance directory...');
+  useComplianceStore.getState().addScannedProduct(
+    extracted,
+    imageDataUrl,
+    ocrResult.confidence,
+    validationResult
+  );
+
+  const scanRecord: ScanRecord = {
+    id: scanId,
+    imageName,
+    imageDataUrl,
+    timestamp: formatTimestamp(),
+    status: 'completed',
+    progress: 100,
+    confidence: ocrResult.confidence,
+    extractedData: extracted,
+    readabilityResult,
+    isMultiAngle: false,
+    angles: [],
+    activeAngleIndex: 0,
+  };
+  const allScans = [scanRecord, ...useScanStore.getState().scans];
+  const batchResult = verifyBatch(
+    scanId,
+    extracted.batchNumber || '',
+    extracted.expiryDate || '',
+    allScans
+  );
+  const mrpResult = verifyMRP(
+    extracted.mrp || '',
+    extracted.productName || '',
+    useComplianceStore.getState().products
+  );
+  onProgress(100, `Extraction complete — Score: ${readabilityResult.summary.overallScore}/100`);
+
+  return { scanRecord, validationResult, correlationResult, readabilityResult, batchResult, mrpResult };
+}
+
 export const useScanStore = create<ScanState>((set, get) => ({
   scans: MOCK_SCANS,
   currentScan: null,
@@ -126,6 +240,10 @@ export const useScanStore = create<ScanState>((set, get) => ({
   readabilityResults: MOCK_READABILITY_RESULTS,
   batchVerificationResults: {},
   mrpVerificationResults: {},
+  scanMode: 'single-product',
+  parallelScanJobs: {},
+  selectedParallelJobId: null,
+  isParallelProcessing: false,
 
   loadSampleImage: async (imageUrl: string, fileName: string) => {
     try {
@@ -170,11 +288,14 @@ export const useScanStore = create<ScanState>((set, get) => ({
   removeImage: (id) => {
     set((state) => {
       const remaining = state.uploadedImages.filter((img) => img.id !== id);
-      // Re-index angle labels
-      const reindexed = remaining.map((img, idx) => ({
-        ...img,
-        angleLabel: DEFAULT_ANGLE_LABELS[idx] || `Angle ${idx + 1}`,
-      }));
+      // Keep filenames as labels in parallel mode; angle labels are only for the
+      // single-product multi-angle workflow.
+      const reindexed = state.scanMode === 'single-product'
+        ? remaining.map((img, idx) => ({
+            ...img,
+            angleLabel: DEFAULT_ANGLE_LABELS[idx] || `Angle ${idx + 1}`,
+          }))
+        : remaining;
       return { uploadedImages: reindexed };
     });
   },
@@ -591,6 +712,80 @@ export const useScanStore = create<ScanState>((set, get) => ({
     }));
   },
 
+  setScanMode: (mode) => {
+    set({ scanMode: mode });
+  },
+
+  selectParallelJob: (jobId) => {
+    if (!jobId) {
+      set({ selectedParallelJobId: null });
+      return;
+    }
+    const job = get().parallelScanJobs[jobId];
+    if (job?.completedScanId) {
+      const scan = get().scans.find((item) => item.id === job.completedScanId);
+      if (scan) {
+        set({ selectedParallelJobId: jobId, currentScan: scan, activeAngleIndex: 0 });
+        return;
+      }
+    }
+    set({ selectedParallelJobId: jobId });
+  },
+
+  removeParallelJob: (jobId) => {
+    set((state) => {
+      const job = state.parallelScanJobs[jobId];
+      if (job && job.status !== 'scanning' && job.status !== 'validating') {
+        const { [jobId]: _removed, ...remaining } = state.parallelScanJobs;
+        return {
+          parallelScanJobs: remaining,
+          selectedParallelJobId: state.selectedParallelJobId === jobId ? null : state.selectedParallelJobId,
+        };
+      }
+      return state;
+    });
+  },
+
+  clearParallelJobs: () => {
+    const remaining = Object.fromEntries(
+      Object.entries(get().parallelScanJobs).filter(([, job]) =>
+        job.status === 'scanning' || job.status === 'validating'
+      )
+    );
+    set({ parallelScanJobs: remaining, selectedParallelJobId: null });
+  },
+
+  startParallelScan: async () => {
+    const { uploadedImages, isParallelProcessing } = get();
+    if (uploadedImages.length === 0 || isParallelProcessing) return;
+
+    const newJobs: Record<string, ParallelScanJob> = Object.fromEntries(
+      uploadedImages.map((image) => {
+        const id = generateId();
+        return [id, {
+          id,
+          status: 'queued' as const,
+          progress: 0,
+          statusMessage: 'Waiting for worker...',
+          imageDataUrl: image.dataUrl,
+          imageName: image.name,
+          file: image.file,
+          confidence: 0,
+          extractedData: null,
+          createdAt: Date.now(),
+        }];
+      })
+    );
+
+    set((state) => ({
+      parallelScanJobs: { ...state.parallelScanJobs, ...newJobs },
+      uploadedImages: [],
+      isParallelProcessing: true,
+    }));
+
+    await processParallelQueue(Object.keys(newJobs));
+  },
+
   restoreOfflineInspections: async (inspections) => {
     const inspectionsById = new Map(inspections.map((inspection) => [inspection.id, inspection]));
     const restoredScans = await Promise.all(
@@ -630,3 +825,101 @@ export const useScanStore = create<ScanState>((set, get) => ({
     });
   },
 }));
+
+async function processParallelQueue(jobIds: string[]): Promise<void> {
+  const queue = [...jobIds];
+  const workers = Array.from(
+    { length: Math.min(MAX_PARALLEL_SCANS, queue.length) },
+    async () => {
+      while (queue.length > 0) {
+        const jobId = queue.shift();
+        if (jobId) await processOneParallelJob(jobId);
+      }
+    }
+  );
+
+  await Promise.all(workers);
+  const anyRunning = Object.values(useScanStore.getState().parallelScanJobs).some((job) =>
+    job.status === 'scanning' || job.status === 'validating' || job.status === 'queued'
+  );
+  if (!anyRunning) useScanStore.setState({ isParallelProcessing: false });
+}
+
+async function processOneParallelJob(jobId: string): Promise<void> {
+  const initialJob = useScanStore.getState().parallelScanJobs[jobId];
+  if (!initialJob || initialJob.status !== 'queued') return;
+
+  useScanStore.setState((state) => ({
+    parallelScanJobs: {
+      ...state.parallelScanJobs,
+      [jobId]: {
+        ...state.parallelScanJobs[jobId],
+        status: 'scanning',
+        startedAt: Date.now(),
+        statusMessage: 'Initializing OCR engine...',
+      },
+    },
+  }));
+
+  try {
+    const result = await processSingleParallelProduct(
+      initialJob.imageDataUrl,
+      initialJob.imageName,
+      (progress, status) => {
+        const current = useScanStore.getState().parallelScanJobs[jobId];
+        if (!current) return;
+        useScanStore.setState((state) => ({
+          parallelScanJobs: {
+            ...state.parallelScanJobs,
+            [jobId]: {
+              ...state.parallelScanJobs[jobId],
+              progress,
+              statusMessage: status,
+              status: progress >= 70 ? 'validating' : 'scanning',
+            },
+          },
+        }));
+      }
+    );
+
+    useScanStore.setState((state) => ({
+      scans: [result.scanRecord, ...state.scans],
+      validationResults: { ...state.validationResults, [result.scanRecord.id]: result.validationResult },
+      correlationResults: { ...state.correlationResults, [result.scanRecord.id]: result.correlationResult },
+      readabilityResults: { ...state.readabilityResults, [result.scanRecord.id]: result.readabilityResult },
+      batchVerificationResults: { ...state.batchVerificationResults, [result.scanRecord.id]: result.batchResult },
+      mrpVerificationResults: { ...state.mrpVerificationResults, [result.scanRecord.id]: result.mrpResult },
+      parallelScanJobs: {
+        ...state.parallelScanJobs,
+        [jobId]: {
+          ...state.parallelScanJobs[jobId],
+          status: 'completed',
+          progress: 100,
+          statusMessage: 'Extraction complete',
+          confidence: result.scanRecord.confidence,
+          extractedData: result.scanRecord.extractedData,
+          completedScanId: result.scanRecord.id,
+          completedAt: Date.now(),
+        },
+      },
+      currentScan: state.currentScan === null ? result.scanRecord : state.currentScan,
+      hasUnviewedCompletion: true,
+      lastCompletedScanId: result.scanRecord.id,
+    }));
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Scan failed';
+    useScanStore.setState((state) => ({
+      parallelScanJobs: {
+        ...state.parallelScanJobs,
+        [jobId]: {
+          ...state.parallelScanJobs[jobId],
+          status: 'failed',
+          progress: 0,
+          statusMessage: `Error: ${errorMessage}`,
+          errorMessage,
+          completedAt: Date.now(),
+        },
+      },
+    }));
+  }
+}

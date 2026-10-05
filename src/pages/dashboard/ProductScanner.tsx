@@ -36,6 +36,8 @@ import { HistoricalIntelligencePanel } from '../../components/scanner/Historical
 import { OfflineInspectionQueue } from '../../components/scanner/OfflineInspectionQueue';
 import { ScanOptionsCard, DEFAULT_SCAN_OPTIONS, type ScanOptionsValue } from '../../components/scanner/ScanOptionsCard';
 import { Rule7MeasurementPanel } from '../../components/scanner/Rule7MeasurementPanel';
+import { ScanModeSelector } from '../../components/scanner/ScanModeSelector';
+import { ParallelScanQueue } from '../../components/scanner/ParallelScanQueue';
 import type { ComplianceInspectionReport, ReportGenerationOptions } from '../../types/report';
 
 export const ProductScanner: React.FC = () => {
@@ -48,6 +50,10 @@ export const ProductScanner: React.FC = () => {
     clearImages,
     validationResults,
     readabilityResults,
+    scanMode,
+    startParallelScan,
+    isParallelProcessing,
+    parallelScanJobs,
   } = useScanStore();
 
   const { reports, addReport } = useReportStore();
@@ -58,6 +64,16 @@ export const ProductScanner: React.FC = () => {
   const [showMobileDeepAnalytics, setShowMobileDeepAnalytics] = useState(false);
   const [showMobileScanHistory, setShowMobileScanHistory] = useState(false);
   const [scanOptions, setScanOptions] = useState<ScanOptionsValue>(DEFAULT_SCAN_OPTIONS);
+
+  const isParallelMode = scanMode === 'parallel-products';
+
+  const handleStartScan = () => {
+    if (isParallelMode) {
+      void startParallelScan();
+    } else {
+      void startScan();
+    }
+  };
 
   const handleGenerateSessionReport = (options?: Partial<ReportGenerationOptions>) => {
     const validScans = scans.filter((s) => s.status === 'completed' && s.extractedData);
@@ -115,6 +131,11 @@ export const ProductScanner: React.FC = () => {
       ) / 10
       : 0;
   const lastScanTime = scans[0]?.timestamp || 'Never';
+  const parallelJobsList = Object.values(parallelScanJobs);
+  const hasParallelJobs = parallelJobsList.length > 0;
+  const isStartDisabled = isParallelMode
+    ? uploadedImages.length === 0 || isParallelProcessing
+    : uploadedImages.length === 0 || isProcessing;
 
   return (
     <div className="space-y-6">
@@ -265,6 +286,7 @@ export const ProductScanner: React.FC = () => {
       />
 
       {/* Packaging Capture & Upload Zone */}
+      <ScanModeSelector />
       <div className="min-w-0">
         <ImageUploader />
       </div>
@@ -277,14 +299,17 @@ export const ProductScanner: React.FC = () => {
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-subtle px-4 py-3">
           <p className="text-xs text-slate-600 dark:text-slate-400 min-w-0 truncate mr-2">
             <span className="font-semibold text-slate-900 dark:text-white">{uploadedImages.length}</span>{' '}
-            {uploadedImages.length === 1 ? 'image' : 'images'} queued
+            {isParallelMode
+              ? `${uploadedImages.length === 1 ? 'product' : 'products'} queued`
+              : `${uploadedImages.length === 1 ? 'image' : 'images'} queued`}
+            {isParallelMode && <span className="text-indigo-600 ml-1 font-medium">(parallel mode)</span>}
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={clearImages}
-              disabled={isProcessing}
+              disabled={isProcessing || isParallelProcessing}
               className="text-xs gap-1 min-h-[36px]"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -293,20 +318,24 @@ export const ProductScanner: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={startScan}
-              isLoading={isProcessing}
-              disabled={isProcessing}
+              onClick={handleStartScan}
+              isLoading={isProcessing || isParallelProcessing}
+              disabled={isStartDisabled}
               className="text-xs gap-1.5 font-semibold min-h-[36px]"
             >
               <Play className="h-3.5 w-3.5" />
-              <span>{isProcessing ? 'Scanning...' : 'Start Scan'}</span>
+              <span>{isParallelMode
+                ? (isParallelProcessing ? 'Scanning in parallel...' : `Start Parallel Scan (${uploadedImages.length})`)
+                : (isProcessing ? 'Scanning...' : 'Start Scan')}</span>
             </Button>
           </div>
         </div>
       )}
 
+      {isParallelMode && hasParallelJobs && <ParallelScanQueue />}
+
       {/* Processing Status */}
-      <OCRProcessingCard />
+      {!isParallelMode && <OCRProcessingCard />}
 
       {/* Side-by-Side: Statutory Declarations & Compliance Validation */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
