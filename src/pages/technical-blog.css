@@ -650,7 +650,26 @@
 .gdoc-editor .blog-article section:first-of-type { border-top: 1px solid var(--gdoc-border); }
 .gdoc-editor .blog-article h2 { max-width: none; font-size: clamp(1.55rem, 3vw, 2.25rem) !important; }
 
-.gdoc-fullscreen .gdoc-editor-wrap { min-height: calc(100vh - 4.25rem); }
+.gdoc-fullscreen {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.gdoc-fullscreen .gdoc-workspace {
+  min-height: 0;
+  height: calc(100vh - 4.25rem);
+  flex: 0 0 auto;
+}
+
+.gdoc-fullscreen .gdoc-editor-wrap {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
 .gdoc-fullscreen .gdoc-topbar { top: 0; }
 .gdoc-fullscreen .gdoc-outline { top: 4.25rem; }
 .gdoc-fullscreen > footer { display: none; }

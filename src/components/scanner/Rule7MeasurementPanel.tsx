@@ -374,7 +374,10 @@ export const Rule7MeasurementPanel: React.FC<Rule7MeasurementPanelProps> = ({ sc
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 15000);
+      // Vision AI round-trip (frontend → backend → Pollinations → backend → frontend) can take
+      // 20–40 s on production cold-starts. 60 s is a safe ceiling.
+      const timer = window.setTimeout(() => controller.abort(), 60000);
+      setDetectionNotice('⏳ Scanning with Vision AI… this may take up to 30 seconds on first request.');
 
       const response = await fetch(`${apiUrl}/api/v1/detect-reference-object`, {
         method: 'POST',
