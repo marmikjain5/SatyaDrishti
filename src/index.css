@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smart technical-term explainers */
+.smart-info-popup {
+  transform-origin: center top;
+  animation: smartInfoIn 160ms ease-out both;
+}
+
+@keyframes smartInfoIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @layer base {
   :root {
     --color-primary: #0F172A;

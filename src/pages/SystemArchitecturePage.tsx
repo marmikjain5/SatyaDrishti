@@ -28,6 +28,7 @@ import {
 import { LandingNavbar } from '../components/layout/LandingNavbar';
 import { LandingFooter } from '../components/layout/LandingFooter';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
+import { SmartInfoTooltip } from '../components/ui/SmartInfoTooltip';
 
 export const SystemArchitecturePage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('hla');
@@ -211,7 +212,7 @@ export const SystemArchitecturePage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                      High-Level Architecture (HLA)
+                      <SmartInfoTooltip term="High-Level Architecture (HLA)" meaning="The big-picture view of how the main parts work together." example="It shows the journey from a product image to an enforcement record." />
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
                       7-Tier Live Platform Blueprint • Animated Dataflow Conduits
@@ -231,7 +232,7 @@ export const SystemArchitecturePage: React.FC = () => {
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                SatyaDrishti adopts a <strong>hybrid, edge-first architecture</strong>. Optical image preprocessing and deterministic rule audits occur immediately on the client browser, while heavier vector RAG embeddings, background marketplace crawlers, and SCN dispatch run asynchronously in containerized FastAPI microservices.
+                SatyaDrishti adopts a <strong><SmartInfoTooltip term="Hybrid, Edge-First Architecture" meaning="Uses nearby browser checks first, then sends heavier work to the server." example="A photo can be cleaned and checked before the full report is prepared." /></strong>. <SmartInfoTooltip term="Image Preprocessing" meaning="Cleans an image before its text is read." example="It reduces glare so small label text is easier to recognise." /> and <SmartInfoTooltip term="Rule Validation" meaning="Tests each product detail against a specific rule." example="It checks whether the printed font size meets the required minimum." /> occur immediately on the client browser, while heavier vector <SmartInfoTooltip term="RAG" meaning="Finds the most relevant current rules before giving an answer." example="A new Legal Metrology amendment can be used during a compliance check." /> embeddings, background marketplace <SmartInfoTooltip term="E-Commerce Crawler" meaning="Checks product listings on online marketplaces automatically." example="It compares an online MRP and product claim with the package image." />, and <SmartInfoTooltip term="Show Cause Notice (SCN)" meaning="An official notice asking a business to explain a suspected violation." example="An inspector can review and send a notice after a confirmed mismatch." /> dispatch run asynchronously in containerized FastAPI microservices.
               </p>
 
               {/* The Live System Architecture Visual with Flowing Dots */}
@@ -251,7 +252,7 @@ export const SystemArchitecturePage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                      Low-Level Architecture (LLA)
+                      <SmartInfoTooltip term="Low-Level Architecture (LLA)" meaning="A closer view of the functions and modules inside the system." example="It shows which service extracts MRP before rules are checked." />
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
                       Internal Functions, Algorithms, Code Modules &amp; Call Graphs
@@ -267,7 +268,7 @@ export const SystemArchitecturePage: React.FC = () => {
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                The Low-Level Architecture (LLA) details the internal code mechanics of SatyaDrishti. Below are the concrete source modules, key exported functions, mathematical formulations, and the runtime function call graph across the repository.
+                The Low-Level Architecture (LLA) details the internal code mechanics of SatyaDrishti. It includes <SmartInfoTooltip term="OCR" meaning="Reads printed words and numbers from an image." example="It extracts MRP, expiry, and manufacturer details from a package label." />, image processing, rule checks, concrete source modules, key exported functions, mathematical formulations, and the runtime function call graph across the repository.
               </p>
 
               {/* Modern Grid of Clean LLA Module Cards (No large black boxes) */}
@@ -294,7 +295,7 @@ export const SystemArchitecturePage: React.FC = () => {
                       <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-blue-600 dark:text-blue-400">generatePreprocessingVariants(file)</code>
                     </div>
                     <div className="text-[11px] leading-relaxed">
-                      Generates 6 parallel canvas matrix variants (Grayscale, Contrast, Bilinear, Adaptive Binarized, Laplacian Sharpened, Denoised).
+                      Generates 6 parallel canvas matrix variants (Grayscale, Contrast, Bilinear, Adaptive Binarized, Laplacian Sharpened, Denoised) for <SmartInfoTooltip term="Image Preprocessing" meaning="Cleans an image before its text is read." example="It reduces glare so small label text is easier to recognise." />.
                     </div>
                     <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                       <div>• Luminance: <span className="text-slate-700 dark:text-slate-300">0.2126R + 0.7152G + 0.0722B</span></div>
@@ -324,7 +325,7 @@ export const SystemArchitecturePage: React.FC = () => {
                       <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-indigo-600 dark:text-indigo-400">processImageMultiPass(blob, variants)</code>
                     </div>
                     <div className="text-[11px] leading-relaxed">
-                      Manages a Tesseract WebAssembly worker pool with <code className="font-mono text-slate-700 dark:text-slate-300">eng.traineddata</code>, running parallel multi-pass recognition.
+                      Manages a Tesseract <SmartInfoTooltip term="WebAssembly" meaning="Lets image-reading code run quickly inside the browser." example="The browser can read a label without waiting for a server round trip." /> worker pool with <code className="font-mono text-slate-700 dark:text-slate-300">eng.traineddata</code>, running parallel multi-pass recognition.
                     </div>
                     <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                       <div>• Output: <span className="text-slate-700 dark:text-slate-300">MultiPassOCRData[] with line bboxes</span></div>
@@ -384,7 +385,7 @@ export const SystemArchitecturePage: React.FC = () => {
                       <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-emerald-600 dark:text-emerald-400">extractAllLegalDeclarations()</code>
                     </div>
                     <div className="text-[11px] leading-relaxed">
-                      Statutory Regex AST engine parsing 11 mandatory PCR 2011 declarations (MRP, Net Qty, Origin, Mfd Date, Address, USP).
+                      Statutory <SmartInfoTooltip term="Regex" meaning="A matching pattern used to find familiar text formats." example="It can find text that looks like an MRP or batch number." /> parser reading 11 mandatory declarations (MRP, Net Qty, Origin, Mfd Date, Address, USP).
                     </div>
                     <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                       <div>• Anchors: <span className="text-slate-700 dark:text-slate-300">"Net Wt", "Mfd by", "₹", "Customer Care"</span></div>
@@ -444,7 +445,7 @@ export const SystemArchitecturePage: React.FC = () => {
                       <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-rose-600 dark:text-rose-400">validateProduct(productData)</code>
                     </div>
                     <div className="text-[11px] leading-relaxed">
-                      Deterministic compliance auditor checking Schedule I MPE tolerances, Section 36 penalties, and mandatory field requirements.
+                      Deterministic <SmartInfoTooltip term="Compliance Engine" meaning="Checks product details against official requirements." example="It flags a missing declaration for officer review." /> checking Schedule I MPE tolerances, Section 36 penalties, and mandatory field requirements.
                     </div>
                     <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
                       <div>• Output: <span className="text-slate-700 dark:text-slate-300">Compliance score (0-100) + auditEntries[]</span></div>
@@ -735,23 +736,23 @@ export const SystemArchitecturePage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                      Database Schemas &amp; Data Models
+                      <SmartInfoTooltip term="Database Schemas & Data Models" meaning="The organised structure used to store and connect records." example="A product record can be linked to its scan and violation history." />
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
-                      SQLAlchemy Relational ORM Entities • File: backend/models/db_models.py
+                    <SmartInfoTooltip term="SQLAlchemy ORM" meaning="A way to work with database records using familiar code objects." example="The product screen can save a product record without writing raw database commands." /> • File: backend/models/db_models.py
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
                   <span className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-500/30">
-                    PostgreSQL 16 / SQLite
+                    <SmartInfoTooltip term="PostgreSQL" meaning="A database that stores structured records reliably." example="It stores products, scans, violations, and notices." /> / <SmartInfoTooltip term="SQLite" meaning="A small local database used for lightweight storage." example="It can keep inspection data available during an offline demo." />
                   </span>
                 </div>
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-                Relational storage is powered by SQLAlchemy 2.0 ORM models in <code className="font-mono text-emerald-600 dark:text-emerald-400">backend/models/db_models.py</code>, tracking manufacturers, products, OCR scans, violations, and notices with foreign keys and query indexes.
+                The <SmartInfoTooltip term="Database Layer" meaning="The part that stores and retrieves system records." example="It saves products, scans, complaints, and notices." /> is powered by SQLAlchemy 2.0 ORM models in <code className="font-mono text-emerald-600 dark:text-emerald-400">backend/models/db_models.py</code>, tracking manufacturers, products, OCR scans, violations, and notices with <SmartInfoTooltip term="Foreign Keys" meaning="Links one record to a related record." example="A scan can point back to the product it checked." /> and query indexes.
               </p>
 
               {/* Clean Table-based Database Entity Cards (No black boxes) */}
