@@ -22,10 +22,8 @@ import {
   SunMedium,
   Maximize2,
   Binary,
-  Wand2,
   Filter,
   FileText,
-  Sparkles,
   AlertTriangle,
   Mail,
   MapPin,
@@ -48,17 +46,100 @@ interface NodeInfo {
 }
 
 const NODE_DETAILS: Record<string, NodeInfo> = {
-  'users': {
-    id: 'users',
-    name: 'Role-Based Access Layer',
-    category: 'Users & Access',
-    description: 'Enforcement Officers, CCPA Central Supervisors, and Citizens access dedicated portals to file packaging grievances, perform field label audits, and monitor legal metrology compliance.',
-    tech: ['JWT Session Tokens', 'RBAC Middleware', 'Zustand Store'],
-    metrics: [
-      { label: 'Role Types', value: '3 Portals' },
-      { label: 'Auth Latency', value: '< 20ms' },
-      { label: 'Multi-lingual', value: 'Hindi, Tamil, Kannada, English' }
-    ]
+  'inspector': {
+    id: 'inspector', name: 'Inspector Portal', category: 'Users & Access',
+    description: 'The zonal inspector workspace supports field label audits, evidence capture, OCR review, violation confirmation, and inspection follow-up for assigned cases.',
+    tech: ['JWT Session Tokens', 'Inspector RBAC', 'Offline Sync'], metrics: [{ label: 'Access', value: 'Zonal' }, { label: 'Workflow', value: 'Field Audit' }, { label: 'Evidence', value: 'Image + OCR' }]
+  },
+  'ccpa-admin': {
+    id: 'ccpa-admin', name: 'CCPA Admin Console', category: 'Users & Access',
+    description: 'The central directorate console gives supervisors nationwide visibility into complaints, violations, inspector activity, enforcement approvals, and regulatory intelligence.',
+    tech: ['JWT Session Tokens', 'Supervisor RBAC', 'Audit Logs'], metrics: [{ label: 'Access', value: 'National' }, { label: 'Workflow', value: 'Oversight' }, { label: 'Control', value: 'Approval Gate' }]
+  },
+  'consumer': {
+    id: 'consumer', name: 'Consumer Grievance Portal', category: 'Users & Access',
+    description: 'The citizen-facing portal lets consumers submit packaging grievances, attach supporting evidence, track case progress, and receive official resolution updates.',
+    tech: ['JWT Session Tokens', 'Consumer RBAC', 'Complaint API'], metrics: [{ label: 'Access', value: 'Public' }, { label: 'Workflow', value: 'Grievance' }, { label: 'Tracking', value: 'Case Status' }]
+  },
+  'frontend-scanner': {
+    id: 'frontend-scanner', name: 'Product Scanner', category: 'Frontend Module',
+    description: 'Captures multi-angle package images and coordinates local preprocessing, OCR, structured extraction, and the final compliance review workflow.',
+    tech: ['React', 'TypeScript', 'Camera APIs'], metrics: [{ label: 'Capture', value: 'Multi-angle' }, { label: 'Runtime', value: 'Browser' }, { label: 'Output', value: 'Scan Record' }]
+  },
+  'frontend-regulatory': {
+    id: 'frontend-regulatory', name: 'Regulatory Intelligence', category: 'Frontend Module',
+    description: 'Presents current Legal Metrology rules, Gazette references, retrieved clauses, and explainable rule mappings used during compliance decisions.',
+    tech: ['React', 'TypeScript', 'RAG Results'], metrics: [{ label: 'Source', value: 'e-Gazette' }, { label: 'Search', value: 'Hybrid' }, { label: 'Output', value: 'Rule Context' }]
+  },
+  'frontend-manufacturer': {
+    id: 'frontend-manufacturer', name: 'Manufacturer Intelligence', category: 'Frontend Module',
+    description: 'Aggregates manufacturer profiles, product history, recurring violations, and risk signals to help enforcement teams prioritize follow-up action.',
+    tech: ['React', 'TypeScript', 'Risk Scoring'], metrics: [{ label: 'Focus', value: 'Manufacturers' }, { label: 'View', value: 'History' }, { label: 'Output', value: 'Risk Profile' }]
+  },
+  'frontend-legal-review': {
+    id: 'frontend-legal-review', name: 'AI Legal Review', category: 'Frontend Module',
+    description: 'Shows an evidence-grounded legal recommendation alongside the extracted facts and applicable rules; it informs review but cannot approve enforcement by itself.',
+    tech: ['React', 'Evidence Context', 'Review Workflow'], metrics: [{ label: 'Role', value: 'Advisory' }, { label: 'Input', value: 'Evidence' }, { label: 'Output', value: 'Recommendation' }]
+  },
+  'frontend-violations': {
+    id: 'frontend-violations', name: 'Violation Ledger', category: 'Frontend Module',
+    description: 'Maintains the searchable record of confirmed infractions, statutory sections, evidence, responsible officers, status, and enforcement history.',
+    tech: ['React', 'Case Records', 'Audit Timeline'], metrics: [{ label: 'Record', value: 'Violation' }, { label: 'Status', value: 'Tracked' }, { label: 'History', value: 'Immutable Log' }]
+  },
+  'frontend-analytics': {
+    id: 'frontend-analytics', name: 'Analytics', category: 'Frontend Module',
+    description: 'Turns inspection, complaint, and enforcement records into operational dashboards for workload monitoring, SLA tracking, and zonal performance analysis.',
+    tech: ['React', 'Recharts', 'Aggregated Metrics'], metrics: [{ label: 'View', value: 'Dashboards' }, { label: 'Focus', value: 'SLA + Trends' }, { label: 'Scope', value: 'Zonal' }]
+  },
+  'frontend-product': {
+    id: 'frontend-product', name: 'Product Intelligence', category: 'Frontend Module',
+    description: 'Provides a consolidated product view with declarations, manufacturer details, scan history, compliance outcomes, and linked complaints.',
+    tech: ['React', 'TypeScript', 'Product API'], metrics: [{ label: 'View', value: 'Product 360' }, { label: 'Data', value: 'Linked Records' }, { label: 'Use', value: 'Investigation' }]
+  },
+  'frontend-consumer': {
+    id: 'frontend-consumer', name: 'Consumer Portal', category: 'Frontend Module',
+    description: 'Provides the public complaint, evidence-upload, and case-tracking experience without exposing internal enforcement controls.',
+    tech: ['React', 'TypeScript', 'Complaint API'], metrics: [{ label: 'Audience', value: 'Citizens' }, { label: 'Input', value: 'Complaints' }, { label: 'Output', value: 'Updates' }]
+  },
+  'backend-python': {
+    id: 'backend-python', name: 'Python 3.11 Runtime', category: 'Backend / Application Layer',
+    description: 'Provides the server runtime for asynchronous compliance services, scheduled jobs, validation logic, and integrations.',
+    tech: ['Python 3.11', 'AsyncIO', 'Docker'], metrics: [{ label: 'Runtime', value: 'Python 3.11' }, { label: 'Mode', value: 'Async' }, { label: 'Deploy', value: 'Container' }]
+  },
+  'backend-fastapi': {
+    id: 'backend-fastapi', name: 'FastAPI API Gateway', category: 'Backend / Application Layer',
+    description: 'Exposes typed HTTP endpoints for scans, complaints, regulatory data, dashboards, enforcement actions, and secure session-aware access.',
+    tech: ['FastAPI', 'Uvicorn ASGI', 'Pydantic'], metrics: [{ label: 'Protocol', value: 'REST / HTTPS' }, { label: 'Latency', value: 'P95 < 45ms' }, { label: 'Docs', value: 'OpenAPI' }]
+  },
+  'backend-services': {
+    id: 'backend-services', name: 'Application Services', category: 'Backend / Application Layer',
+    description: 'Coordinates OCR validation, complaint workflows, crawler jobs, rule retrieval, notifications, and enforcement operations behind the API.',
+    tech: ['Service Modules', 'Background Jobs', 'Audit Logs'], metrics: [{ label: 'Scope', value: 'Business Logic' }, { label: 'Jobs', value: 'Async' }, { label: 'Audit', value: 'Logged' }]
+  },
+  'backend-orm': {
+    id: 'backend-orm', name: 'SQLAlchemy ORM', category: 'Backend / Application Layer',
+    description: 'Maps application entities to PostgreSQL tables and manages validated transactions for users, products, inspections, complaints, and enforcement records.',
+    tech: ['SQLAlchemy ORM', 'PostgreSQL', 'Transactions'], metrics: [{ label: 'Store', value: 'Relational' }, { label: 'Integrity', value: 'Transactional' }, { label: 'Models', value: 'Typed' }]
+  },
+  'camera': {
+    id: 'camera', name: 'Product Camera / Image', category: 'Capture & OCR Pipeline',
+    description: 'Collects clear front, back, side, and bottom package views so required declarations can be inspected even when they are distributed across panels.',
+    tech: ['Camera Input', 'Multi-angle Capture', 'Image Evidence'], metrics: [{ label: 'Input', value: 'Package Photos' }, { label: 'Angles', value: 'Multi-angle' }, { label: 'Output', value: 'Evidence' }]
+  },
+  'preprocessing': {
+    id: 'preprocessing', name: 'Image Preprocessing', category: 'Capture & OCR Pipeline',
+    description: 'Creates six browser-side image variants that improve contrast, scale, edges, and noise conditions before text recognition.',
+    tech: ['Canvas Filters', 'WebAssembly', '6-Pass Pipeline'], metrics: [{ label: 'Variants', value: '6' }, { label: 'Runtime', value: 'Browser' }, { label: 'Latency', value: '~48ms' }]
+  },
+  'ocr': {
+    id: 'ocr', name: 'Tesseract.js OCR', category: 'Capture & OCR Pipeline',
+    description: 'Reads printed label text from the prepared image variants and returns tokens, confidence scores, and bounding boxes for downstream extraction.',
+    tech: ['Tesseract.js v7', 'WebAssembly', 'Bounding Boxes'], metrics: [{ label: 'Output', value: 'Tokens' }, { label: 'Evidence', value: 'Bboxes' }, { label: 'Mode', value: 'Multi-pass' }]
+  },
+  'field-extraction': {
+    id: 'field-extraction', name: 'Structured Field Extraction', category: 'Capture & OCR Pipeline',
+    description: 'Normalizes OCR text into compliance fields such as product name, MRP, quantity, manufacturer, dates, and consumer-care contacts.',
+    tech: ['Regex AST', 'Field Normalization', 'OCR Confidence'], metrics: [{ label: 'Fields', value: 'Declarations' }, { label: 'Input', value: 'OCR Tokens' }, { label: 'Output', value: 'Structured JSON' }]
   },
   'frontend': {
     id: 'frontend',
@@ -122,6 +203,41 @@ const NODE_DETAILS: Record<string, NodeInfo> = {
       { label: 'Dispatch Speed', value: '< 2.5s' }
     ],
     statutoryRef: 'Legal Metrology Act, 2009  -  Section 36 & 48'
+  },
+  'compliance-decision': {
+    id: 'compliance-decision', name: 'Compliance Decision', category: 'Statutory Core',
+    description: 'Combines extracted declarations, applicable statutory rules, and validation results into a traceable Pass, Warning, or Defect outcome.',
+    tech: ['Rule Results', 'Evidence Trace', 'Decision Status'], metrics: [{ label: 'Outcomes', value: '3 States' }, { label: 'Trace', value: 'Explainable' }, { label: 'Mode', value: 'Deterministic' }]
+  },
+  'violation-record': {
+    id: 'violation-record', name: 'Evidence & Violation Record', category: 'Enforcement & Governance',
+    description: 'Packages the failed declaration, evidence image, statutory mapping, severity, and case context into a reviewable violation record.',
+    tech: ['Evidence Store', 'Statutory Mapping', 'Case Ledger'], metrics: [{ label: 'Record', value: 'Case-ready' }, { label: 'Evidence', value: 'Attached' }, { label: 'Status', value: 'Reviewable' }]
+  },
+  'ai-review': {
+    id: 'ai-review', name: 'AI Legal Review', category: 'Outputs & Enforcement',
+    description: 'Produces an evidence-grounded recommendation about possible legal action. It remains advisory and does not bypass the mandatory human approval gate.',
+    tech: ['Evidence Context', 'Legal Reasoning', 'Recommendation'], metrics: [{ label: 'Role', value: 'Advisory' }, { label: 'Input', value: 'Case Evidence' }, { label: 'Output', value: 'Recommendation' }]
+  },
+  'human-verification': {
+    id: 'human-verification', name: 'Human Verification', category: 'Outputs & Enforcement',
+    description: 'Requires an authorized inspector or supervisor to verify the evidence and approve the case before a statutory notice can be issued.',
+    tech: ['RBAC', 'Approval Workflow', 'Audit Logs'], metrics: [{ label: 'Gate', value: 'Mandatory' }, { label: 'Actor', value: 'Officer' }, { label: 'Audit', value: 'Logged' }]
+  },
+  'scn': {
+    id: 'scn', name: 'Enforcement / SCN', category: 'Outputs & Enforcement',
+    description: 'Generates the statutory Show Cause Notice after approval, records the enforcement action, and routes the notice through the configured communication service.',
+    tech: ['PDF Generator', 'Gmail REST API', 'Notice Ledger'], metrics: [{ label: 'Notice', value: '14 Days' }, { label: 'Approval', value: 'Required' }, { label: 'Dispatch', value: '< 2.5s' }], statutoryRef: 'Legal Metrology Act, 2009 — Section 36 & 48'
+  },
+  'postgres': {
+    id: 'postgres', name: 'PostgreSQL 16', category: 'Data / Persistence',
+    description: 'Persists users, products, inspections, complaints, violations, enforcement records, and audit history with relational constraints and indexed retrieval.',
+    tech: ['PostgreSQL 16', 'Relational Tables', 'Vector Index'], metrics: [{ label: 'Store', value: 'Relational' }, { label: 'Index', value: 'Vector + B-tree' }, { label: 'Deploy', value: 'Docker' }]
+  },
+  'data-domains': {
+    id: 'data-domains', name: 'Logical Data Domains', category: 'Data / Persistence',
+    description: 'Groups the platform’s business records into clear domains so workflows can link evidence, decisions, complaints, inspectors, manufacturers, and enforcement outcomes.',
+    tech: ['Users & Roles', 'Compliance Results', 'Audit Data'], metrics: [{ label: 'Domains', value: '9+' }, { label: 'Links', value: 'Cross-case' }, { label: 'Use', value: 'Traceability' }]
   },
   'leaflet-gis': {
     id: 'leaflet-gis',
@@ -231,7 +347,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
             ].map((usr) => (
               <div
                 key={usr.title}
-                onClick={() => setSelectedNode(NODE_DETAILS['users'])}
+                onClick={() => setSelectedNode(NODE_DETAILS[usr.title === 'Inspector' ? 'inspector' : usr.title === 'CCPA Admin' ? 'ccpa-admin' : 'consumer'])}
                 className="flex items-center justify-center gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer group"
               >
                 <usr.icon className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
@@ -317,7 +433,12 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
               ].map((mod) => (
                 <div
                   key={mod.title}
-                  onClick={() => setSelectedNode(NODE_DETAILS['frontend'])}
+                  onClick={() => setSelectedNode(NODE_DETAILS[({
+                    'Product Scanner': 'frontend-scanner', 'Regulatory Intelligence': 'frontend-regulatory',
+                    'Manufacturer Intelligence': 'frontend-manufacturer', 'AI Legal Review': 'frontend-legal-review',
+                    'Violation Ledger': 'frontend-violations', 'Analytics': 'frontend-analytics',
+                    'Product Intelligence': 'frontend-product', 'Consumer Portal': 'frontend-consumer'
+                  } as Record<string, string>)[mod.title]])}
                   className="flex flex-col items-center justify-center p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
                 >
                   <mod.icon className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-1 group-hover:scale-110 transition-transform" />
@@ -377,7 +498,10 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
               ].map((service, idx) => (
                 <div
                   key={service.name}
-                  onClick={() => setSelectedNode(NODE_DETAILS['backend'])}
+                  onClick={() => setSelectedNode(NODE_DETAILS[({
+                    'Python 3.11': 'backend-python', FastAPI: 'backend-fastapi',
+                    'Application Services': 'backend-services', 'SQLAlchemy ORM': 'backend-orm'
+                  } as Record<string, string>)[service.name]])}
                   className="relative flex items-center justify-center gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-800 dark:text-slate-200 font-semibold text-xs shadow-xs hover:border-emerald-400 transition-all cursor-pointer group"
                 >
                   <service.icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -414,7 +538,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
         <div className="rounded-xl border-2 border-sky-300 dark:border-sky-800 bg-sky-50/20 dark:bg-sky-950/20 p-3 sm:p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-700 text-[11px] font-mono font-bold text-sky-800 dark:text-sky-300">
-              <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              <Layers className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span>AI + COMPLIANCE PROCESSING PIPELINE</span>
             </div>
             <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400">Sequential OCR &amp; Deterministic Rules</span>
@@ -424,7 +548,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             {/* Camera */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['ocr-pipeline'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['camera'])}
               className="md:col-span-3 flex items-center justify-center gap-2.5 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-all cursor-pointer shadow-xs group"
             >
               <Camera className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
@@ -449,7 +573,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             {/* Image Preprocessing with 6 variants */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['ocr-pipeline'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['preprocessing'])}
               className="md:col-span-4 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800 shadow-xs cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
@@ -506,7 +630,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             {/* OCR */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['ocr-pipeline'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['ocr'])}
               className="md:col-span-3 flex items-center justify-center gap-2.5 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-all cursor-pointer shadow-xs group"
             >
               <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
@@ -539,7 +663,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
             
             {/* Structured Field Extraction */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['ocr-pipeline'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['field-extraction'])}
               className="md:col-span-4 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-all cursor-pointer shadow-xs"
             >
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 font-mono mb-1.5">
@@ -592,7 +716,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
             <div className="md:col-span-4 flex flex-col gap-2">
               {/* Compliance Decision */}
               <div
-                onClick={() => setSelectedNode(NODE_DETAILS['rule-engine'])}
+                onClick={() => setSelectedNode(NODE_DETAILS['compliance-decision'])}
                 className="flex items-center gap-2.5 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-400 dark:border-emerald-700 hover:border-emerald-500 transition-all cursor-pointer shadow-xs"
               >
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -604,7 +728,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
               {/* Evidence & Violation Record */}
               <div
-                onClick={() => setSelectedNode(NODE_DETAILS['enforcement-flow'])}
+                onClick={() => setSelectedNode(NODE_DETAILS['violation-record'])}
                 className="flex items-center gap-2.5 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-400 dark:border-rose-700 hover:border-rose-500 transition-all cursor-pointer shadow-xs"
               >
                 <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
@@ -649,7 +773,10 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             {/* Docker PostgreSQL Container */}
-            <div className="md:col-span-4 rounded-lg border-2 border-dashed border-emerald-400 bg-white dark:bg-slate-800 p-2.5 shadow-xs">
+            <div
+              onClick={() => setSelectedNode(NODE_DETAILS['postgres'])}
+              className="md:col-span-4 rounded-lg border-2 border-dashed border-emerald-400 bg-white dark:bg-slate-800 p-2.5 shadow-xs cursor-pointer hover:border-emerald-500 transition-all"
+            >
               <div className="text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-400 mb-1">
                 DOCKER - POSTGRESQL CONTAINER
               </div>
@@ -663,7 +790,10 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
             </div>
 
             {/* Logical Data Domains */}
-            <div className="md:col-span-8 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div
+              onClick={() => setSelectedNode(NODE_DETAILS['data-domains'])}
+              className="md:col-span-8 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs cursor-pointer hover:border-slate-400 transition-all"
+            >
               <div className="text-[10px] font-bold text-slate-800 dark:text-slate-200 font-mono mb-1">
                 LOGICAL DATA DOMAINS
               </div>
@@ -713,7 +843,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
             
             {/* AI Legal Review */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['enforcement-flow'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['ai-review'])}
               className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 shadow-xs cursor-pointer relative"
             >
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 font-mono mb-1">
@@ -730,7 +860,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             {/* Human Verification (Mandatory Gate) */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['enforcement-flow'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['human-verification'])}
               className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/60 border-2 border-blue-400 dark:border-blue-500 shadow-xs cursor-pointer relative"
             >
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800 dark:text-blue-200 font-mono mb-1">
@@ -747,7 +877,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             {/* Enforcement / SCN */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['enforcement-flow'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['scn'])}
               className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-rose-300 dark:border-rose-800 shadow-xs cursor-pointer relative"
             >
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-800 dark:text-rose-300 font-mono mb-1">
@@ -850,7 +980,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             {/* Gmail API */}
             <div
-              onClick={() => setSelectedNode(NODE_DETAILS['enforcement-flow'])}
+              onClick={() => setSelectedNode(NODE_DETAILS['scn'])}
               className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/80 hover:border-amber-400 transition-all cursor-pointer shadow-xs flex items-center gap-3"
             >
               <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-900/40 text-amber-600">
@@ -895,7 +1025,7 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
 
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
-                <Sparkles className="w-5 h-5" />
+                <Layers className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-[9px] font-mono uppercase tracking-wider font-bold text-blue-600 dark:text-blue-400">
