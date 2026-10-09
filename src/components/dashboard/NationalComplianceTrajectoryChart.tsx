@@ -40,6 +40,13 @@ const CustomRedDot = (props: any) => {
 export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTrajectoryChartProps> = ({
   data,
 }) => {
+  const maxViolations = Math.max(0, ...data.map((point) => Number(point.violations) || 0));
+  const violationsAxisMax = Math.max(2000, Math.ceil(maxViolations / 500) * 500);
+  const violationsTicks = Array.from(
+    { length: Math.floor(violationsAxisMax / 500) + 1 },
+    (_, index) => index * 500,
+  );
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-subtle space-y-6">
       {/* Header Section: Title & Subtitle Left + 3 Mini KPI Summary Cards Right */}
@@ -111,7 +118,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
         <span>Confirmed violations (raw cases)</span>
       </div>
 
-      {/* Shared raw-count Composed Chart Section */}
+      {/* Dual-scale Composed Chart Section */}
       <div className="relative h-72 w-full">
         {/* Callout Badge overlay on the latest Sep 2026 scan bar */}
         <div className="absolute right-3 top-3 z-10 hidden sm:block">
@@ -159,6 +166,20 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
               }}
             />
 
+            {/* Right Y-Axis: Confirmed violations. The separate scale keeps
+                low raw case counts readable beside much larger scan volumes. */}
+            <YAxis
+              yAxisId="violations"
+              orientation="right"
+              domain={[0, violationsAxisMax]}
+              ticks={violationsTicks}
+              stroke="#DC2626"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : `${value}`}
+            />
+
             <Tooltip
               contentStyle={{
                 backgroundColor: '#0F172A',
@@ -194,11 +215,10 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
               />
             </Bar>
 
-            {/* Plot violations on the same raw-count scale as scans. This keeps
-                2,100 cases visually inside a 220K scan bar instead of stretching
-                the violations series across an independent 0-2,500 axis. */}
+            {/* Violations use the right axis so their month-to-month trend is
+                visible while the bars retain the scan-volume scale. */}
             <Area
-              yAxisId="scans"
+              yAxisId="violations"
               type="linear"
               dataKey="violations"
               stroke="none"
@@ -208,7 +228,7 @@ export const NationalComplianceTrajectoryChart: React.FC<NationalComplianceTraje
 
             {/* Line for Confirmed Violations (raw case count) */}
             <Line
-              yAxisId="scans"
+              yAxisId="violations"
               type="linear"
               dataKey="violations"
               name="violations"

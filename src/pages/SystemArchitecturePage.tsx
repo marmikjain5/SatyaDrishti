@@ -100,18 +100,9 @@ export const SystemArchitecturePage: React.FC = () => {
           </div>
 
           <div className="max-w-4xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase tracking-wider">
-              <Layers className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Technical Documentation &amp; Deployment Framework</span>
-            </div>
-
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               SatyaDrishti <span className="text-blue-600 dark:text-blue-400">Software Architecture Specification</span>
             </h1>
-
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
-              Technical documentation describing the software architecture and deployment framework for the <strong>Legal Metrology (Packaged Commodities) Rules, 2011 compliance checking system</strong>  -  covering the <strong>High-Level Architecture (HLA)</strong> with live dataflow animation, the <strong>Low-Level Architecture (LLA)</strong> with Computer Vision, OCR, and deterministic rule engine execution graphs, and the <strong>Database Schemas &amp; Data Layer</strong>.
-            </p>
           </div>
         </div>
       </header>
@@ -286,7 +277,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/imagePreprocessor.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -316,7 +306,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/ocrService.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -346,7 +335,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/multiAngleConsolidator.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border border-sky-200 dark:border-sky-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -376,7 +364,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/fieldExtractors.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -406,7 +393,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/readabilityService.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -436,7 +422,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">src/lib/ruleEngineService.ts</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800">TypeScript</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -466,7 +451,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">backend/services/vision_service.py</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Python 3.11</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -496,7 +480,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">backend/services/llm_validation_service.py</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Python 3.11</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -526,7 +509,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">backend/services/ecommerce_crawler.py</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800">Python 3.11</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -556,7 +538,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">backend/services/retrieval/hybrid.py</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">Python 3.11</span>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -586,7 +567,6 @@ export const SystemArchitecturePage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">backend/services/email_service.py</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800">Python 3.11</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-300">
@@ -609,7 +589,7 @@ export const SystemArchitecturePage: React.FC = () => {
               {/* Sleek Visual Call Graph (Clean Stepper UI instead of ASCII terminal box) */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                  <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
@@ -627,96 +607,96 @@ export const SystemArchitecturePage: React.FC = () => {
                   
                   {/* Step 1 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       1
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Image Preprocessing Pipeline</span>
-                        <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400">imagePreprocessor.ts</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">imagePreprocessor.ts</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-blue-600 dark:text-blue-400 font-mono text-[11px]">generatePreprocessingVariants()</code> generates 6 canvas matrix buffers via Rec. 709 luminance and Laplacian kernel.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">generatePreprocessingVariants()</code> generates 6 canvas matrix buffers via Rec. 709 luminance and Laplacian kernel.
                       </div>
                     </div>
                   </div>
 
                   {/* Step 2 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       2
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Parallel Optical Character Recognition</span>
-                        <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">ocrService.ts</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">ocrService.ts</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">processImageMultiPass()</code> invokes Tesseract WebAssembly worker pool, mapping words and baseline bounding boxes.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">processImageMultiPass()</code> invokes Tesseract WebAssembly worker pool, mapping words and baseline bounding boxes.
                       </div>
                     </div>
                   </div>
 
                   {/* Step 3 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       3
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Statutory Declaration Extraction</span>
-                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">fieldExtractors.ts</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">fieldExtractors.ts</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">extractAllLegalDeclarations()</code> parses MRP, Net Quantity, Expiry, and Manufacturer candidates using statutory regex patterns.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">extractAllLegalDeclarations()</code> parses MRP, Net Quantity, Expiry, and Manufacturer candidates using statutory regex patterns.
                       </div>
                     </div>
                   </div>
 
                   {/* Step 4 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-amber-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       4
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Compliance &amp; Readability Audit</span>
-                        <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">ruleEngineService.ts + readabilityService.ts</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">ruleEngineService.ts + readabilityService.ts</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-amber-600 dark:text-amber-400 font-mono text-[11px]">validateProduct()</code> checks Schedule I tolerances; <code className="text-amber-600 dark:text-amber-400 font-mono text-[11px]">analyzeReadability()</code> verifies font mm thresholds and WCAG contrast.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">validateProduct()</code> checks Schedule I tolerances; <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">analyzeReadability()</code> verifies font mm thresholds and WCAG contrast.
                       </div>
                     </div>
                   </div>
 
                   {/* Step 5 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-purple-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       5
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Hybrid Retrieval &amp; Secondary LLM Verification</span>
-                        <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400">hybrid_retriever.py + llm_validation_service.py</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">hybrid_retriever.py + llm_validation_service.py</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-purple-600 dark:text-purple-400 font-mono text-[11px]">HybridRetriever.retrieve()</code> retrieves verbatim Section 36 clauses; LLM confirmation pass verifies flagged violations.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">HybridRetriever.retrieve()</code> retrieves verbatim Section 36 clauses; LLM confirmation pass verifies flagged violations.
                       </div>
                     </div>
                   </div>
 
                   {/* Step 6 */}
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="w-7 h-7 rounded-lg bg-rose-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-slate-700 dark:bg-slate-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0">
                       6
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs text-slate-900 dark:text-white">Notice Dispatch &amp; Relational Persistence</span>
-                        <span className="text-[10px] font-mono text-rose-600 dark:text-rose-400">email_service.py + db_models.py</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">email_service.py + db_models.py</span>
                       </div>
                       <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                        <code className="text-rose-600 dark:text-rose-400 font-mono text-[11px]">dispatch_compliance_notice()</code> emails legal notice with PDF evidence; commits records to PostgreSQL database models.
+                        <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">dispatch_compliance_notice()</code> emails legal notice with PDF evidence; commits records to PostgreSQL database models.
                       </div>
                     </div>
                   </div>

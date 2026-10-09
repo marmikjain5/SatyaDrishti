@@ -51,8 +51,8 @@ const NODE_DETAILS: Record<string, NodeInfo> = {
     description: 'The zonal inspector workspace supports field label audits, evidence capture, OCR review, violation confirmation, and inspection follow-up for assigned cases.',
     tech: ['JWT Session Tokens', 'Inspector RBAC', 'Offline Sync'], metrics: [{ label: 'Access', value: 'Zonal' }, { label: 'Workflow', value: 'Field Audit' }, { label: 'Evidence', value: 'Image + OCR' }]
   },
-  'ccpa-admin': {
-    id: 'ccpa-admin', name: 'CCPA Admin Console', category: 'Users & Access',
+  'supervisor': {
+    id: 'supervisor', name: 'Supervisor Console', category: 'Users & Access',
     description: 'The central directorate console gives supervisors nationwide visibility into complaints, violations, inspector activity, enforcement approvals, and regulatory intelligence.',
     tech: ['JWT Session Tokens', 'Supervisor RBAC', 'Audit Logs'], metrics: [{ label: 'Access', value: 'National' }, { label: 'Workflow', value: 'Oversight' }, { label: 'Control', value: 'Approval Gate' }]
   },
@@ -342,12 +342,12 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
           <div className="grid grid-cols-3 gap-3">
             {[
               { title: 'Inspector', icon: Users, sub: 'Field Audits' },
-              { title: 'CCPA Admin', icon: Shield, sub: 'Central Directorate' },
+              { title: 'Supervisor', icon: Shield, sub: 'Central Directorate' },
               { title: 'Consumer', icon: UserCheck, sub: 'Grievance Filing' },
             ].map((usr) => (
               <div
                 key={usr.title}
-                onClick={() => setSelectedNode(NODE_DETAILS[usr.title === 'Inspector' ? 'inspector' : usr.title === 'CCPA Admin' ? 'ccpa-admin' : 'consumer'])}
+                onClick={() => setSelectedNode(NODE_DETAILS[usr.title === 'Inspector' ? 'inspector' : usr.title === 'Supervisor' ? 'supervisor' : 'consumer'])}
                 className="flex items-center justify-center gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer group"
               >
                 <usr.icon className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
