@@ -255,6 +255,37 @@ const NODE_DETAILS: Record<string, NodeInfo> = {
 export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ className }) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
+  const [selectedTechnology, setSelectedTechnology] = useState<string | null>(null);
+
+  const technologyExplanation = (technology: string) => {
+    const explanations: Record<string, string> = {
+      React: 'React is used to build the screens and interactive controls that inspectors, supervisors, and consumers use to work with the platform.',
+      TypeScript: 'TypeScript helps keep the application’s data and actions consistent, reducing mistakes when scan results move between the screen and the services behind it.',
+      Vite: 'Vite runs the web application during development and prepares an efficient version for deployment so pages load quickly.',
+      'Tailwind CSS': 'Tailwind CSS provides the visual styling system used to keep the portal consistent across dashboards, forms, reports, and responsive layouts.',
+      'React Router': 'React Router controls movement between areas such as the product scanner, supervisor dashboard, public portal, and technical documentation.',
+      Zustand: 'Zustand keeps shared screen information available while a user moves through a workflow, such as selecting a product and reviewing its scan result.',
+      Recharts: 'Recharts is used for dashboards and trend graphs so supervisors can see scan volumes, violations, risk levels, and changes over time.',
+      Leaflet: 'Leaflet is used for GIS-based compliance work. Supervisors can see where the highest-risk zones are and dispatch inspection teams to the manufacturers or brands associated with those violations.',
+      'Python 3.11': 'Python runs the backend services that process compliance requests, communicate with external services, and save results for later review.',
+      FastAPI: 'FastAPI provides the backend endpoints through which the web portal sends images, scan requests, reports, and review actions.',
+      'Application Services': 'Application services coordinate the main work after a request arrives, such as scanning, checking declarations, recording violations, and preparing reports.',
+      'SQLAlchemy ORM': 'SQLAlchemy connects the application to the database using the project’s product, inspection, violation, and user records.',
+      'PostgreSQL 16': 'PostgreSQL stores the platform’s structured records, including users, products, scan results, violations, complaints, and enforcement history.',
+      'Leaflet GIS': 'Leaflet is used for GIS-based compliance work. Supervisors can see where the highest-risk zones are and dispatch inspection teams to the manufacturers or brands associated with those violations.',
+      'Tesseract.js': 'Tesseract.js reads printed words and numbers from package images directly in the browser, which helps the scanner begin processing without uploading the original image for every step.',
+      'Tesseract.js OCR': 'Tesseract.js reads printed words and numbers from package images directly in the browser and returns both the text and its position on the label.',
+      'OCR Engine': 'The OCR engine converts visible package text into searchable words and numbers that can then be checked against mandatory declarations.',
+      'Qwen2.5-VL': 'Qwen2.5-VL is an optional vision-language fallback used when ordinary text reading has difficulty with curved, reflective, or very small package text.',
+      'Google Gemini Flash Vision': 'Google Gemini Flash Vision is a configured fallback for difficult images when the primary local or cloud vision service cannot confidently read the label.',
+      'Ollama Qwen2.5-VL': 'Ollama Qwen2.5-VL provides a local vision-language fallback for difficult labels, helping the system interpret image details without making the first step dependent on a cloud provider.',
+      'Hybrid Retrieval': 'Hybrid retrieval searches official regulatory material using both exact words and related meaning, helping the report cite the most relevant rule or notice.',
+      'BM25 + Cosine': 'This search combination balances exact legal wording with similar meaning, so a rule can still be found when the wording in a finding is slightly different.',
+      'Docker': 'Docker packages a service with the environment it needs, making the backend easier to run consistently in development and deployment.',
+      'Gmail API': 'The Gmail API sends approved compliance notices and inspection communications through the configured official email account.'
+    };
+    return explanations[technology] || `${technology} supports the compliance workflow by helping the platform process, check, store, or present product evidence.`;
+  };
 
   return (
     <div
@@ -404,12 +435,14 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
               'Recharts',
               'Leaflet',
             ].map((tech) => (
-              <span
+              <button
                 key={tech}
+                type="button"
+                onClick={() => setSelectedTechnology(tech)}
                 className="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-mono text-slate-700 dark:text-slate-300 shadow-xs"
               >
                 {tech}
-              </span>
+              </button>
             ))}
           </div>
 
@@ -1054,12 +1087,14 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {selectedNode.tech.map((t) => (
-                  <span
+                  <button
                     key={t}
+                    type="button"
+                    onClick={() => setSelectedTechnology(t)}
                     className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-mono"
                   >
                     {t}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1070,6 +1105,42 @@ export const LiveSystemArchitecture: React.FC<{ className?: string }> = ({ class
                 <span className="font-semibold">{selectedNode.statutoryRef}</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedTechnology && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          role="presentation"
+          onClick={() => setSelectedTechnology(null)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-2xl text-slate-800 dark:text-slate-100 font-sans"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="technology-explanation-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedTechnology(null)}
+              aria-label="Close technology explanation"
+              className="absolute top-3 right-3 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="pr-8">
+              <div className="text-[10px] font-mono uppercase tracking-wider font-bold text-blue-600 dark:text-blue-400">
+                Technology in this platform
+              </div>
+              <h3 id="technology-explanation-title" className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                {selectedTechnology}
+              </h3>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              {technologyExplanation(selectedTechnology)}
+            </p>
           </div>
         </div>
       )}

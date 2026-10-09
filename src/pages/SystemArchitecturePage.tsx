@@ -31,15 +31,143 @@ import {
   Activity,
   Box,
   Monitor,
-  Globe
+  Globe,
+  X
 } from 'lucide-react';
 import { LandingNavbar } from '../components/layout/LandingNavbar';
 import { LandingFooter } from '../components/layout/LandingFooter';
 import { LiveSystemArchitecture } from '../components/architecture/LiveSystemArchitecture';
 import { SmartInfoTooltip } from '../components/ui/SmartInfoTooltip';
 
+type ArchitectureExplanation = {
+  title: string;
+  category: string;
+  summary: string;
+  howItHelps: string;
+  functionName?: string;
+  functionExplanation?: string;
+};
+
+const MODULE_EXPLANATIONS: Record<string, ArchitectureExplanation> = {
+  'imagePreprocessor.ts': {
+    title: 'Image Preprocessing',
+    category: 'Image preparation',
+    summary: 'This module prepares a product photo before any text is read from it.',
+    howItHelps: 'It creates clearer versions of the image so glare, shadows, blur, and low contrast are less likely to hide declarations such as MRP or expiry dates.',
+    functionName: 'generatePreprocessingVariants(file)',
+    functionExplanation: 'Creates several cleaned-up versions of the uploaded image and sends the most useful versions to the text-reading step.'
+  },
+  'ocrService.ts': {
+    title: 'Optical Character Recognition',
+    category: 'Text reading',
+    summary: 'This module reads printed words and numbers from the product image.',
+    howItHelps: 'It checks the label through multiple image versions and keeps the location of each word, making it easier to connect a value to the correct declaration.',
+    functionName: 'processImageMultiPass(blob, variants)',
+    functionExplanation: 'Reads the image several times and combines the strongest results instead of relying on a single reading.'
+  },
+  'multiAngleConsolidator.ts': {
+    title: 'Multi-angle Consolidation',
+    category: 'Multiple image handling',
+    summary: 'This module combines information when the same product is photographed from different angles.',
+    howItHelps: 'It prevents the final report from treating repeated or partial readings as separate facts, while preserving the clearest value found across all views.',
+    functionName: 'consolidateMultiAngleDeclarations()',
+    functionExplanation: 'Compares readings from the front, back, side, and bottom views and creates one reliable product record.'
+  },
+  'fieldExtractors.ts': {
+    title: 'Mandatory Declaration Extraction',
+    category: 'Declaration finding',
+    summary: 'This module finds legally important values inside the text read from a package.',
+    howItHelps: 'It looks for labels and nearby values such as MRP, net quantity, manufacturer, dates, address, and customer-care details so each requirement can be checked separately.',
+    functionName: 'extractAllLegalDeclarations()',
+    functionExplanation: 'Organises the text into named declarations that the compliance checks can understand.'
+  },
+  'readabilityService.ts': {
+    title: 'Label Readability Check',
+    category: 'Readability and visibility',
+    summary: 'This module checks whether important package information is printed clearly enough to be read.',
+    howItHelps: 'It estimates the printed letter height and checks contrast so a declaration can be present on the package but still be flagged if customers cannot reasonably read it.',
+    functionName: 'analyzeReadability(productData)',
+    functionExplanation: 'Measures the visible text and compares it with the required readability thresholds.'
+  },
+  'ruleEngineService.ts': {
+    title: 'Compliance Rule Engine',
+    category: 'Legal rule checking',
+    summary: 'This module applies the Legal Metrology requirements to the declarations found on the product.',
+    howItHelps: 'It makes repeatable pass or fail decisions for missing declarations, quantity tolerances, MRP, unit sale price, dates, and other statutory requirements.',
+    functionName: 'validateProduct(productData)',
+    functionExplanation: 'Checks the product record against the applicable rules and records the evidence for each decision.'
+  },
+  'vision_service.py': {
+    title: 'Vision-assisted Declaration Review',
+    category: 'Vision model support',
+    summary: 'This service provides a second reading when ordinary text recognition struggles with a label.',
+    howItHelps: 'It is useful for curved bottles, reflective packaging, small print, and difficult layouts. The result supports the review process; the deterministic rules remain responsible for compliance decisions.',
+    functionName: 'extract_statutory_declarations_hybrid()',
+    functionExplanation: 'Sends the available text and relevant processing context through the configured vision fallback path to recover hard-to-read declarations.'
+  },
+  'llm_validation_service.py': {
+    title: 'Secondary Review Service',
+    category: 'Result verification',
+    summary: 'This service reviews uncertain findings and helps reduce avoidable false alarms.',
+    howItHelps: 'It focuses on entries that did not clearly pass and returns an additional explanation for a human reviewer, instead of replacing the statutory rule checks.',
+    functionName: 'augment_validation_with_llm()',
+    functionExplanation: 'Adds a second opinion and reasoning to selected audit findings that need closer review.'
+  },
+  'ecommerce_crawler_service.py': {
+    title: 'Online Product Listing Check',
+    category: 'Marketplace monitoring',
+    summary: 'This service checks product information displayed on online marketplaces.',
+    howItHelps: 'It helps officers compare online claims, prices, and origin information with the package evidence and identify listings that may need investigation.',
+    functionName: 'EcommerceCrawlerService',
+    functionExplanation: 'Visits supported marketplace product pages and turns their relevant details into records that can be compared with compliance findings.'
+  },
+  'hybrid_retriever.py': {
+    title: 'Regulatory Reference Search',
+    category: 'Legal reference retrieval',
+    summary: 'This service finds the most relevant official rule or notice for a compliance finding.',
+    howItHelps: 'It combines exact word matching with meaning-based search so reports can cite the right legal source instead of relying on a vague or unsupported reference.',
+    functionName: 'HybridRetriever',
+    functionExplanation: 'Searches the stored regulatory material and returns the closest official clauses for the current finding.'
+  },
+  'email_service.py': {
+    title: 'Notice and Email Dispatch',
+    category: 'Enforcement communication',
+    summary: 'This service prepares and sends formal compliance communications.',
+    howItHelps: 'It packages the decision, evidence, and applicable legal reference into a notice that can be reviewed and sent through the approved communication channel.',
+    functionName: 'dispatch_compliance_notice()',
+    functionExplanation: 'Builds the notice with its supporting evidence and sends it after the required review and approval steps.'
+  }
+};
+
 export const SystemArchitecturePage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('hla');
+  const [selectedExplanation, setSelectedExplanation] = useState<ArchitectureExplanation | null>(null);
+
+  const openModuleExplanation = (moduleName: string) => {
+    const explanation = MODULE_EXPLANATIONS[moduleName];
+    if (explanation) setSelectedExplanation(explanation);
+  };
+
+  const openCustomExplanation = (title: string, category: string, summary: string, howItHelps: string) => {
+    setSelectedExplanation({ title, category, summary, howItHelps });
+  };
+
+  const handleTechnologyCardClick = (event: React.MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    const card = target.closest<HTMLElement>('div[class*="p-3.5"], div[class*="p-3 rounded-lg"]');
+    if (!card) return;
+
+    const title = card.querySelector('span')?.textContent?.trim();
+    const description = card.querySelector('p')?.textContent?.trim();
+    if (!title || !description) return;
+
+    setSelectedExplanation({
+      title,
+      category: 'Technology and platform capability',
+      summary: `${title} is one of the building blocks used by SatyaDrishti to support the compliance workflow.`,
+      howItHelps: description
+    });
+  };
 
   const sections = [
     {
@@ -301,7 +429,7 @@ export const SystemArchitecturePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* 1. imagePreprocessor.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('imagePreprocessor.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
@@ -330,7 +458,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 2. ocrService.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('ocrService.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
@@ -359,7 +487,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 3. multiAngleConsolidator.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('multiAngleConsolidator.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
@@ -388,7 +516,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 4. fieldExtractors.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('fieldExtractors.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
@@ -417,7 +545,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 5. readabilityService.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('readabilityService.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
@@ -446,7 +574,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 6. ruleEngineService.ts */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                <div onClick={() => openModuleExplanation('ruleEngineService.ts')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
@@ -475,7 +603,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 7. vision_service.py */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                <div onClick={() => openModuleExplanation('vision_service.py')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-purple-300 dark:hover:border-purple-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
@@ -504,7 +632,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 8. llm_validation_service.py */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                <div onClick={() => openModuleExplanation('llm_validation_service.py')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-purple-300 dark:hover:border-purple-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
@@ -533,7 +661,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 9. ecommerce_crawler_service.py */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-orange-300 dark:hover:border-orange-700 transition-colors">
+                <div onClick={() => openModuleExplanation('ecommerce_crawler_service.py')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-orange-300 dark:hover:border-orange-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
@@ -562,7 +690,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 10. hybrid_retriever.py */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+                <div onClick={() => openModuleExplanation('hybrid_retriever.py')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
@@ -591,7 +719,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 11. email_service.py */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-red-300 dark:hover:border-red-700 transition-colors md:col-span-2">
+                <div onClick={() => openModuleExplanation('email_service.py')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 hover:border-red-300 dark:hover:border-red-700 transition-colors md:col-span-2 cursor-pointer">
                   <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
@@ -774,7 +902,7 @@ export const SystemArchitecturePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* 1. products table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+                <div onClick={() => openCustomExplanation('Products table', 'Database record group', 'This table stores the main identity and compliance summary for each product.', 'It connects the product to its manufacturer, prices, quantity, and compliance result so officers can review one complete product record.')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 cursor-pointer hover:border-emerald-400 transition-colors">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <div className="flex items-center gap-2">
                       <Table className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -807,7 +935,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 2. violations table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+                <div onClick={() => openCustomExplanation('Violations table', 'Database record group', 'This table stores confirmed or reviewable compliance problems found during inspections and scans.', 'It gives supervisors a reliable history of what was found, which product it belongs to, and how the matter progressed.')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 cursor-pointer hover:border-emerald-400 transition-colors">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <div className="flex items-center gap-2">
                       <Table className="h-4 w-4 text-rose-600 dark:text-rose-400" />
@@ -840,7 +968,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 3. manufacturers table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+                <div onClick={() => openCustomExplanation('Manufacturers table', 'Database record group', 'This table keeps the identity and risk information for manufacturers and brands.', 'It helps supervisors connect repeated violations to the responsible manufacturer and prioritise inspections.')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 cursor-pointer hover:border-emerald-400 transition-colors">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <div className="flex items-center gap-2">
                       <Table className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -873,7 +1001,7 @@ export const SystemArchitecturePage: React.FC = () => {
                 </div>
 
                 {/* 4. ocr_scans table */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3">
+                <div onClick={() => openCustomExplanation('OCR scans table', 'Database record group', 'This table keeps the text-reading output and evidence created from a product image.', 'It allows the system and authorised reviewers to trace which image and extracted text supported each declaration.')} role="button" tabIndex={0} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3 cursor-pointer hover:border-emerald-400 transition-colors">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <div className="flex items-center gap-2">
                       <Table className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
@@ -911,7 +1039,7 @@ export const SystemArchitecturePage: React.FC = () => {
             {/* ========================================================================= */}
             {/* SECTION 4: COMPREHENSIVE TECHNOLOGY STACK & FRAMEWORKS */}
             {/* ========================================================================= */}
-            <section id="techstack" className="space-y-8 scroll-mt-24">
+            <section id="techstack" onClick={handleTechnologyCardClick} className="space-y-8 scroll-mt-24">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 font-bold font-mono text-base">
@@ -1249,6 +1377,59 @@ export const SystemArchitecturePage: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {selectedExplanation && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+          role="presentation"
+          onClick={() => setSelectedExplanation(null)}
+        >
+          <div
+            className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl text-slate-800 dark:text-slate-100"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="architecture-explanation-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedExplanation(null)}
+              aria-label="Close explanation"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="pr-8">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                {selectedExplanation.category}
+              </div>
+              <h2 id="architecture-explanation-title" className="mt-1 text-xl font-bold text-slate-900 dark:text-white">
+                {selectedExplanation.title}
+              </h2>
+            </div>
+
+            <div className="mt-5 space-y-4 text-sm leading-relaxed">
+              <p className="text-slate-700 dark:text-slate-200">{selectedExplanation.summary}</p>
+              <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/60 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 mb-1.5">
+                  How it helps the compliance team
+                </div>
+                <p className="text-slate-700 dark:text-slate-300">{selectedExplanation.howItHelps}</p>
+              </div>
+              {selectedExplanation.functionName && selectedExplanation.functionExplanation && (
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">
+                    Main action
+                  </div>
+                  <code className="text-xs font-semibold text-slate-900 dark:text-white">{selectedExplanation.functionName}</code>
+                  <p className="mt-1.5 text-slate-600 dark:text-slate-300">{selectedExplanation.functionExplanation}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <LandingFooter />
     </div>
