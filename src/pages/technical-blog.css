@@ -507,6 +507,15 @@
 }
 
 .gdoc-title-wrap { min-width: 0; flex: 1; }
+.gdoc-title-static {
+  padding: 0.15rem 0.35rem;
+  color: #202124;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  user-select: text;
+}
+.dark .gdoc-title-static { color: #f8fafc; }
 .gdoc-title-wrap input {
   width: min(100%, 34rem);
   padding: 0.15rem 0.35rem;

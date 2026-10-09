@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Terminal, Menu, X, BookOpen, Layers, Cloud } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { AnimatedThemeToggler } from '../ui/AnimatedThemeToggler';
@@ -14,6 +14,7 @@ export const LandingNavbar: React.FC = () => {
   const isDirectoryActive = location.pathname === '/' || location.pathname === '/directory' || location.pathname === '/verify';
   const isAboutActive = location.pathname === '/about' && (!location.hash || location.hash === '#about');
   const isArchitectureActive = location.pathname === '/system-architecture' || location.pathname === '/architecture';
+  const isDeploymentActive = location.pathname === '/deployment-architecture' || location.pathname === '/deployment';
 
   const handleNavClick = (targetId: string) => {
     setIsMobileMenuOpen(false);
@@ -82,6 +83,18 @@ export const LandingNavbar: React.FC = () => {
             }`}
           >
             System Architecture
+          </Link>
+
+          <Link
+            to="/deployment-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`shrink-0 whitespace-nowrap px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              isDeploymentActive
+                ? 'bg-blue-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            Deployment Architecture
           </Link>
 
           <Link
@@ -180,6 +193,19 @@ export const LandingNavbar: React.FC = () => {
           >
             <Layers className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
             <span>System Architecture (HLA / LLA)</span>
+          </Link>
+
+          <Link
+            to="/deployment-architecture"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold min-h-[44px] transition-colors ${
+              isDeploymentActive
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Cloud className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>Deployment Architecture (Cloud &amp; DevOps)</span>
           </Link>
 
           <Link
