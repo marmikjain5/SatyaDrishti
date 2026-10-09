@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
@@ -156,7 +156,9 @@ export const TechnicalBlogPage: React.FC = () => {
       <div className="gdoc-topbar">
         <div className="gdoc-file-icon"><FileText size={25} strokeWidth={1.7} /></div>
         <div className="gdoc-title-wrap">
-          <input aria-label="Document title" defaultValue="SatyaDrishti  -  Blog" />
+          <div className="gdoc-title-static font-semibold text-base sm:text-lg text-slate-800 dark:text-slate-100 tracking-tight select-none">
+            SatyaDrishti &mdash; Blog
+          </div>
           <div className="gdoc-file-meta"><span>Technical documentation</span><span>Updated October 2026</span></div>
         </div>
         <div className="gdoc-top-actions">

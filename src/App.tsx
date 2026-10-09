@@ -18,6 +18,7 @@ import { ScrollToAnchor } from './components/layout/ScrollToAnchor';
 
 import { TechnicalBlogPage } from './pages/TechnicalBlogPage';
 import { SystemArchitecturePage } from './pages/SystemArchitecturePage';
+import { DeploymentArchitecturePage } from './pages/DeploymentArchitecturePage';
 
 export function App() {
   return (
@@ -29,6 +30,8 @@ export function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/system-architecture" element={<SystemArchitecturePage />} />
         <Route path="/architecture" element={<Navigate to="/system-architecture" replace />} />
+        <Route path="/deployment-architecture" element={<DeploymentArchitecturePage />} />
+        <Route path="/deployment" element={<Navigate to="/deployment-architecture" replace />} />
         <Route path="/technical-blog" element={<TechnicalBlogPage />} />
         <Route path="/tech-blog" element={<Navigate to="/technical-blog" replace />} />
         <Route path="/login" element={<LoginPage />} />
